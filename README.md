@@ -44,6 +44,7 @@ cd Uni-Sphere
 
 ```bash
 cd client
+npm install
 npm start
 ```
 ### 3️⃣ **Set up the BackendEnd**
@@ -53,8 +54,8 @@ cd server
 npm install
 ```
 ### 4️⃣ **Configure Environment Variables**
-	1.	In the server directory, create a file named .env.
-	2.	Add the following environment variables to the .env file:
+In the server directory, create a file named .env.
+Add the following environment variables to the .env file:
 ```bash
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
