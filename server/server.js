@@ -14,5 +14,8 @@ app.use(express.json());
 const userRoutes = require("./routes/userRoutes");
 app.use("/api/users", userRoutes);  // This makes /api/users/register and /api/users/login available
 
+const postRoutes = require('./routes/postRoutes');
+app.use('/api/posts', postRoutes);
+
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`✅ Server running on Port ${PORT}`));
