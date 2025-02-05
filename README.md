@@ -52,7 +52,7 @@ Open Another terminal in Root Directory
 cd server
 npm install
 ```
-###4️⃣ **Configure Environment Variables**
+### 4️⃣ **Configure Environment Variables**
 	1.	In the server directory, create a file named .env.
 	2.	Add the following environment variables to the .env file:
 ```bash
@@ -60,7 +60,10 @@ MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
 PORT=5001
 ```
-
+### 5️⃣ **Run the Backend Server**
+```bash
+node server.js
+```
 
 
 
