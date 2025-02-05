@@ -4,18 +4,32 @@ import SchoolIcon from '@mui/icons-material/School';
 import EventIcon from '@mui/icons-material/Event';
 import GroupIcon from '@mui/icons-material/Group';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';  // Import Axios for API requests
 
 const Home = () => {
+    const [posts, setPosts] = useState([]);  // Initialize posts state
     const [userName, setUserName] = useState('');
     const navigate = useNavigate();
-    // Fetch user name from localStorage
+
+    // Fetch posts from backend on component mount
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                console.log('Fetching posts from API...');
+                const res = await axios.get('http://localhost:5001/api/posts/all');  // API call to fetch posts
+                console.log('Fetched posts:', res.data);  // Log fetched posts
+                setPosts(res.data);
+            } catch (err) {
+                console.error('Error fetching posts:', err.response?.data || err.message);  // Detailed error logging
+            }
+        };
+
+        fetchPosts();
+    }, []);
+
 
     // Sample Data
-    const posts = [
-        { id: 1, author: "John Doe", content: "Excited to start the new semester! 🎓", time: "2 hrs ago" },
-        { id: 2, author: "Jane Smith", content: "Looking for study partners for Data Structures. DM me!", time: "5 hrs ago" },
-        { id: 3, author: "Michael Johnson", content: "Campus fest coming this weekend! Don’t miss it 🎉", time: "1 day ago" }
-    ];
+
 
     const events = [
         { id: 1, name: "Career Fair 2025", date: "Feb 10, 2025" },
@@ -38,6 +52,10 @@ const Home = () => {
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         UniConnect - Your Campus Social Hub
                     </Typography>
+                    <Button color="inherit" component={Link} to="/add-post" sx={{
+                        mr: 2, backgroundColor: '#333',  // Dark gray
+                        color: '#fff',
+                    }}>Add Post</Button>  {/* Add Post Button */}
                     <Typography variant="body1" sx={{ mr: 2 }}>
                         Welcome, Student!
                     </Typography>
@@ -54,18 +72,47 @@ const Home = () => {
                     {/* News Feed Section */}
                     <Grid item xs={12} md={8}>
                         <Typography variant="h5" gutterBottom>News Feed</Typography>
-                        {posts.map(post => (
-                            <Paper key={post.id} sx={{ p: 2, mb: 2 }}>
-                                <Box display="flex" alignItems="center">
-                                    <Avatar sx={{ bgcolor: "primary.main", mr: 2 }}>{post.author[0]}</Avatar>
-                                    <Box>
-                                        <Typography variant="subtitle1">{post.author}</Typography>
-                                        <Typography variant="body2" color="text.secondary">{post.time}</Typography>
+
+                        {posts.length > 0 ? (
+                            posts.map(post => (
+                                <Paper
+                                    key={post._id}
+                                    sx={{
+                                        p: 2,
+                                        mb: 2,
+                                        wordWrap: 'break-word',  // Ensure long words break
+                                        overflow: 'hidden',      // Prevent content from spilling out
+                                        maxWidth: '100%'         // Ensure paper doesn't exceed container width
+                                    }}
+                                >
+                                    <Box display="flex" alignItems="center">
+                                        <Avatar sx={{ bgcolor: "primary.main", mr: 2 }}>{post.userName[0]}</Avatar>
+                                        <Box>
+                                            <Typography variant="subtitle1">{post.userName}</Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {new Date(post.createdAt).toLocaleString()}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                </Box>
-                                <Typography variant="body1" sx={{ mt: 2 }}>{post.content}</Typography>
-                            </Paper>
-                        ))}
+
+                                    {/* Content Styling to Handle Overflow */}
+                                    <Typography
+                                        variant="body1"
+                                        sx={{
+                                            mt: 2,
+                                            wordWrap: 'break-word',  // Break long words
+                                            overflowWrap: 'break-word',  // Ensure wrapping in all browsers
+                                            maxHeight: '200px',  // Optional: Limit height for long posts
+                                            overflowY: 'auto'    // Scroll if content exceeds maxHeight
+                                        }}
+                                    >
+                                        {post.content}
+                                    </Typography>
+                                </Paper>
+                            ))
+                        ) : (
+                            <Typography variant="body1">No posts available yet. Be the first to add one!</Typography>
+                        )}
                     </Grid>
 
                     {/* Sidebar with Events & Groups */}

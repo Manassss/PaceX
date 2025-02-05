@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';  // Import the AuthContext
 
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+    const { login } = useAuth();  // Get the login function from context
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -19,10 +22,8 @@ const Login = () => {
             setMessage('🎉 Login Successful!');
             console.log('User Logged In:', res.data);
 
-            // Save user info in localStorage
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+            login(res.data.user);
 
-            // Redirect to Home page
             navigate('/home');
 
         } catch (err) {
