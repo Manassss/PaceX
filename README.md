@@ -37,5 +37,30 @@ Follow the instructions below to set up the project locally.
 
 ```bash
 git clone https://github.com/Manassss/Uni-Sphere.git
-cd Uni-Sphere!
-[Screenshot 2025-02-05 at 4 53 41 PM](https://github.com/user-attachments/assets/cf6b777c-56cf-438e-a29a-1ef47adbb822)
+cd Uni-Sphere
+```
+
+### 2️⃣ **Set up the FrontEnd**
+
+```bash
+cd client
+npm start
+```
+### 3️⃣ **Set up the BackendEnd**
+Open Another terminal in Root Directory
+```bash
+cd server
+npm install
+```
+###4️⃣ **Configure Environment Variables**
+	1.	In the server directory, create a file named .env.
+	2.	Add the following environment variables to the .env file:
+```bash
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_key
+PORT=5001
+```
+
+
+
+
