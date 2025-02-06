@@ -18,7 +18,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/home" element={<Home />} />  {/* Home Route */}
             <Route path="/add-post" element={<AddPost />} />  {/* Add Post Route */}
-            <Route path="/profile" element={<ProfilePage />} />  {/* Add Post Route */}
+            <Route path="/profile/:id" element={<ProfilePage />} />  {/* Dynamic profile route */}
           </Routes>
         </Router>
       </AuthProvider>
