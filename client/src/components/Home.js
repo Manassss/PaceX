@@ -1,32 +1,79 @@
 import React, { useEffect, useState } from 'react';
-import { AppBar, Toolbar, Typography, Button, Container, Box, Paper, Avatar, Grid, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, Box, Paper, Avatar, Grid, Autocomplete, List, ListItem, ListItemAvatar, ListItemText, InputAdornment, TextField } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import EventIcon from '@mui/icons-material/Event';
 import GroupIcon from '@mui/icons-material/Group';
+import SearchIcon from '@mui/icons-material/Search';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';  // Import Axios for API requests
+import { useAuth } from '../auth/AuthContext';
 
 const Home = () => {
     const [posts, setPosts] = useState([]);  // Initialize posts state
     const [userName, setUserName] = useState('');
+    const [users, setUsers] = useState([]);  // List of all users
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredUsers, setFilteredUsers] = useState([]);  // Filtered users based on search
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
-
     // Fetch posts from backend on component mount
     useEffect(() => {
+        if (user && user.name) {  // ✅ Check if user exists before accessing name
+            setUserName(user.name);
+        }
+
         const fetchPosts = async () => {
             try {
                 console.log('Fetching posts from API...');
                 const res = await axios.get('http://localhost:5001/api/posts/all');  // API call to fetch posts
-                console.log('Fetched posts:', res.data);  // Log fetched posts
+                // console.log('Fetched posts:', res.data);  // Log fetched posts
                 setPosts(res.data);
+
             } catch (err) {
                 console.error('Error fetching posts:', err.response?.data || err.message);  // Detailed error logging
             }
         };
 
         fetchPosts();
+    }, [user]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const res = await axios.get('http://localhost:5001/api/users/all');
+                setUsers(res.data);
+                console.log(res.data);
+            } catch (err) {
+                console.error("Error fetching users:", err.response?.data?.message || err.message);
+            }
+        };
+
+        fetchUsers();
     }, []);
 
+    // Handle search input change
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+
+        // Filter users based on search term
+        if (value) {
+            const filtered = users.filter(u => u.name.toLowerCase().includes(value.toLowerCase()));
+            setFilteredUsers(filtered);
+        } else {
+            setFilteredUsers([]);
+        }
+    };
+
+    // Navigate to selected user's profile
+    const handleUserSelect = (userId) => {
+        // navigate(`/profile/${userId}`);
+    };
+    // Handle Logout
+    const handleLogout = () => {
+        logout();  // Clear user from AuthContext
+        navigate('/login');  // Redirect to login page after logout
+    };
 
     // Sample Data
 
@@ -52,15 +99,49 @@ const Home = () => {
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         UniConnect - Your Campus Social Hub
                     </Typography>
+                    {/* Search Bar */}
+                    <Autocomplete
+                        options={users}  // All user data
+                        getOptionLabel={(option) => option.name || ''}  // Display user's name
+                        onChange={handleUserSelect}  // Trigger navigation on selection
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                variant="outlined"
+                                placeholder="Search students..."
+                                size="small"
+                                sx={{ bgcolor: 'white', borderRadius: 1, mr: 2, width: 250 }}
+                                InputProps={{
+                                    ...params.InputProps,
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        )}
+                    />
+
                     <Button color="inherit" component={Link} to="/add-post" sx={{
                         mr: 2, backgroundColor: '#333',  // Dark gray
                         color: '#fff',
                     }}>Add Post</Button>  {/* Add Post Button */}
+                    {/* Conditionally Render Buttons Based on Login Status */}
+
                     <Typography variant="body1" sx={{ mr: 2 }}>
-                        Welcome, Student!
+                        Welcome, {userName || 'Student!'}
                     </Typography>
-                    <Button color="inherit" component={Link} to="/login">Login</Button>
-                    <Button color="inherit" component={Link} to="/register">Register</Button>
+                    {user ? (
+                        <>
+                            <Button color="inherit" onClick={handleLogout}>Logout</Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button color="inherit" component={Link} to="/login">Login</Button>
+                            <Button color="inherit" component={Link} to="/register">Register</Button>
+                        </>
+                    )}
 
                 </Toolbar>
             </AppBar>
