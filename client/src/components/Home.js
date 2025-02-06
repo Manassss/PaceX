@@ -66,13 +66,19 @@ const Home = () => {
     };
 
     // Navigate to selected user's profile
-    const handleUserSelect = (userId) => {
-        // navigate(`/profile/${userId}`);
+    const handleUserSelect = (event, selectedUser) => {
+        if (selectedUser && selectedUser._id) {
+            navigate(`/profile/${selectedUser._id}`);  // Navigate to the selected user's profile
+        }
     };
     // Handle Logout
     const handleLogout = () => {
         logout();  // Clear user from AuthContext
         navigate('/login');  // Redirect to login page after logout
+    };
+    const handleProfile = () => {
+
+        navigate(`/profile/${user._id}`);  // Redirect to login page after logout
     };
 
     // Sample Data
@@ -135,6 +141,7 @@ const Home = () => {
                     {user ? (
                         <>
                             <Button color="inherit" onClick={handleLogout}>Logout</Button>
+                            <Button color="inherit" onClick={handleProfile}>Profile</Button>
                         </>
                     ) : (
                         <>
