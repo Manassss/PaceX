@@ -6,7 +6,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import HomeIcon from '@mui/icons-material/Home';
 
 import { useAuth } from '../auth/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const ProfilePage = () => {
     const [userDetails, setUserDetails] = useState({});
@@ -14,11 +14,14 @@ const ProfilePage = () => {
     const [formData, setFormData] = useState({});
     const { user } = useAuth();  // Get logged-in user from context
     const navigate = useNavigate();
+    const { id } = useParams();
 
-    const userId = user?._id;
+    const userId = id ? id : user?._id;
 
     // Fetch user profile data when component mounts
     useEffect(() => {
+        console.log("id", id);
+        console.log("userid", userId);
         if (!userId) return;  // Avoid making API call if userId is undefined
 
         const fetchUserProfile = async () => {
