@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Home from './components/Home';
 import AddPost from './components/AddPost';
 import { AuthProvider } from './auth/AuthContext';
+import ProfilePage from './components/ProfilePage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/home" element={<Home />} />  {/* Home Route */}
             <Route path="/add-post" element={<AddPost />} />  {/* Add Post Route */}
+            <Route path="/profile" element={<ProfilePage />} />  {/* Add Post Route */}
           </Routes>
         </Router>
       </AuthProvider>

@@ -54,4 +54,55 @@ const loginUser = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
-module.exports = { registerUser, loginUser };
+
+// Get User Profile
+const getUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// Update User Profile
+const updateUserProfile = async (req, res) => {
+    try {
+        const { university, major, graduationYear, birthdate, bio, profileImage } = req.body;
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Update the profile fields
+        user.university = university || user.university;
+        user.major = major || user.major;
+        user.graduationYear = graduationYear || user.graduationYear;
+        user.birthdate = birthdate || user.birthdate;
+        user.bio = bio || user.bio;
+        user.profileImage = profileImage || user.profileImage;
+
+        await user.save();
+        res.status(200).json({ message: "Profile updated successfully", user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// ✅ Get all users (for search)
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}, 'name university major');  // Only return necessary fields
+        res.status(200).json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers };

@@ -13,8 +13,10 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
     };
 
-    // Function to log out
-    const logout = () => setUser(null);
+    const logout = () => {
+        setUser(null);
+
+    };
 
     return (
         <AuthContext.Provider value={{ user, login, logout }}>
