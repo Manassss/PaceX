@@ -78,14 +78,19 @@ const updateUserProfile = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
+        // ✅ Ensure profileImage is being updated
+        if (profileImage) {
+            user.profileImage = profileImage;
+            console.log("profile url added", profileImage);
+        }
 
-        // Update the profile fields
+
         user.university = university || user.university;
         user.major = major || user.major;
         user.graduationYear = graduationYear || user.graduationYear;
         user.birthdate = birthdate || user.birthdate;
         user.bio = bio || user.bio;
-        user.profileImage = profileImage || user.profileImage;
+
 
         await user.save();
         res.status(200).json({ message: "Profile updated successfully", user });
@@ -98,7 +103,8 @@ const updateUserProfile = async (req, res) => {
 // ✅ Get all users (for search)
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}, 'name university major');  // Only return necessary fields
+        // ✅ Fetch all users with all fields (excluding passwords for security)
+        const users = await User.find().select("-password"); // Excludes password field
         res.status(200).json(users);
 
     } catch (err) {

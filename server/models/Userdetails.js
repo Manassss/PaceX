@@ -6,13 +6,13 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, enum: ["student", "faculty", "admin"], default: "student" },
     joinedAt: { type: Date, default: Date.now },
-    // Profile Fields
+    profileImage: { type: String, default: "" },
     university: { type: String, default: "Pace University" },
     major: { type: String },
     graduationYear: { type: Number },
     birthdate: { type: Date },
     bio: { type: String },
-    profileImage: { type: String },  // URL for profile ima
+    // URL for profile ima
 });
 
 module.exports = mongoose.model('User', userSchema);

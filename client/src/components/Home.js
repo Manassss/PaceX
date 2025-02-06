@@ -42,7 +42,7 @@ const Home = () => {
             try {
                 const res = await axios.get('http://localhost:5001/api/users/all');
                 setUsers(res.data);
-                console.log(res.data);
+                // console.log(res.data);
             } catch (err) {
                 console.error("Error fetching users:", err.response?.data?.message || err.message);
             }
@@ -128,7 +128,14 @@ const Home = () => {
                             />
                         )}
                     />
-
+                    <Button
+                        color="inherit"
+                        component={Link}
+                        to="/marketplace"
+                        sx={{ mr: 2, backgroundColor: '#333', color: '#fff', borderRadius: 1 }}
+                    >
+                        Marketplace
+                    </Button>
                     <Button color="inherit" component={Link} to="/add-post" sx={{
                         mr: 2, backgroundColor: '#333',  // Dark gray
                         color: '#fff',
@@ -159,6 +166,7 @@ const Home = () => {
                 <Grid container spacing={4}>
                     {/* News Feed Section */}
                     <Grid item xs={12} md={8}>
+
                         <Typography variant="h5" gutterBottom>News Feed</Typography>
 
                         {posts.length > 0 ? (
@@ -174,7 +182,16 @@ const Home = () => {
                                     }}
                                 >
                                     <Box display="flex" alignItems="center">
-                                        <Avatar sx={{ bgcolor: "primary.main", mr: 2 }}>{post.userName[0]}</Avatar>
+                                        {(() => {
+                                            const user = users.find((u) => u._id === post.userId);
+                                            console.log("user", user);
+                                            return (
+                                                <Avatar
+                                                    src={user?.profileImage || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"}
+                                                    sx={{ width: 40, height: 40, mr: 2 }}
+                                                />
+                                            );
+                                        })()}
                                         <Box>
                                             <Typography variant="subtitle1">{post.userName}</Typography>
                                             <Typography variant="body2" color="text.secondary">
