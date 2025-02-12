@@ -1,43 +1,67 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/Userdetails");  // ✅ Importing the User model
+const admin = require("../config/firebaseConfig"); // Import Firebase Admin
 
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role, profileImage, university, major, graduationYear, birthdate, bio } = req.body;
+        const { idToken, name, email, role, profileImage, university, major, graduationYear, birthdate, bio, password } = req.body;
 
-        let user = await User.findOne({ email });
-        if (user) {
+        // Verify Firebase ID Token
+        console.log("email", email)
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const firebaseEmail = decodedToken.email;
+        console.log("fbemail", firebaseEmail)
+
+        // Check if email is verified
+        // const firebaseUser = await admin.auth().getUser(decodedToken.uid);
+        // if (!firebaseUser.emailVerified) {
+        //     return res.status(400).json({ message: "❌ Email not verified. Please verify your email first." });
+        // }
+        // Check if user already exists in MongoDB
+        let existingUser = await User.findOne({ email: firebaseEmail });
+        if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
 
-        user = new User({
+        // Save user details in MongoDB (no need to store password)
+        const newUser = new User({
             name,
-            email,
             password,
-            role: role || "student",  // Default to "student" if not provided
-            profileImage: profileImage || "",  // Default to empty string
-            university: university || "Pace University",  // Default to "Pace University"
+            email: firebaseEmail, // Use email from Firebase
+            role: role || "student",
+            profileImage: profileImage || "",
+            university: university || "Pace University",
             major,
             graduationYear,
             birthdate,
-            bio
+            bio,
         });
 
-        await user.save();
-        res.status(201).json({ message: "User registered successfully!", user });
+        await newUser.save();
+
+        res.status(201).json({ message: "User registered successfully!", userId: decodedToken.uid });
 
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Server Error" });
+        res.status(500).json({ message: "Server Error", error: err.message });
     }
 };
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { idToken } = req.body; // Frontend should send Firebase ID Token
 
+        // Verify the token with Firebase
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const email = decodedToken.email;
+
+        const firebaseUser = await admin.auth().getUser(decodedToken.uid);
+        if (!firebaseUser.emailVerified) {
+            return res.status(400).json({ message: "❌ Email not verified. Please check your email." });
+        }
+        // Find user in MongoDB
         const user = await User.findOne({ email });
 
-        if (!user || user.password !== password) {
+        if (!user) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
 
@@ -50,13 +74,20 @@ const loginUser = async (req, res) => {
             user: {
                 _id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                role: user.role,
+                profileImage: user.profileImage,
+                university: user.university,
+                major: user.major,
+                graduationYear: user.graduationYear,
+                birthdate: user.birthdate,
+                bio: user.bio
             }
         });
 
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Server Error" });
+        res.status(401).json({ message: "Invalid or expired token" });
     }
 };
 

@@ -1,21 +1,50 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
     const [formData, setFormData] = useState({ name: '', email: '', password: '' });
     const [message, setMessage] = useState('');
-
+    const navigate = useNavigate();
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const auth = getAuth();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         try {
-            const res = await axios.post('http://localhost:5001/api/users/register', formData);
+            const { name, email, password } = formData;
+
+            // Register the user with Firebase
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const idToken = await user.getIdToken(); // Get Firebase ID Token
+
+            // Send necessary user data (excluding password) and Firebase ID token to backend
+            const res = await axios.post('http://localhost:5001/api/users/register', {
+                idToken,
+                name,
+                email,
+                password
+
+            });
+
             setMessage('🎉 Registration Successful!');
-            console.log('User Registered:', res.data);
+            // Send verification email
+            await sendEmailVerification(user);
+            console.log("📧 Verification Email Sent!");
+
+            setMessage("📩 Please check your email and verify your account before logging in.");
+
+
+
+            navigate('/login'); // Redirect to home
+
         } catch (err) {
             setMessage('❌ Registration Failed');
             console.error("Registration Error:", err.response?.data?.message || "Server Error");
