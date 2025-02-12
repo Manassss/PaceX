@@ -4,6 +4,7 @@ import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';  // Import the AuthContext
 
+
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [message, setMessage] = useState('');
@@ -14,16 +15,35 @@ const Login = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const auth = getAuth();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Extract email and password from the form
+
         try {
-            const res = await axios.post('http://localhost:5001/api/users/login', formData);
+            const { email, password } = formData;
+
+
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            // Check if email is verified
+            if (!user.emailVerified) {
+                setMessage("❌ Email not verified. Please check your inbox.");
+                return;
+            }
+            const idToken = await user.getIdToken(); // Get Firebase token
+
+            // Send the Firebase token to backend for verification
+            const res = await axios.post('http://localhost:5001/api/users/login', { idToken });
+
             setMessage('🎉 Login Successful!');
             console.log('User Logged In:', res.data);
 
-            login(res.data.user);
+            login(res.data.user); // Store user data in context or state
 
-            navigate('/userhome');
+            navigate('/home');
 
         } catch (err) {
             setMessage('❌ Login Failed');

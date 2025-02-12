@@ -3,7 +3,95 @@ import { Typography, Button, Container, Box } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
+    const [posts, setPosts] = useState([]);  // Initialize posts state
+    const [userName, setUserName] = useState('');
+    const [users, setUsers] = useState([]);  // List of all users
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredUsers, setFilteredUsers] = useState([]);  // Filtered users based on search
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    // Fetch posts from backend on component mount
+    useEffect(() => {
+        if (user && user.name) {  // ✅ Check if user exists before accessing name
+            setUserName(user.name);
+        }
+
+        const fetchPosts = async () => {
+            try {
+                console.log('Fetching posts from API...');
+                const res = await axios.get('http://localhost:5001/api/posts/all');  // API call to fetch posts
+                // console.log('Fetched posts:', res.data);  // Log fetched posts
+                setPosts(res.data);
+
+            } catch (err) {
+                console.error('Error fetching posts:', err.response?.data || err.message);  // Detailed error logging
+            }
+        };
+
+        fetchPosts();
+    }, [user]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const res = await axios.get('http://localhost:5001/api/users/all');
+                setUsers(res.data);
+                // console.log(res.data);
+            } catch (err) {
+                console.error("Error fetching users:", err.response?.data?.message || err.message);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
+    // Handle search input change
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+
+        // Filter users based on search term
+        if (value) {
+            const filtered = users.filter(u => u.name.toLowerCase().includes(value.toLowerCase()));
+            setFilteredUsers(filtered);
+        } else {
+            setFilteredUsers([]);
+        }
+    };
+
+    // Navigate to selected user's profile
+    const handleUserSelect = (event, selectedUser) => {
+        if (selectedUser && selectedUser._id) {
+            navigate(`/profile/${selectedUser._id}`);  // Navigate to the selected user's profile
+        }
+    };
+    // Handle Logout
+    const handleLogout = () => {
+        logout();  // Clear user from AuthContext
+        navigate('/login');  // Redirect to login page after logout
+    };
+    const handleProfile = () => {
+
+        navigate(`/profile/${user._id}`);  // Redirect to login page after logout
+    };
+
+    // Sample Data
+
+
+    const events = [
+        { id: 1, name: "Career Fair 2025", date: "Feb 10, 2025" },
+        { id: 2, name: "Coding Hackathon", date: "Feb 15, 2025" },
+        { id: 3, name: "Spring Break Starts", date: "Mar 1, 2025" }
+    ];
+
+    const groups = [
+        { id: 1, name: "Computer Science Club" },
+        { id: 2, name: "Photography Enthusiasts" },
+        { id: 3, name: "Basketball Team" }
+    ];
+
     return (
+
         <div>
             {/* Main Content */}
             <Container 
@@ -68,8 +156,9 @@ const Home = () => {
                         Sign Up
                     </Button>
                 </Box>
-            </Container>
+                </Container>
         </div>
+        
     );
 };
 
