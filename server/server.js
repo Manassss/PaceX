@@ -24,6 +24,9 @@ app.use("/api/users", userRoutes);  // This makes /api/users/register and /api/u
 const postRoutes = require('./routes/postRoutes');
 app.use('/api/posts', postRoutes);
 
+const marketRoutes = require('./routes/marketplace');
+app.use('/api/marketplace', marketRoutes);
+
 // ✅ Socket.io Connection Handling
 io.on("connection", (socket) => {
     console.log("🟢 New client connected:", socket.id);

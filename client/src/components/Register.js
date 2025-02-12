@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
@@ -16,7 +17,6 @@ const Register = () => {
     });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -24,26 +24,39 @@ const Register = () => {
     const handleImageChange = (e) => {
         setFormData({ ...formData, profileImg: e.target.files[0] });
     };
+    const auth = getAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const formDataToSend = new FormData();
-            Object.keys(formData).forEach(key => {
-                formDataToSend.append(key, formData[key]);
-            });
 
-            const res = await axios.post('http://localhost:5001/api/users/register', formDataToSend, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+        try {
+            const { name, email, password } = formData;
+
+            // Register the user with Firebase
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const idToken = await user.getIdToken(); // Get Firebase ID Token
+
+            // Send necessary user data (excluding password) and Firebase ID token to backend
+            const res = await axios.post('http://localhost:5001/api/users/register', {
+                idToken,
+                name,
+                email,
+                password
+
             });
 
             setMessage('🎉 Registration Successful!');
-            console.log('User Registered:', res.data);
+            // Send verification email
+            await sendEmailVerification(user);
+            console.log("📧 Verification Email Sent!");
 
-            // After successful registration, navigate to login page
-            navigate('/login');  // Redirect to login page after successful registration
+            setMessage("📩 Please check your email and verify your account before logging in.");
+
+
+
+            navigate('/login'); // Redirect to home
+
         } catch (err) {
             setMessage('❌ Registration Failed');
             console.error("Registration Error:", err.response?.data?.message || "Server Error");
