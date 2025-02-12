@@ -4,15 +4,14 @@ import { Container, Typography, Box, Avatar, Button, TextField, Grid, Paper, Inp
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import HomeIcon from '@mui/icons-material/Home';
+import SettingsIcon from '@mui/icons-material/Settings';
+import AddIcon from '@mui/icons-material/Add';
 import { getAuth } from "firebase/auth";
 import { storage } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-
-
-
-
 import { useAuth } from '../auth/AuthContext';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import IconButton from '@mui/material/IconButton';
 
 const ProfilePage = () => {
     const [userDetails, setUserDetails] = useState({});
@@ -51,7 +50,6 @@ const ProfilePage = () => {
     const handleFileChange = (event) => {
         setSelectedFile(event.target.files[0]);
     };
-
 
     const handleImageUpload = async () => {
         if (!selectedFile) {
@@ -109,113 +107,80 @@ const ProfilePage = () => {
         }
     };
 
+    // Navigate to the UserHome page
+    const handleHomeClick = () => {
+        navigate('/userhome'); // Adjust the path if it's different
+    };
+
     return (
-        <Container maxWidth="sm" sx={{ mt: 5 }}>
-            <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-                <Box display="flex" justifyContent="flex-end">
-                    <Button
-                        variant="outlined"
-                        component={Link}
-                        to="/home"
-                        startIcon={<HomeIcon />}
-                        sx={{ mb: 2 }}
-                    >
-                        Home
-                    </Button>
-                </Box>
-                {/* Profile Header */}
-                <Box display="flex" flexDirection="column" alignItems="center">
-                    <Avatar
-                        src={userDetails.profileImage ? userDetails.profileImage : "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"}
-                        sx={{ width: 100, height: 100, mb: 2 }}
-                    />
-                    <Typography variant="h5">{userDetails.name || 'Your Name'}</Typography>
+        <Container maxWidth="xs" sx={{ 
+            width: 600, 
+            height: 800, 
+            bgcolor: 'white', 
+            borderRadius: 3, 
+            position: 'relative', 
+            overflow: 'hidden', 
+            p: 2,
+            border: '2px solid #ccc', // Added border around the entire container
+        }}>
+            {/* Settings Icon */}
+            <Box display="flex" justifyContent="flex-end">
+                <Button variant="outlined" startIcon={<SettingsIcon />} sx={{ mb: 2 }} />
+            </Box>
+
+            <Box display="flex" justifyContent="flex-start" alignItems="center" flexDirection="column">
+                {/* Profile Image */}
+                <Avatar
+                    src={userDetails.profileImage ? userDetails.profileImage : "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"}
+                    sx={{ width: 100, height: 100, mb: 2, mr: 2 }}
+                />
+
+                {/* User Details */}
+                <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '1.8rem' }}>
+                        {userDetails.name || 'Your Name'}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: '1.1rem', mt: 1 }}>
+                        {userDetails.bio || 'No bio available'}
+                    </Typography>
                 </Box>
 
-                {/* Image Upload */}
-                {user && user._id === userId && (
-                    <Box display="flex" flexDirection="column" alignItems="center" sx={{ mt: 3 }}>
-                        <Input type="file" onChange={handleFileChange} />
-                        <Button variant="contained" color="primary" onClick={handleImageUpload} sx={{ mt: 2 }}>
-                            Upload Picture
-                        </Button>
-                    </Box>
-                )}
+                {/* User Stats (Posts, Followers, Following) */}
+                <Box sx={{ display: 'flex', gap: 3, mt: 3, justifyContent: 'center' }}>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>Posts: {userDetails.posts?.length || 0}</Typography>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>Followers: {userDetails.followers?.length || 0}</Typography>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>Following: {userDetails.following?.length || 0}</Typography>
+                </Box>
+            </Box>
 
-                {/* Profile Form */}
-                <Box sx={{ mt: 4 }}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="University"
-                                name="university"
-                                fullWidth
-                                value={formData.university || ''}
-                                onChange={handleChange}
-                                disabled={!editMode}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Major"
-                                name="major"
-                                fullWidth
-                                value={formData.major || ''}
-                                onChange={handleChange}
-                                disabled={!editMode}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Graduation Year"
-                                name="graduationYear"
-                                fullWidth
-                                type="number"
-                                value={formData.graduationYear || ''}
-                                onChange={handleChange}
-                                disabled={!editMode}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Birthdate"
-                                name="birthdate"
-                                fullWidth
-                                type="date"
-                                value={formData.birthdate ? formData.birthdate.split('T')[0] : ''}
-                                onChange={handleChange}
-                                InputLabelProps={{ shrink: true }}
-                                disabled={!editMode}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Bio"
-                                name="bio"
-                                fullWidth
-                                multiline
-                                rows={3}
-                                value={formData.bio || ''}
-                                onChange={handleChange}
-                                disabled={!editMode}
-                            />
-                        </Grid>
+            {/* Posts Grid */}
+            <Box sx={{ mt: 5, pt: 3, px: 2 }}>
+                {userDetails.posts && userDetails.posts.length > 0 ? (
+                    <Grid container spacing={3}>
+                        {userDetails.posts.map((post, index) => (
+                            <Grid item xs={12} sm={6} md={4} key={index}>
+                                <Paper sx={{ p: 3, backgroundColor: 'transparent', borderRadius: 2 }}>
+                                    <Typography variant="body2" sx={{ fontSize: '1.2rem' }}>{post.content}</Typography>
+                                </Paper>
+                            </Grid>
+                        ))}
                     </Grid>
+                ) : (
+                    <Typography variant="body2" sx={{ textAlign: 'center', color: 'gray', fontStyle: 'italic', fontSize: '1.3rem' }}>
+                        No Posts Available
+                    </Typography>
+                )}
+            </Box>
 
-                    {/* Edit/Save Buttons */}
-                    <Box display="flex" justifyContent="flex-end" sx={{ mt: 3 }}>
-                        {editMode ? (
-                            <Button variant="contained" color="primary" startIcon={<SaveIcon />} onClick={handleSave}>
-                                Save
-                            </Button>
-                        ) : (
-                            <Button variant="outlined" startIcon={<EditIcon />} onClick={() => setEditMode(true)}>
-                                Edit Profile
-                            </Button>
-                        )}
-                    </Box>
-                </Box>
-            </Paper>
+            {/* Feed and Add Post Buttons at the Bottom */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)' }}>
+                <IconButton sx={{ backgroundColor: '#ff4500', color: 'white', borderRadius: '50%', mr: 2 }}>
+                    <AddIcon />
+                </IconButton>
+                <IconButton onClick={handleHomeClick} sx={{ backgroundColor: '#ff4500', color: 'white', borderRadius: '50%' }}>
+                    <HomeIcon />
+                </IconButton>
+            </Box>
         </Container>
     );
 };
