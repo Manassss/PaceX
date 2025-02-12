@@ -5,11 +5,11 @@ import Home from './components/Home';
 import AddPost from './components/AddPost';
 import { AuthProvider } from './auth/AuthContext';
 import ProfilePage from './components/ProfilePage';
+import UserHome from './components/userhome';
 
 function App() {
   return (
     <div className="App">
-      <h1>University Social Platform</h1>
       <AuthProvider>
         <Router>
           <Routes>
@@ -19,6 +19,8 @@ function App() {
             <Route path="/home" element={<Home />} />  {/* Home Route */}
             <Route path="/add-post" element={<AddPost />} />  {/* Add Post Route */}
             <Route path="/profile/:id" element={<ProfilePage />} />  {/* Dynamic profile route */}
+            <Route path="/userhome" element={<UserHome />} />
+
           </Routes>
         </Router>
       </AuthProvider>
