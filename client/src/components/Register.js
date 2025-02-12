@@ -3,34 +3,27 @@ import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { useNavigate } from 'react-router-dom';
+import backgroundImage from "../assets/paceuni.jpg"; // ✅ Import background image
 
 const Register = () => {
     const [formData, setFormData] = useState({
         firstName: '',
-        lastName: '',
         email: '',
-        password: '',
-        profileImg: null,
-        bio: '',
-        dob: '',
-        major: ''
+        password: ''
     });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+    const auth = getAuth();
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-
-    const handleImageChange = (e) => {
-        setFormData({ ...formData, profileImg: e.target.files[0] });
-    };
-    const auth = getAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
-            const { name, email, password } = formData;
+            const { firstName, email, password } = formData;
 
             // Register the user with Firebase
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -38,24 +31,20 @@ const Register = () => {
             const idToken = await user.getIdToken(); // Get Firebase ID Token
 
             // Send necessary user data (excluding password) and Firebase ID token to backend
-            const res = await axios.post('http://localhost:5001/api/users/register', {
+            await axios.post('http://localhost:5001/api/users/register', {
                 idToken,
-                name,
-                email,
-                password
-
+                firstName,
+                email
             });
 
             setMessage('🎉 Registration Successful!');
+
             // Send verification email
             await sendEmailVerification(user);
             console.log("📧 Verification Email Sent!");
 
             setMessage("📩 Please check your email and verify your account before logging in.");
-
-
-
-            navigate('/login'); // Redirect to home
+            navigate('/login'); // Redirect to login
 
         } catch (err) {
             setMessage('❌ Registration Failed');
@@ -64,10 +53,36 @@ const Register = () => {
     };
 
     return (
-        <Container maxWidth="sm" sx={{ mt: 5 }}>
-            <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-                <Typography variant="h4" component="h1" align="center" gutterBottom>
-                    Register
+        <Box
+            sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '100vh',
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                padding: 3
+            }}
+        >
+            <Paper
+                elevation={6}
+                sx={{
+                    p: 5,
+                    borderRadius: 4,
+                    width: '100%',
+                    maxWidth: 400,
+                    textAlign: 'center',
+                    backdropFilter: 'blur(10px)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)'
+                }}
+            >
+                <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+                    Sign Up
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                    Create an account to get started!
+                    <p> Please use your Pace Id to create account!</p>
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <TextField
@@ -76,13 +91,7 @@ const Register = () => {
                         name="firstName"
                         onChange={handleChange}
                         required
-                    />
-                    <TextField
-                        label="Last Name"
-                        variant="outlined"
-                        name="lastName"
-                        onChange={handleChange}
-                        required
+                        fullWidth
                     />
                     <TextField
                         label="Email (.edu)"
@@ -91,6 +100,7 @@ const Register = () => {
                         type="email"
                         onChange={handleChange}
                         required
+                        fullWidth
                     />
                     <TextField
                         label="Password"
@@ -99,62 +109,22 @@ const Register = () => {
                         type="password"
                         onChange={handleChange}
                         required
+                        fullWidth
                     />
-                    <Typography variant="body1" sx={{ mb: 1 }}>Profile Image</Typography>
-                    <input
-                        type="file"
-                        name="profileImg"
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        required
-                        id="profile-img"
-                        style={{ display: 'none' }}
-                    />
-                    <label htmlFor="profile-img">
-                        <Button variant="outlined" component="span" sx={{ textTransform: 'none' }}>
-                            Choose File
-                        </Button>
-                    </label>
-                    <TextField
-                        label="Bio"
-                        variant="outlined"
-                        name="bio"
-                        multiline
-                        rows={3}
-                        onChange={handleChange}
-                    />
-                    <TextField
-                        label="Date of Birth"
-                        variant="outlined"
-                        name="dob"
-                        type="date"
-                        InputLabelProps={{
-                            shrink: true,
-                        }}
-                        onChange={handleChange}
-                        required
-                    />
-                    <TextField
-                        label="Major"
-                        variant="outlined"
-                        name="major"
-                        onChange={handleChange}
-                        required
-                    />
-                    <Button variant="contained" color="primary" type="submit" sx={{ mt: 2 }}>
+                    <Button variant="contained" color="primary" type="submit" sx={{ mt: 2, borderRadius: 2 }}>
                         Register
                     </Button>
-                    <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ mt: 2 }}>
                         Already have an account? <Link href="/login">Login</Link>
                     </Typography>
                 </Box>
                 {message && (
-                    <Typography variant="body1" color="success.main" align="center" sx={{ mt: 2 }}>
+                    <Typography variant="body1" color="success.main" sx={{ mt: 2 }}>
                         {message}
                     </Typography>
                 )}
             </Paper>
-        </Container>
+        </Box>
     );
 };
 
