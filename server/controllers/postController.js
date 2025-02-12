@@ -2,12 +2,13 @@ const Post = require('../models/Post');
 
 const createPost = async (req, res) => {
     try {
-        const { userId, userName, content } = req.body;
+        const { userId, userName, content, postimg } = req.body;
 
         const newPost = new Post({
             userId,
             userName,
-            content
+            content,
+            postimg
         });
 
         await newPost.save();
