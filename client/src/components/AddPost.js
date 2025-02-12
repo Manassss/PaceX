@@ -1,13 +1,68 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { TextField, Button, Container, Typography, Paper, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext'
+import { getAuth } from "firebase/auth";
+import { storage } from '../firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
 
 const AddPost = () => {
     const [content, setContent] = useState('');
     const navigate = useNavigate();
     const { user } = useAuth();  // Get user from context
+    const [postimg, setpostimg] =useState('');
+    const [selectedFile, setSelectedFile] = useState(null);  // State for image upload
+    const userId = id ? id : user?._id;
+    const { id } = useParams();
+
+
+    
+
+    const handleImageUpload = async () => {
+        if (!selectedFile) {
+            alert("Please select an image first!");
+            return;
+        }
+
+        const storageRef = ref(storage, `postPictures/${userId}/${selectedFile.name}`);
+        const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+
+        uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+                console.log(`Upload progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%`);
+            },
+            (error) => {
+                console.error("Upload error:", error);
+                alert("Upload failed. Check Firebase Storage permissions.");
+            },
+            async () => {
+                // ✅ Get the download URL from Firebase Storage
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                console.log("Downloaded URL:", downloadURL);
+
+                // ✅ Update profileImage in MongoDB immediately after uploading
+                try {
+                    // const res = await axios.put(`http://localhost:5001/api/users/profile/${userId}`, {
+                    //     profileImage: downloadURL
+                    // });
+
+                    // setUserDetails(res.data.user); // Update UI state with new image URL
+                    setpostimg( downloadURL ); // Ensure form data is updated
+                    alert("Post picture updated successfully!");
+
+                } catch (err) {
+                    console.error("Error updating profile picture:", err.response?.data?.message || err.message);
+                }
+            }
+        );
+    };
+
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
