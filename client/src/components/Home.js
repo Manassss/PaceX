@@ -26,6 +26,7 @@ const Home = () => {
           borderRadius: "15px",
           padding: "20px",
           textAlign: "center",
+          width: '400px',
         }}
       >
         <Typography variant="h4" gutterBottom>

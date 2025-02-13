@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Button, Container, Paper, TextField, Avatar, Box, IconButton, List, ListItem, ListItemText, MenuItem, Menu } from '@mui/material';
+import { Typography, Button, Container, Paper, TextField, Avatar, Box, IconButton, List, ListItem, ListItemText, Modal, MenuItem, Menu } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
 import AddIcon from '@mui/icons-material/Add';
+import CameraCapture from './CameraComponent';
 
 const UserHome = () => {
     const [posts, setPosts] = useState([]);
@@ -12,7 +13,34 @@ const UserHome = () => {
     const [filteredUsers, setFilteredUsers] = useState([]);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [openCamera, setOpenCamera] = useState(false);
+    const [stories, setStories] = useState([]);
 
+    const handleImageUpload = async (downloadURL) => {
+
+        try {
+            console.log("downloadurl", downloadURL);
+            const postData = {
+                userId: user?._id,
+                userName: user?.name,
+                mediaUrl: downloadURL,
+                mediaType: 'image'
+
+            };
+
+            console.log('Post Data:', postData);  // Log the data before sending
+
+            // Send post data to backend
+            await axios.post('http://localhost:5001/api/story/add', postData);
+
+
+
+            console.log("✅ Story uploaded successfully:", downloadURL);
+            setOpenCamera(false); // Close camera modal after upload
+        } catch (err) {
+            console.error('Error creating post:', err.response?.data || err.message);  // More detailed error logging
+        }
+    };
     useEffect(() => {
         const fetchPosts = async () => {
             try {
@@ -59,9 +87,26 @@ const UserHome = () => {
                 console.error('Error fetching users:', err);
             }
         };
+        const fetchStories = async () => {
+            try {
+                const res = await axios.get('http://localhost:5001/api/story/all');
+                const todaystories = res.data.map(story => ({
+                    userId: story.userId,
+                    userName: story.userName,
+                    mediaUrl: story.mediaUrl,
+                    mediaType: story.mediaType
+                }));
+                console.log("story", todaystories); // Check the transformed structure
+                setStories(todaystories);
+            }
+            catch (err) {
+                console.error('Error fetching story:', err);
+            }
+        }
 
         fetchPosts();
         fetchUsers();
+        fetchStories();
     }, []);
 
 
@@ -96,8 +141,9 @@ const UserHome = () => {
                 overflow: 'hidden',
                 bgcolor: 'white',
                 borderRadius: 3,
-                p: 2,
-                border: '2px solid #000' // Added border
+                p: 1,
+                border: '2px solid #000', // Added border,
+                marginTop: '50px'
             }}
         >
             {/* App Name */}
@@ -125,16 +171,38 @@ const UserHome = () => {
                     cursor: 'grab',
                 }}
             >
-                {users.slice(0, 10).map((user) => (
-                    <Avatar
-                        key={user.id}
-                        sx={{ width: 60, height: 60, cursor: 'pointer', border: '3px solid #ff4500' }}
-                        onClick={() => handleProfile(user.id)} // Navigate to profile on click
-                        src={user.profileImage}
-                    />
-                ))}
+                <AddIcon sx={{ backgroundColor: 'grey', color: 'white', width: 65, height: 65, borderRadius: '50%' }}
+                    onClick={() => setOpenCamera(true)} />
+                {stories.map((story, index) => {
+                    const storyUser = users.find((user) => user.id === story.userId)
+                    return (
+                        <Avatar
+                            key={index}
+                            sx={{ width: 60, height: 60, cursor: 'pointer', border: '3px solid #ff4500' }}
+                            // onClick={() => handleProfile(user.id)} // Navigate to profile on click
+                            src={storyUser.profileImage}
+                        />
+                    )
+                }
+                )}
             </Box>
+            <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
+                <Box
+                    sx={{
+                        position: "absolute",
+                        marginTop: '50px',
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 430,
+                        bgcolor: "white",
+                        boxShadow: 24,
 
+                        borderRadius: 2,
+                    }}
+                >
+                    <CameraCapture onImageUpload={handleImageUpload} />
+                </Box>
+            </Modal>
             {/* Search Users */}
             <TextField
                 fullWidth
@@ -234,26 +302,28 @@ const UserHome = () => {
             {/* Container for Profile & Add Post Buttons */}
             <Box sx={{
                 display: 'flex',
-                justifyContent: 'center',
+                justifyContent: 'space-evenly',
                 alignItems: 'center',
-                gap: 2,
+                gap: 0.5,
                 position: 'absolute',
-                bottom: 10,
+                bottom: 0,
                 left: '50%',
-                transform: 'translateX(-50%)'
+                transform: 'translateX(-50%)',
+                backgroundColor: 'RGBA(0,0,0,0.7)',
+                width: '100%'
             }}>
                 {/* Profile Button */}
                 <IconButton onClick={() => handleProfile(user._id)}>
-                    <Avatar src={user?.profilePic} sx={{ width: 50, height: 50 }} />
+                    <Avatar src={user?.profilePic} sx={{ width: 50, height: 50, borderRadius: '0%' }} />
                 </IconButton>
 
                 {/* Add Post Button */}
                 <IconButton onClick={handleAddpost}
-                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '50%' }}>
+                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
                     <AddIcon />
                 </IconButton>
                 <IconButton onClick={handleAddpost}
-                    sx={{ width: 50, height: 50, bgcolor: 'black', color: 'white', borderRadius: '50%' }}>
+                    sx={{ width: 50, height: 50, bgcolor: 'black', color: 'white', borderRadius: '0%' }}>
                     S
                 </IconButton>
             </Box>

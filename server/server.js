@@ -27,6 +27,9 @@ app.use('/api/posts', postRoutes);
 const marketRoutes = require('./routes/marketplace');
 app.use('/api/marketplace', marketRoutes);
 
+const storyroutes = require('./routes/storyRoutes');
+app.use('/api/story', storyroutes);
+
 // ✅ Socket.io Connection Handling
 io.on("connection", (socket) => {
     console.log("🟢 New client connected:", socket.id);
