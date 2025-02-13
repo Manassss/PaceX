@@ -3,7 +3,7 @@ const Post = require('../models/Post');
 const createPost = async (req, res) => {
     try {
         const { userId, userName, content, postimg } = req.body;
-        console.log(postimg)
+        console.log(postimg);
         const newPost = new Post({
             userId,
             userName,
