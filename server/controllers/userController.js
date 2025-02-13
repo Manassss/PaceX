@@ -109,7 +109,7 @@ const getUserProfile = async (req, res) => {
 // Update User Profile
 const updateUserProfile = async (req, res) => {
     try {
-        const { university, major, graduationYear, birthdate, bio, profileImage } = req.body;
+        const { university, major, graduationYear, birthdate, bio, profileImage, username } = req.body;
 
         const user = await User.findById(req.params.id);
         if (!user) {
@@ -127,7 +127,7 @@ const updateUserProfile = async (req, res) => {
         user.graduationYear = graduationYear || user.graduationYear;
         user.birthdate = birthdate || user.birthdate;
         user.bio = bio || user.bio;
-
+        user.username = username || user.username
 
         await user.save();
         res.status(200).json({ message: "Profile updated successfully", user });

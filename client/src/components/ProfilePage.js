@@ -51,10 +51,10 @@ const ProfilePage = () => {
     const handleSave = async () => {
         try {
             // Prepare the updated data to send to the backend
-            const updatedData = { ...formData, profileImage: userDetails.profileImage };
+
 
             // Send the updated data to the backend
-            const res = await axios.put(`http://localhost:5001/api/users/profile/${userId}`, updatedData);
+            const res = await axios.put(`http://localhost:5001/api/users/profile/${userId}`, formData);
 
             // Check if the response has the updated user data
             if (res.data && res.data.user) {
@@ -88,13 +88,15 @@ const ProfilePage = () => {
             (error) => alert("Upload failed! Check Firebase permissions."),
             async () => {
                 const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                console.log("downloadurl", downloadURL);
                 try {
-                    const res = await axios.put(`http://localhost:5001/api/users/profile/${userId}`, {
-                        profileImage: downloadURL
-                    });
-                    setUserDetails(res.data.user);
+                    // const res = await axios.put(`http://localhost:5001/api/users/profile/${userId}`, {
+                    //     profileImage: downloadURL,
+                    //     username:
+                    // });
+                    // setUserDetails(res.data.user);
                     setFormData({ ...formData, profileImage: downloadURL });
-                    alert("Profile picture updated successfully!");
+
                 } catch (err) {
                     console.error("Error updating profile picture:", err.message);
                 }
@@ -161,6 +163,23 @@ const ProfilePage = () => {
                         </>
                     )}
 
+                    {editMode ? (
+                        <TextField
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            label="Username"
+                            variant="outlined"
+                            fullWidth
+                            multiline
+                            rows={2}
+                            sx={{ mb: 2 }}
+                        />
+                    ) : (
+                        <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                            {userDetails.username || ''}
+                        </Typography>
+                    )}
                     {editMode ? (
                         <TextField
                             name="name"
