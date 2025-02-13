@@ -6,6 +6,10 @@ import axios from 'axios';
 import AddIcon from '@mui/icons-material/Add';
 import CameraCapture from './CameraComponent';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+
 
 const UserHome = () => {
     const [posts, setPosts] = useState([]);
@@ -14,9 +18,80 @@ const UserHome = () => {
     const [filteredUsers, setFilteredUsers] = useState([]);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [openCamera, setOpenCamera] = useState(false);
+    const [openCamera, setOpenStoryCamera] = useState(false);
     const [stories, setStories] = useState([]);
     const [likedPosts, setLikedPosts] = useState([]);
+    const [openStory, setOpenStory] = useState(false);
+    const [currentStories, setCurrentStories] = useState([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [storyUser, setstoryUser] = useState([]);
+    const [currentIndexStory, setCurrentIndexStory] = useState(0);
+    // ✅ Function to mark a story as "viewed"
+    const markStoryAsViewed = async (storyId, userId) => {
+        try {
+            const postdata = {
+                storyId, userId
+            }
+            // Send post data to backend
+            console.log("postdata", postdata)
+            await axios.put("http://localhost:5001/api/story/view", postdata);
+            console.log(`👀 User ${user?._id} viewed story ${storyId}`);
+        } catch (error) {
+            console.error("🔥 Error updating story view:", error);
+        }
+    };
+
+    // ✅ Call the view API when a new story is viewed
+    useEffect(() => {
+        if (openStory && currentStories.length > 0) {
+            console.log(currentStories[currentIndexStory]);
+            markStoryAsViewed(currentStories[currentIndexStory].storyId, user?._id);
+        }
+    }, [currentIndexStory, openStory]);
+
+    // ✅ Move to Next Story
+    const handleNext = () => {
+        if (currentIndexStory < currentStories.length - 1) {
+            setCurrentIndexStory((prevIndex) => prevIndex + 1);
+            //console.log(currentIndexStory)
+        } else {
+            handleClose(); // Close modal if it's the last story
+        }
+    };
+
+    // ✅ Move to Previous Story
+    const handlePrev = () => {
+        if (currentIndexStory > 0) {
+            setCurrentIndexStory((prevIndex) => prevIndex - 1);
+            console.log(currentIndexStory)
+        }
+    };
+
+    // ✅ Handle Keyboard Navigation (Arrow Keys)
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === "ArrowRight") handleNext();
+            if (event.key === "ArrowLeft") handlePrev();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [currentIndex]);
+
+    // Open modal and set stories
+    const handleStoryClick = (storyUser, stories) => {
+        console.log("storyUser", storyUser);
+        setstoryUser(storyUser);
+        setCurrentStories(stories);
+        setCurrentIndex(0);  // Start with the first story
+        setOpenStory(true);
+    };
+
+    // Close modal
+    const handleClose = () => {
+        setOpenStory(false);
+        setCurrentStories([]);
+        setCurrentIndexStory(0);
+    };
 
     const handleImageUpload = async (downloadURL) => {
 
@@ -35,14 +110,44 @@ const UserHome = () => {
             // Send post data to backend
             await axios.post('http://localhost:5001/api/story/add', postData);
 
-
+            fetchStories();
 
             console.log("✅ Story uploaded successfully:", downloadURL);
-            setOpenCamera(false); // Close camera modal after upload
+            setOpenStoryCamera(false); // Close camera modal after upload
         } catch (err) {
             console.error('Error creating post:', err.response?.data || err.message);  // More detailed error logging
         }
     };
+    const groupedStories = stories.reduce((acc, story) => {
+        if (!acc[story.userId]) {
+            acc[story.userId] = { userId: story.userId, stories: [] };
+        }
+        acc[story.userId].stories.push(story); // Add all stories of the same user
+        return acc;
+    }, {});
+
+    // Convert the object back to an array
+    const uniqueUserStories = Object.values(groupedStories);
+
+    const fetchStories = async () => {
+        try {
+            const res = await axios.get('http://localhost:5001/api/story/all');
+            const todaystories = res.data.map(story => ({
+                storyId: story._id,
+                userId: story.userId,
+                userName: story.userName,
+                mediaUrl: story.mediaUrl,
+                mediaType: story.mediaType,
+                views: story.views
+            }));
+            console.log("story", todaystories); // Check the transformed structure
+            setStories(todaystories);
+        }
+        catch (err) {
+            console.error('Error fetching story:', err);
+        }
+    }
+
     useEffect(() => {
         const fetchPosts = async () => {
             try {
@@ -89,22 +194,7 @@ const UserHome = () => {
                 console.error('Error fetching users:', err);
             }
         };
-        const fetchStories = async () => {
-            try {
-                const res = await axios.get('http://localhost:5001/api/story/all');
-                const todaystories = res.data.map(story => ({
-                    userId: story.userId,
-                    userName: story.userName,
-                    mediaUrl: story.mediaUrl,
-                    mediaType: story.mediaType
-                }));
-                console.log("story", todaystories); // Check the transformed structure
-                setStories(todaystories);
-            }
-            catch (err) {
-                console.error('Error fetching story:', err);
-            }
-        }
+
 
         fetchPosts();
         fetchUsers();
@@ -181,21 +271,30 @@ const UserHome = () => {
                 }}
             >
                 <AddIcon sx={{ backgroundColor: 'grey', color: 'white', width: 65, height: 65, borderRadius: '50%' }}
-                    onClick={() => setOpenCamera(true)} />
-                {stories.map((story, index) => {
-                    const storyUser = users.find((user) => user.id === story.userId)
+                    onClick={() => setOpenStoryCamera(true)} />
+                {uniqueUserStories.map(({ userId, stories }, index) => {
+                    const storyUser = users.find((user) => user.id === userId);
+                    if (!storyUser) return null;
+
+                    // Step 2: Check if the current user has viewed all their stories
+                    const hasSeenAllStories = stories.every((s) => Array.isArray(s.views) && s.views.includes(user?._id));
+
                     return (
                         <Avatar
                             key={index}
-                            sx={{ width: 60, height: 60, cursor: 'pointer', border: '3px solid #ff4500' }}
-                            // onClick={() => handleProfile(user.id)} // Navigate to profile on click
+                            sx={{
+                                width: 60,
+                                height: 60,
+                                cursor: "pointer",
+                                border: `3px solid ${hasSeenAllStories ? "gray" : "#ff4500"}`, // Gray if seen all, else red
+                            }}
                             src={storyUser.profileImage}
+                            onClick={() => handleStoryClick(storyUser, stories)}
                         />
-                    )
-                }
-                )}
+                    );
+                })}
             </Box>
-            <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
+            <Modal open={openCamera} onClose={() => setOpenStoryCamera(false)}>
                 <Box
                     sx={{
                         position: "absolute",
@@ -210,6 +309,115 @@ const UserHome = () => {
                     }}
                 >
                     <CameraCapture onImageUpload={handleImageUpload} />
+                </Box>
+            </Modal>
+            <Modal open={openStory} onClose={handleClose}>
+                <Box
+                    sx={{
+                        position: "absolute",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 430,
+                        height: 800,
+                        bgcolor: "black",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: 2,
+                        overflow: "hidden",
+                        mt: 6,
+                        position: "relative",
+                    }}
+                >
+                    {/* ✅ Show Only One Story at a Time */}
+                    {currentStories.length > 0 && (
+                        <img
+                            key={currentIndexStory}
+                            src={currentStories[currentIndexStory].mediaUrl}  // Ensure story has `mediaUrl`
+                            alt={`Story ${currentIndexStory + 1}`}
+                            style={{
+                                width: 430,
+                                height: 800,
+                                aspectRatio: "3/5",
+                                objectFit: "cover",
+                                borderRadius: 10,
+                            }}
+                        />
+                    )}
+
+                    {/* ❌ Close Button (Top-Right) */}
+                    <IconButton
+                        onClick={handleClose}
+                        sx={{
+                            position: "absolute",
+                            top: 10,
+                            right: 10,
+                            backgroundColor: "rgba(255, 255, 255, 0.5)",
+                            color: "white",
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+
+                    {/* 👤 Story User Info (Top-Left Overlay) */}
+                    {storyUser && (
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: 10,
+                                left: 10,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+
+                                borderRadius: "20px",
+                                padding: "5px 10px",
+                            }}
+                        >
+                            <Avatar
+                                src={storyUser.profileImage}
+                                sx={{ width: 40, height: 40, cursor: "pointer" }}
+                                onClick={() => handleProfile(storyUser.userId)}
+                            />
+                            <Typography variant="h6" sx={{ fontWeight: "bold", color: "black" }}>
+                                {storyUser.name}
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {/* ◀️ Left (Previous) Button */}
+                    {currentIndexStory > 0 && (
+                        <IconButton
+                            onClick={handlePrev}
+                            sx={{
+                                position: "absolute",
+                                left: 10,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                backgroundColor: "rgba(255, 255, 255, 0.3)",
+                                color: "white",
+                            }}
+                        >
+                            <ArrowBackIosNewIcon />
+                        </IconButton>
+                    )}
+
+                    {/* ▶️ Right (Next) Button */}
+                    {currentIndexStory < currentStories.length - 1 && (
+                        <IconButton
+                            onClick={handleNext}
+                            sx={{
+                                position: "absolute",
+                                right: 10,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                backgroundColor: "rgba(255, 255, 255, 0.3)",
+                                color: "white",
+                            }}
+                        >
+                            <ArrowForwardIosIcon />
+                        </IconButton>
+                    )}
                 </Box>
             </Modal>
             {/* Search Users */}
@@ -322,7 +530,7 @@ const UserHome = () => {
             }}>
                 {/* Profile Button */}
                 <IconButton onClick={() => handleProfile(user._id)}>
-                    <Avatar src={user?.profilePic} sx={{ width: 50, height: 50, borderRadius: '0%' }} />
+                    <Avatar src={user.profileImage} sx={{ width: 50, height: 50, borderRadius: '0%' }} />
                 </IconButton>
 
                 {/* Add Post Button */}
@@ -330,20 +538,9 @@ const UserHome = () => {
                     sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
                     <AddIcon />
                 </IconButton>
-                <IconButton onClick={handleAddpost}
-                    sx={{ width: 50, height: 50, bgcolor: 'black', color: 'white', borderRadius: '0%' }}>
-                    S
-                </IconButton>
+
             </Box>
-            {/* Floating Action Buttons */}
-            <Box sx={{ position: 'fixed', bottom: 20, right: 20, display: 'flex', gap: 2 }}>
-                <IconButton onClick={() => handleProfile(user._id)}>
-                    <Avatar src={user?.profilePic} sx={{ width: 50, height: 50 }} />
-                </IconButton>
-                <IconButton sx={{ bgcolor: '#ff4500', color: 'white', borderRadius: '50%' }}>
-                    <AddIcon />
-                </IconButton>
-            </Box>
+
         </Container>
     );
 };

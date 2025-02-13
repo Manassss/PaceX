@@ -1,8 +1,10 @@
 import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
-import { Button, Box, Typography } from "@mui/material";
+import { Button, Box, Typography, IconButton } from "@mui/material";
 import { storage } from "../firebase";  // ✅ Import Firebase Storage
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";  // ✅ Upload Icon
+import ReplayIcon from "@mui/icons-material/Replay";
 
 
 const CameraCapture = ({ userId, onImageUpload }) => {
@@ -53,8 +55,8 @@ const CameraCapture = ({ userId, onImageUpload }) => {
     };
 
     return (
-        <Box display="flex" flexDirection="column" alignItems="center" sx={{ border: "2px solid #ccc", borderRadius: 3, width: '425px', height: '790px', backgroundColor: 'RGBA(255,255,255,1)' }}>
-            <Typography variant="h6">📸 Capture Profile Picture</Typography>
+        <Box display="flex" flexDirection="column" alignItems="center" sx={{ border: "2px solid #ccc", borderRadius: 3, width: '435px', height: '790px', backgroundColor: 'RGBA(255,255,255,1)' }}>
+
 
             {/* Camera Preview */}
             {!capturedImage ? (
@@ -69,26 +71,52 @@ const CameraCapture = ({ userId, onImageUpload }) => {
                         height: "auto",         // Auto-adjust height
                         aspectRatio: '3/5',    // Adjust the aspect ratio (4/3, 16/9, etc.)
                         borderRadius: "10px",
-                        marginBottom: "10px",
+
                         objectFit: "cover",
                         // Prevent distortion
                     }}
 
                 />
             ) : (
-                <img src={capturedImage} alt="Captured" style={{ width: 300, borderRadius: 10 }} />
+                <img src={capturedImage} alt="Captured" style={{ width: 430, height: 800, aspectRatio: '3/5', objectFit: 'cover', borderRadius: 10 }} />
             )}
 
             {/* Buttons */}
-            <Box display="flex" justifyContent="center" gap={2} >
+            <Box display="flex" justifyContent="center" gap={2} marginTop={1} >
                 {!capturedImage ? (
                     <Button variant="contained" color="primary" onClick={capturePhoto}>Capture</Button>
                 ) : (
                     <>
-                        <Button variant="contained" color="success" onClick={uploadPhoto} disabled={uploading}>
-                            {uploading ? "Uploading..." : "Upload"}
-                        </Button>
-                        <Button variant="outlined" color="secondary" onClick={() => setCapturedImage(null)}>Retake</Button>
+                        {/* Upload (✔ Tick Mark) - Bottom Left */}
+                        <IconButton
+                            sx={{
+                                position: "absolute",
+                                bottom: 10,
+                                left: 10,
+                                backgroundColor: "green",
+                                color: "white",
+                                "&:hover": { backgroundColor: "darkgreen" }
+                            }}
+                            onClick={uploadPhoto}
+                            disabled={uploading}
+                        >
+                            <CheckCircleIcon fontSize="large" />
+                        </IconButton>
+
+                        {/* Retake (🔄 Retry Icon) - Bottom Right */}
+                        <IconButton
+                            sx={{
+                                position: "absolute",
+                                bottom: 10,
+                                right: 10,
+                                backgroundColor: "red",
+                                color: "white",
+                                "&:hover": { backgroundColor: "darkred" }
+                            }}
+                            onClick={() => setCapturedImage(null)}
+                        >
+                            <ReplayIcon fontSize="large" />
+                        </IconButton>
                     </>
                 )}
             </Box>
