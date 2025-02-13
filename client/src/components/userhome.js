@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
 import AddIcon from '@mui/icons-material/Add';
 import CameraCapture from './CameraComponent';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 
 const UserHome = () => {
     const [posts, setPosts] = useState([]);
@@ -15,6 +16,7 @@ const UserHome = () => {
     const navigate = useNavigate();
     const [openCamera, setOpenCamera] = useState(false);
     const [stories, setStories] = useState([]);
+    const [likedPosts, setLikedPosts] = useState([]);
 
     const handleImageUpload = async (downloadURL) => {
 
@@ -131,6 +133,13 @@ const UserHome = () => {
     };
 
 
+    const handleLikeToggle = (postId) => {
+        setLikedPosts((prev) => ({
+            ...prev,
+            [postId]: !prev[postId],
+        }));
+    };
+
     return (
         <Container
             maxWidth="xs"
@@ -240,6 +249,7 @@ const UserHome = () => {
                 </Box>
             )}
 
+
             {/* Feed */}
             <Box
                 sx={{
@@ -285,14 +295,12 @@ const UserHome = () => {
                                 </Typography>
                             )}
 
-                            {/* Display Likes and Dislikes */}
-                            <Box sx={{ display: 'flex', gap: 2, mt: 2, alignItems: 'center' }}>
-                                <Typography sx={{ fontWeight: 'bold' }}>
-                                    Likes: {post.likes}
-                                </Typography>
-                                <Typography sx={{ fontWeight: 'bold' }}>
-                                    Dislikes: {post.dislikes}
-                                </Typography>
+                            {/* Like Button */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                <IconButton onClick={() => handleLikeToggle(post._id)}>
+                                    <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
+                                </IconButton>
+                                <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
                             </Box>
                         </Paper>
                     );
@@ -327,7 +335,15 @@ const UserHome = () => {
                     S
                 </IconButton>
             </Box>
-
+            {/* Floating Action Buttons */}
+            <Box sx={{ position: 'fixed', bottom: 20, right: 20, display: 'flex', gap: 2 }}>
+                <IconButton onClick={() => handleProfile(user._id)}>
+                    <Avatar src={user?.profilePic} sx={{ width: 50, height: 50 }} />
+                </IconButton>
+                <IconButton sx={{ bgcolor: '#ff4500', color: 'white', borderRadius: '50%' }}>
+                    <AddIcon />
+                </IconButton>
+            </Box>
         </Container>
     );
 };
