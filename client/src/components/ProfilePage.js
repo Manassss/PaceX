@@ -16,7 +16,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 
 
 
-const ProfilePage = async () => {
+const ProfilePage = () => {
     const [userDetails, setUserDetails] = useState({});
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
