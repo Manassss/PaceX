@@ -1,6 +1,6 @@
 const Story = require('../models/Story');
 
-// 📌 Create a new story
+//  Create a new story
 const createStory = async (req, res) => {
     try {
         const { userId, userName, mediaUrl, mediaType } = req.body;
@@ -21,7 +21,7 @@ const createStory = async (req, res) => {
     }
 };
 
-// 📌 Get all active (non-expired) stories
+//  Get all active (non-expired) stories
 const getStories = async (req, res) => {
     try {
         console.log('Fetching active stories...');
@@ -36,7 +36,7 @@ const getStories = async (req, res) => {
     }
 };
 
-// 📌 Mark a story as "viewed" by a user
+//  Mark a story as "viewed" by a user
 const viewStory = async (req, res) => {
     try {
         const { storyId, userId } = req.body;
@@ -61,7 +61,7 @@ const viewStory = async (req, res) => {
     }
 };
 
-// 📌 Delete a story manually
+//  Delete a story manually
 const deleteStory = async (req, res) => {
     try {
         const { storyId } = req.params;
@@ -80,7 +80,7 @@ const deleteStory = async (req, res) => {
     }
 };
 
-// 📌 Automatically delete expired stories (Scheduled Cleanup)
+//  Automatically delete expired stories (Scheduled Cleanup)
 const deleteExpiredStories = async () => {
     try {
         const result = await Story.deleteMany({ expiresAt: { $lt: new Date() } });

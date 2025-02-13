@@ -5,11 +5,17 @@ import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from "../assets/paceuni.jpg"; // ✅ Import background image
 
+
 const Register = () => {
+
+    const [selectedFile, setSelectedFile] = useState(null);  // State for image upload
+
     const [formData, setFormData] = useState({
-        firstName: '',
+        name: '',
         email: '',
-        password: ''
+        password: '',
+        username: ''
+
     });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -23,7 +29,7 @@ const Register = () => {
         e.preventDefault();
 
         try {
-            const { firstName, email, password } = formData;
+            const { name, email, password, username } = formData;
 
             // Register the user with Firebase
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -33,8 +39,10 @@ const Register = () => {
             // Send necessary user data (excluding password) and Firebase ID token to backend
             await axios.post('http://localhost:5001/api/users/register', {
                 idToken,
-                firstName,
-                email
+                name,
+                email,
+                password,
+                username
             });
 
             setMessage('🎉 Registration Successful!');
@@ -85,10 +93,19 @@ const Register = () => {
                     <p> Please use your Pace Id to create account!</p>
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+                    <TextField
+                        label="Username"
+                        variant="outlined"
+                        name="username"
+                        onChange={handleChange}
+                        required
+                        fullWidth
+                    />
                     <TextField
                         label="First Name"
                         variant="outlined"
-                        name="firstName"
+                        name="name"
                         onChange={handleChange}
                         required
                         fullWidth
@@ -111,6 +128,8 @@ const Register = () => {
                         required
                         fullWidth
                     />
+
+
                     <Button variant="contained" color="primary" type="submit" sx={{ mt: 2, borderRadius: 2 }}>
                         Register
                     </Button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { TextField, Button, Container, Typography, Paper, Box } from '@mui/material';
+import { TextField, Button, Container, Typography, Paper, Box, Input } from '@mui/material';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext'
 import { getAuth } from "firebase/auth";
@@ -12,13 +12,13 @@ const AddPost = () => {
     const [content, setContent] = useState('');
     const navigate = useNavigate();
     const { user } = useAuth();  // Get user from context
-    const [postimg, setpostimg] =useState('');
+    const [postimg, setpostimg] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);  // State for image upload
-    const userId = id ? id : user?._id;
-    const { id } = useParams();
 
 
-    
+
+
+
 
     const handleImageUpload = async () => {
         if (!selectedFile) {
@@ -26,7 +26,7 @@ const AddPost = () => {
             return;
         }
 
-        const storageRef = ref(storage, `postPictures/${userId}/${selectedFile.name}`);
+        const storageRef = ref(storage, `postPictures/${user?._id}/${selectedFile.name}`);
         const uploadTask = uploadBytesResumable(storageRef, selectedFile);
 
         uploadTask.on(
@@ -50,7 +50,8 @@ const AddPost = () => {
                     // });
 
                     // setUserDetails(res.data.user); // Update UI state with new image URL
-                    setpostimg( downloadURL ); // Ensure form data is updated
+                    setpostimg(downloadURL); // Ensure form data is updated
+                    console.log("postimg", postimg);
                     alert("Post picture updated successfully!");
 
                 } catch (err) {
@@ -70,7 +71,9 @@ const AddPost = () => {
             const postData = {
                 userId: user?._id,   // Safely accessing user data
                 userName: user?.name,
-                content
+                content,
+                postimg: postimg
+
             };
 
             console.log('Post Data:', postData);  // Log the data before sending
@@ -78,7 +81,7 @@ const AddPost = () => {
             // Send post data to backend
             await axios.post('http://localhost:5001/api/posts/add', postData);
             alert('Post created successfully!');
-            navigate('/home');  // Redirect to home after posting
+            navigate('/userhome');  // Redirect to home after posting
 
         } catch (err) {
             console.error('Error creating post:', err.response?.data || err.message);  // More detailed error logging
@@ -89,6 +92,8 @@ const AddPost = () => {
         <Container maxWidth="sm" sx={{ mt: 5 }}>
             <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
                 <Typography variant="h4" align="center" gutterBottom>Create a New Post</Typography>
+
+                {/* Form for Post Submission */}
                 <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <TextField
                         label="What's on your mind?"
@@ -99,6 +104,63 @@ const AddPost = () => {
                         onChange={(e) => setContent(e.target.value)}
                         required
                     />
+
+                    {/* Stylish File Upload Section */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '2px dashed #ccc',
+                            borderRadius: 2,
+                            p: 3,
+                            textAlign: 'center',
+                            backgroundColor: '#f9f9f9',
+                            '&:hover': { backgroundColor: '#f0f0f0' }
+                        }}
+                    >
+                        <Input
+                            type="file"
+                            onChange={handleFileChange}
+                            sx={{ display: 'none' }}
+                            id="upload-image"
+                        />
+                        <label htmlFor="upload-image">
+                            <Button
+                                variant="contained"
+                                component="span"
+                                sx={{
+                                    backgroundColor: '#1976d2',
+                                    color: '#fff',
+                                    '&:hover': { backgroundColor: '#1565c0' }
+                                }}
+                            >
+                                Choose a Picture
+                            </Button>
+                        </label>
+
+                        {postimg && (
+                            <Box mt={2}>
+                                <img
+                                    src={postimg}
+                                    alt="Preview"
+                                    style={{ width: '100%', maxWidth: 250, borderRadius: 8, marginTop: 10 }}
+                                />
+                            </Box>
+                        )}
+
+                        <Button
+                            variant="contained"
+                            color="success"
+                            onClick={handleImageUpload}
+                            sx={{ mt: 2 }}
+                        >
+                            Upload Picture
+                        </Button>
+                    </Box>
+
+                    {/* Post Button */}
                     <Button variant="contained" color="primary" type="submit">Post</Button>
                 </Box>
             </Paper>
