@@ -103,7 +103,7 @@ const ProfilePage = () => {
             setUserDetails(res.data.user);  // Update state with new user data
             setEditMode(false);
             alert('Profile updated successfully!');
-            navigate('/home');
+            navigate('/userhome');
         } catch (err) {
             console.error("Error updating profile:", err.response?.data?.message || err.message);
         }
@@ -116,7 +116,7 @@ const ProfilePage = () => {
                     <Button
                         variant="outlined"
                         component={Link}
-                        to="/home"
+                        to="/userhome"
                         startIcon={<HomeIcon />}
                         sx={{ mb: 2 }}
                     >

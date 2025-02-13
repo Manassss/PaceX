@@ -48,27 +48,31 @@ const UserHome = () => {
     const handleProfile = () => {
         navigate(`/profile/${user._id}`);
     };
+    const handleAddpost = () => {
+        navigate(`/add-post`);
+    };
+
 
     return (
         <Container maxWidth="xs" sx={{ width: 600, height: 800, position: 'relative', overflow: 'hidden', bgcolor: 'white', borderRadius: 3, p: 2 }}>
             {/* Stories Section */}
-            <Box 
-    sx={{ 
-        display: 'flex', 
-        overflowX: 'auto', 
-        gap: 1, 
-        pb: 1, 
-        scrollbarWidth: 'none', // Hides scrollbar in Firefox
-        '&::-webkit-scrollbar': {
-            display: 'none',  // Hides the scrollbar in Webkit browsers (Chrome, Safari)
-        }, 
-        cursor: 'grab', // Optional: gives a visual cue that the user can click and drag
-    }}
->
-    {users.slice(0, 10).map((user) => (
-        <Avatar key={user._id} sx={{ width: 60, height: 60, cursor: 'pointer', border: '3px solid #ff4500' }} />
-    ))}
-</Box>
+            <Box
+                sx={{
+                    display: 'flex',
+                    overflowX: 'auto',
+                    gap: 1,
+                    pb: 1,
+                    scrollbarWidth: 'none', // Hides scrollbar in Firefox
+                    '&::-webkit-scrollbar': {
+                        display: 'none',  // Hides the scrollbar in Webkit browsers (Chrome, Safari)
+                    },
+                    cursor: 'grab', // Optional: gives a visual cue that the user can click and drag
+                }}
+            >
+                {users.slice(0, 10).map((user) => (
+                    <Avatar key={user._id} sx={{ width: 60, height: 60, cursor: 'pointer', border: '3px solid #ff4500' }} />
+                ))}
+            </Box>
 
 
             {/* Search Users */}
@@ -81,37 +85,37 @@ const UserHome = () => {
             />
 
             {/* Feed */}
-            <Box 
-    sx={{ 
-        mt: 2, 
-        height: 500, 
-        overflowY: 'auto', 
-        '&::-webkit-scrollbar': {
-            display: 'none',  // Hides the scrollbar
-        }, 
-        scrollbarWidth: 'none' // Hides scrollbar in Firefox
-    }}
->
-    {posts.map((post, index) => (
-        <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: 'transparent' }}>
-            {/* Display the username above each post */}
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                {post.userName}
-            </Typography>
-            <Typography sx={{ wordWrap: 'break-word' }}>{post.content}</Typography>
-        </Paper>
-    ))}
-</Box>
+            <Box
+                sx={{
+                    mt: 2,
+                    height: 500,
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': {
+                        display: 'none',  // Hides the scrollbar
+                    },
+                    scrollbarWidth: 'none' // Hides scrollbar in Firefox
+                }}
+            >
+                {posts.map((post, index) => (
+                    <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: 'transparent' }}>
+                        {/* Display the username above each post */}
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                            {post.userName}
+                        </Typography>
+                        <Typography sx={{ wordWrap: 'break-word' }}>{post.content}</Typography>
+                    </Paper>
+                ))}
+            </Box>
             {/* Container for Profile & Add Post Buttons */}
-            <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                gap: 2, 
-                position: 'absolute', 
-                bottom: 10, 
-                left: '50%', 
-                transform: 'translateX(-50%)' 
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 2,
+                position: 'absolute',
+                bottom: 10,
+                left: '50%',
+                transform: 'translateX(-50%)'
             }}>
                 {/* Profile Button */}
                 <IconButton onClick={handleProfile}>
@@ -119,8 +123,13 @@ const UserHome = () => {
                 </IconButton>
 
                 {/* Add Post Button */}
-                <IconButton sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '50%' }}>
+                <IconButton onClick={handleAddpost}
+                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '50%' }}>
                     <AddIcon />
+                </IconButton>
+                <IconButton onClick={handleAddpost}
+                    sx={{ width: 50, height: 50, bgcolor: 'black', color: 'white', borderRadius: '50%' }}>
+                    S
                 </IconButton>
             </Box>
 

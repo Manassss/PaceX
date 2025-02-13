@@ -4,7 +4,7 @@ const admin = require("../config/firebaseConfig"); // Import Firebase Admin
 
 const registerUser = async (req, res) => {
     try {
-        const { idToken, name, email, role, profileImage, university, major, graduationYear, birthdate, bio, password } = req.body;
+        const { idToken, name, email, role, profileImage, university, major, graduationYear, birthdate, bio, password, username } = req.body;
 
         // Verify Firebase ID Token
         console.log("email", email)
@@ -17,8 +17,8 @@ const registerUser = async (req, res) => {
         // if (!firebaseUser.emailVerified) {
         //     return res.status(400).json({ message: "❌ Email not verified. Please verify your email first." });
         // }
-        // Check if user already exists in MongoDB
-        let existingUser = await User.findOne({ email: firebaseEmail });
+
+        let existingUser = await User.findOne({ username: username });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
@@ -35,6 +35,7 @@ const registerUser = async (req, res) => {
             graduationYear,
             birthdate,
             bio,
+            username
         });
 
         await newUser.save();

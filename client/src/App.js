@@ -24,7 +24,7 @@ function App() {
             <Route path="/home" element={<Home />} />  {/* Home Route */}
             <Route path="/add-post" element={<AddPost />} />  {/* Add Post Route */}
             <Route path="/profile/:id" element={<ProfilePage />} />  {/* Dynamic profile route */}
-            <Route path="/userhome" element={<UserHome />} />
+            <Route path="/userhome/" element={<UserHome />} />
 
             <Route path="/marketplace" element={<Marketplace />} />  {/* Home Route */}
             <Route path="/marketplaceupload" element={<LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>

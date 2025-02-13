@@ -7,7 +7,7 @@ const postSchema = new mongoose.Schema({
     likes: { type: Number, default: 0 },  // Number of likes
     dislikes: { type: Number, default: 0 },  // Number of dislikes
     createdAt: { type: Date, default: Date.now },  // Timestamp
-    postimg: { type: String}// postimg
+    postimg: { type: String }
 });
 
 module.exports = mongoose.model('Post', postSchema);
