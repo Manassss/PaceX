@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
 import AddIcon from '@mui/icons-material/Add';
+import ChatIcon from '@mui/icons-material/Chat'; // **NEW:** Chat icon imported for bottom nav
 import CameraCapture from './CameraComponent';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-
 
 const UserHome = () => {
     const [posts, setPosts] = useState([]);
@@ -24,16 +24,15 @@ const UserHome = () => {
     const [openStory, setOpenStory] = useState(false);
     const [currentStories, setCurrentStories] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [storyUser, setstoryUser] = useState([]);
+    // **CHANGED:** Initialize storyUser as null instead of an empty array.
+    const [storyUser, setstoryUser] = useState(null);
     const [currentIndexStory, setCurrentIndexStory] = useState(0);
+
     // ✅ Function to mark a story as "viewed"
     const markStoryAsViewed = async (storyId, userId) => {
         try {
-            const postdata = {
-                storyId, userId
-            }
-            // Send post data to backend
-            console.log("postdata", postdata)
+            const postdata = { storyId, userId };
+            console.log("postdata", postdata);
             await axios.put("http://localhost:5001/api/story/view", postdata);
             console.log(`👀 User ${user?._id} viewed story ${storyId}`);
         } catch (error) {
@@ -41,7 +40,6 @@ const UserHome = () => {
         }
     };
 
-    // ✅ Call the view API when a new story is viewed
     useEffect(() => {
         if (openStory && currentStories.length > 0) {
             console.log(currentStories[currentIndexStory]);
@@ -49,25 +47,20 @@ const UserHome = () => {
         }
     }, [currentIndexStory, openStory]);
 
-    // ✅ Move to Next Story
     const handleNext = () => {
         if (currentIndexStory < currentStories.length - 1) {
             setCurrentIndexStory((prevIndex) => prevIndex + 1);
-            //console.log(currentIndexStory)
         } else {
             handleClose(); // Close modal if it's the last story
         }
     };
 
-    // ✅ Move to Previous Story
     const handlePrev = () => {
         if (currentIndexStory > 0) {
             setCurrentIndexStory((prevIndex) => prevIndex - 1);
-            console.log(currentIndexStory)
         }
     };
 
-    // ✅ Handle Keyboard Navigation (Arrow Keys)
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === "ArrowRight") handleNext();
@@ -77,16 +70,14 @@ const UserHome = () => {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [currentIndex]);
 
-    // Open modal and set stories
     const handleStoryClick = (storyUser, stories) => {
         console.log("storyUser", storyUser);
         setstoryUser(storyUser);
         setCurrentStories(stories);
-        setCurrentIndex(0);  // Start with the first story
+        setCurrentIndex(0);
         setOpenStory(true);
     };
 
-    // Close modal
     const handleClose = () => {
         setOpenStory(false);
         setCurrentStories([]);
@@ -94,7 +85,6 @@ const UserHome = () => {
     };
 
     const handleImageUpload = async (downloadURL) => {
-
         try {
             console.log("downloadurl", downloadURL);
             const postData = {
@@ -102,31 +92,24 @@ const UserHome = () => {
                 userName: user?.name,
                 mediaUrl: downloadURL,
                 mediaType: 'image'
-
             };
-
-            console.log('Post Data:', postData);  // Log the data before sending
-
-            // Send post data to backend
+            console.log('Post Data:', postData);
             await axios.post('http://localhost:5001/api/story/add', postData);
-
             fetchStories();
-
             console.log("✅ Story uploaded successfully:", downloadURL);
-            setOpenStoryCamera(false); // Close camera modal after upload
+            setOpenStoryCamera(false);
         } catch (err) {
-            console.error('Error creating post:', err.response?.data || err.message);  // More detailed error logging
+            console.error('Error creating post:', err.response?.data || err.message);
         }
     };
+
     const groupedStories = stories.reduce((acc, story) => {
         if (!acc[story.userId]) {
             acc[story.userId] = { userId: story.userId, stories: [] };
         }
-        acc[story.userId].stories.push(story); // Add all stories of the same user
+        acc[story.userId].stories.push(story);
         return acc;
     }, {});
-
-    // Convert the object back to an array
     const uniqueUserStories = Object.values(groupedStories);
 
     const fetchStories = async () => {
@@ -140,7 +123,7 @@ const UserHome = () => {
                 mediaType: story.mediaType,
                 views: story.views
             }));
-            console.log("story", todaystories); // Check the transformed structure
+            console.log("story", todaystories);
             setStories(todaystories);
         }
         catch (err) {
@@ -152,31 +135,26 @@ const UserHome = () => {
         const fetchPosts = async () => {
             try {
                 const res = await axios.get('http://localhost:5001/api/posts/all');
-
-                // Transform the data
                 const transformedPosts = res.data.map(post => ({
                     content: post.content,
-                    createdAt: new Date(post.createdAt).toLocaleString(), // Optional: Format the date
+                    createdAt: new Date(post.createdAt).toLocaleString(),
                     dislikes: post.dislikes,
                     likes: post.likes,
-                    postimg: post.postimg, // Assuming postimg is the URL for the post image
+                    postimg: post.postimg,
                     userId: post.userId,
                     userName: post.userName,
-                    postId: post._id, // Storing the post ID
+                    postId: post._id,
                 }));
-
                 setPosts(transformedPosts);
-                console.log(transformedPosts); // Check the transformed structure
+                console.log(transformedPosts);
             } catch (err) {
                 console.error('Error fetching posts:', err);
             }
         };
 
-
         const fetchUsers = async () => {
             try {
                 const res = await axios.get('http://localhost:5001/api/users/all');
-                // Transform the user data
                 const transformedUsers = res.data.map(user => ({
                     id: user._id,
                     name: user.name,
@@ -185,22 +163,20 @@ const UserHome = () => {
                     role: user.role,
                     university: user.university,
                     profileImage: user.profileImage,
-                    joinedAt: new Date(user.joinedAt).toLocaleDateString(), // Optional: format date
+                    joinedAt: new Date(user.joinedAt).toLocaleDateString(),
                 }));
-                console.log(transformedUsers); // Check the transformed structure
+                console.log(transformedUsers);
                 setUsers(transformedUsers);
-                setFilteredUsers(transformedUsers); // Initially set filteredUsers to all users
+                setFilteredUsers(transformedUsers);
             } catch (err) {
                 console.error('Error fetching users:', err);
             }
         };
 
-
         fetchPosts();
         fetchUsers();
         fetchStories();
     }, []);
-
 
     const handleSearchChange = (e) => {
         const value = e.target.value;
@@ -222,7 +198,6 @@ const UserHome = () => {
         navigate(`/add-post`);
     };
 
-
     const handleLikeToggle = (postId) => {
         setLikedPosts((prev) => ({
             ...prev,
@@ -231,69 +206,255 @@ const UserHome = () => {
     };
 
     return (
+        // **CHANGED:** Fixed container size of 600x800, centered on the page
         <Container
-            maxWidth="xs"
             sx={{
                 width: 600,
                 height: 800,
-                position: 'relative',
-                overflow: 'hidden',
-                bgcolor: 'white',
+                margin: '50px auto',
+                border: '2px solid #000',
                 borderRadius: 3,
-                p: 1,
-                border: '2px solid #000', // Added border,
-                marginTop: '50px'
+                overflow: 'hidden',
+                display: 'flex',
+                p: 0,
+                backgroundColor: 'white'
             }}
         >
-            {/* App Name */}
-            <Typography
-                variant="h5"
-                sx={{
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    color: 'black',
-                    mt: 1
-                }}
-            >
-                PaceX
-            </Typography>
-
-            {/* Stories Section */}
+            {/* Left Sidebar for Community */}
             <Box
                 sx={{
-                    display: 'flex',
-                    overflowX: 'auto',
-                    gap: 1,
-                    pb: 1,
-                    scrollbarWidth: 'none',
-                    '&::-webkit-scrollbar': { display: 'none' },
-                    cursor: 'grab',
+                    width: 50, // **CHANGED:** Fixed width to 150px
+                    flexShrink: 0,
+                    borderRight: '1px solid #ccc',
+                    overflowY: 'auto',
+                    p: 2,
                 }}
             >
-                <AddIcon sx={{ backgroundColor: 'grey', color: 'white', width: 65, height: 65, borderRadius: '50%' }}
-                    onClick={() => setOpenStoryCamera(true)} />
-                {uniqueUserStories.map(({ userId, stories }, index) => {
-                    const storyUser = users.find((user) => user.id === userId);
-                    if (!storyUser) return null;
-
-                    // Step 2: Check if the current user has viewed all their stories
-                    const hasSeenAllStories = stories.every((s) => Array.isArray(s.views) && s.views.includes(user?._id));
-
-                    return (
-                        <Avatar
-                            key={index}
-                            sx={{
-                                width: 60,
-                                height: 60,
-                                cursor: "pointer",
-                                border: `3px solid ${hasSeenAllStories ? "gray" : "#ff4500"}`, // Gray if seen all, else red
-                            }}
-                            src={storyUser.profileImage}
-                            onClick={() => handleStoryClick(storyUser, stories)}
-                        />
-                    );
-                })}
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                    Community
+                </Typography>
+                <List>
+                    {/* Dummy community data */}
+                    <ListItem button>
+                        <ListItemText primary="Community 1" secondary="Description" />
+                    </ListItem>
+                    <ListItem button>
+                        <ListItemText primary="Community 2" secondary="Description" />
+                    </ListItem>
+                    <ListItem button>
+                        <ListItemText primary="Community 3" secondary="Description" />
+                    </ListItem>
+                </List>
             </Box>
+
+            {/* Main Content */}
+            <Box sx={{ width: '75%', position: 'relative', display: 'flex', flexDirection: 'column', p: 2 }}>
+                {/* Top Bar with App Name */}
+                <Typography
+                    variant="h5"
+                    sx={{
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        color: 'black',
+                        mb: 2
+                    }}
+                >
+                    PaceX
+                </Typography>
+
+                {/* Improved Search Bar */}
+                <TextField
+                    fullWidth
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    sx={{
+                        mb: 2,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: '30px',
+                            backgroundColor: '#f5f5f5'
+                        }
+                    }}
+                />
+                {searchTerm && (
+                    <Box
+                        sx={{
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            mb: 2,
+                            position: 'absolute',
+                            width: 'calc(75% - 32px)',
+                            zIndex: 100,
+                            backgroundColor: 'white'
+                        }}
+                    >
+                        <List>
+                            {filteredUsers.slice(0, 5).map((user) => (
+                                <ListItem button key={user.id} onClick={() => handleProfile(user.id)}>
+                                    <Avatar
+                                        src={user.profileImage}
+                                        sx={{ width: 30, height: 30, mr: 2 }}
+                                    />
+                                    <ListItemText primary={`${user.name} - ${user.email}`} />
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Box>
+                )}
+
+                {/* Story Section */}
+<Box
+  sx={{
+    display: 'flex',
+    overflowX: 'auto',
+    gap: 2,
+    pb: 2,
+    scrollbarWidth: 'none',
+    '&::-webkit-scrollbar': { display: 'none' },
+    cursor: 'grab',
+    mb: 2
+  }}
+>
+  {/* Updated Add Story Element */}
+  <Box
+    sx={{ position: 'relative', cursor: 'pointer' }}
+    onClick={() => setOpenStoryCamera(true)}
+  >
+    <Avatar
+      src={user?.profileImage}
+      sx={{
+        width: 40,
+        height: 40,
+        border: '3px solid #ff4500'
+      }}
+    />
+    <AddIcon
+      sx={{
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        backgroundColor: 'white',
+        borderRadius: '50%',
+        fontSize: 18,
+        color: '#ff4500'
+      }}
+    />
+  </Box>
+  {uniqueUserStories.map(({ userId, stories }, index) => {
+    const storyUser = users.find(user => user.id === userId);
+    if (!storyUser) return null;
+    const hasSeenAllStories = stories.every(
+      s => Array.isArray(s.views) && s.views.includes(user?._id)
+    );
+    return (
+      <Avatar
+        key={index}
+        sx={{
+          width: 40,
+          height: 40,
+          cursor: 'pointer',
+          border: `3px solid ${hasSeenAllStories ? 'gray' : '#ff4500'}`
+        }}
+        src={storyUser.profileImage}
+        onClick={() => handleStoryClick(storyUser, stories)}
+      />
+    );
+  })}
+</Box>
+
+
+                {/* Posts Section */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        '&::-webkit-scrollbar': { display: 'none' },
+                        scrollbarWidth: 'none'
+                    }}
+                >
+                    {posts.map((post, index) => {
+                        const postUser = users.find((user) => user.id === post.userId);
+                        return (
+                            <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: 'transparent' }}>
+                                {postUser && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Avatar
+                                            src={postUser.profileImage}
+                                            sx={{ width: 40, height: 40 }}
+                                            onClick={() => handleProfile(postUser.id)}
+                                        />
+                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                            {postUser.name}
+                                        </Typography>
+                                    </Box>
+                                )}
+                                {post.postimg && (
+                                    <Box sx={{ mt: 2, maxHeight: 500, overflow: 'hidden' }}>
+                                        <img src={post.postimg} alt="Post" style={{ width: '100%', height: 'auto' }} />
+                                    </Box>
+                                )}
+                                {post.content && (
+                                    <Typography sx={{ wordWrap: 'break-word', mt: 2 }}>
+                                        {post.content}
+                                    </Typography>
+                                )}
+                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                    <IconButton onClick={() => handleLikeToggle(post._id)}>
+                                        <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
+                                    </IconButton>
+                                    <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
+                                </Box>
+                            </Paper>
+                        );
+                    })}
+                </Box>
+
+                {/* Bottom Navigation */}
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-around',
+                    alignItems: 'center',
+                    gap: 2,
+                    position: 'sticky',
+                    bottom: 0,
+                    backgroundColor: '#fff',
+                    p: 1,
+                    borderTop: '1px solid #ccc',
+                    mt: 2
+                }}>
+                    {/* **CHANGED:** Use optional chaining for user to prevent accessing properties on null */}
+                    <IconButton onClick={() => handleProfile(user?._id)}>
+                        <Avatar src={user?.profileImage} sx={{ width: 50, height: 50, borderRadius: '50%' }} />
+                    </IconButton>
+
+                    <IconButton onClick={handleAddpost}
+                        sx={{
+                            bgcolor: '#ff4500',
+                            color: 'white',
+                            width: 50,
+                            height: 50,
+                            borderRadius: '50%',
+                            boxShadow: 3
+                        }}>
+                        <AddIcon sx={{ fontSize: 30 }} />
+                    </IconButton>
+
+                    <IconButton sx={{
+                        bgcolor: '#3f51b5',
+                        color: 'white',
+                        width: 50,
+                        height: 50,
+                        borderRadius: '50%',
+                        boxShadow: 3
+                    }}>
+                        <ChatIcon />
+                    </IconButton>
+                </Box>
+            </Box>
+
+            {/* Modal for Camera Capture */}
             <Modal open={openCamera} onClose={() => setOpenStoryCamera(false)}>
                 <Box
                     sx={{
@@ -304,13 +465,14 @@ const UserHome = () => {
                         width: 430,
                         bgcolor: "white",
                         boxShadow: 24,
-
                         borderRadius: 2,
                     }}
                 >
                     <CameraCapture onImageUpload={handleImageUpload} />
                 </Box>
             </Modal>
+
+            {/* Modal for Story View */}
             <Modal open={openStory} onClose={handleClose}>
                 <Box
                     sx={{
@@ -329,11 +491,10 @@ const UserHome = () => {
                         position: "relative",
                     }}
                 >
-                    {/* ✅ Show Only One Story at a Time */}
                     {currentStories.length > 0 && (
                         <img
                             key={currentIndexStory}
-                            src={currentStories[currentIndexStory].mediaUrl}  // Ensure story has `mediaUrl`
+                            src={currentStories[currentIndexStory].mediaUrl}
                             alt={`Story ${currentIndexStory + 1}`}
                             style={{
                                 width: 430,
@@ -344,8 +505,6 @@ const UserHome = () => {
                             }}
                         />
                     )}
-
-                    {/* ❌ Close Button (Top-Right) */}
                     <IconButton
                         onClick={handleClose}
                         sx={{
@@ -358,8 +517,6 @@ const UserHome = () => {
                     >
                         <CloseIcon />
                     </IconButton>
-
-                    {/* 👤 Story User Info (Top-Left Overlay) */}
                     {storyUser && (
                         <Box
                             sx={{
@@ -369,7 +526,6 @@ const UserHome = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1,
-
                                 borderRadius: "20px",
                                 padding: "5px 10px",
                             }}
@@ -384,8 +540,6 @@ const UserHome = () => {
                             </Typography>
                         </Box>
                     )}
-
-                    {/* ◀️ Left (Previous) Button */}
                     {currentIndexStory > 0 && (
                         <IconButton
                             onClick={handlePrev}
@@ -401,8 +555,6 @@ const UserHome = () => {
                             <ArrowBackIosNewIcon />
                         </IconButton>
                     )}
-
-                    {/* ▶️ Right (Next) Button */}
                     {currentIndexStory < currentStories.length - 1 && (
                         <IconButton
                             onClick={handleNext}
@@ -420,127 +572,6 @@ const UserHome = () => {
                     )}
                 </Box>
             </Modal>
-            {/* Search Users */}
-            <TextField
-                fullWidth
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                sx={{ mt: 2, bgcolor: 'white', borderRadius: 1 }}
-            />
-
-            {/* Dropdown for filtered users */}
-            {searchTerm && (
-                <Box
-                    sx={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        mt: 1,
-                        position: 'absolute',
-                        width: '100%',
-                        zIndex: 100
-                    }}
-                >
-                    <List>
-                        {filteredUsers.slice(0, 5).map((user) => (
-                            <ListItem button key={user.id} onClick={() => handleProfile(user.id)}>
-                                <Avatar
-                                    src={user.profileImage}
-                                    sx={{ width: 30, height: 30, mr: 2 }}
-                                />
-                                <ListItemText primary={`${user.name} - ${user.email}`} />
-                            </ListItem>
-                        ))}
-                    </List>
-                </Box>
-            )}
-
-
-            {/* Feed */}
-            <Box
-                sx={{
-                    mt: 2,
-                    height: 500,
-                    overflowY: 'auto',
-                    '&::-webkit-scrollbar': {
-                        display: 'none',  // Hides the scrollbar
-                    },
-                    scrollbarWidth: 'none' // Hides scrollbar in Firefox
-                }}
-            >
-                {posts.map((post, index) => {
-                    // Find the user who made the post
-                    const postUser = users.find((user) => user.id === post.userId);
-                    return (
-                        <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: 'transparent' }}>
-                            {/* Display the username and profile pic above each post */}
-                            {postUser && (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Avatar
-                                        src={postUser.profileImage}
-                                        sx={{ width: 40, height: 40 }}
-                                        onClick={() => handleProfile(postUser.id)} // Navigate to profile on click
-                                    />
-                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                        {postUser.name}
-                                    </Typography>
-                                </Box>
-                            )}
-
-                            {/* Display the post's image if available */}
-                            {post.postimg && (
-                                <Box sx={{ mt: 2, maxHeight: 400, overflow: 'hidden' }}>
-                                    <img src={post.postimg} alt="Post" style={{ width: '100%', height: 'auto' }} />
-                                </Box>
-                            )}
-
-                            {/* Display the text content if available */}
-                            {post.content && (
-                                <Typography sx={{ wordWrap: 'break-word', mt: 2 }}>
-                                    {post.content}
-                                </Typography>
-                            )}
-
-                            {/* Like Button */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                <IconButton onClick={() => handleLikeToggle(post._id)}>
-                                    <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
-                                </IconButton>
-                                <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
-                            </Box>
-                        </Paper>
-                    );
-                })}
-            </Box>
-
-            {/* Container for Profile & Add Post Buttons */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-evenly',
-                alignItems: 'center',
-                gap: 0.5,
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'RGBA(0,0,0,0.7)',
-                width: '100%'
-            }}>
-                {/* Profile Button */}
-                <IconButton onClick={() => handleProfile(user._id)}>
-                    <Avatar src={user.profileImage} sx={{ width: 50, height: 50, borderRadius: '0%' }} />
-                </IconButton>
-
-                {/* Add Post Button */}
-                <IconButton onClick={handleAddpost}
-                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
-                    <AddIcon />
-                </IconButton>
-
-            </Box>
-
         </Container>
     );
 };
