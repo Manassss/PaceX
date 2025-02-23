@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🎓 UniConnect - University Social Platform
 
 UniConnect is a MERN stack-based social platform designed exclusively for university students and faculty. It provides a digital space where users can connect, collaborate, and engage in academic and extracurricular activities.
@@ -68,3 +69,7 @@ node server.js
 
 
 
+=======
+# Uni-Sphere
+ A university based social media app
+>>>>>>> origin/dev-manas

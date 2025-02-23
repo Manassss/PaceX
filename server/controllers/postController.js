@@ -30,7 +30,7 @@ const getPosts = async (req, res) => {
   }
 };
 
-// NEW: Like a specific post
+//  Like a specific post
 const likePost = async (req, res) => {
   try {
     const { postId } = req.params;
