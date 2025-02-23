@@ -198,12 +198,20 @@ const UserHome = () => {
         navigate(`/add-post`);
     };
 
-    const handleLikeToggle = (postId) => {
-        setLikedPosts((prev) => ({
-            ...prev,
-            [postId]: !prev[postId],
-        }));
-    };
+const handleLike = async (postId) => {
+  try {
+    const res = await axios.put(`http://localhost:5001/api/posts/like/${postId}`);
+    // Update your state to reflect the new like count from the response
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.postId === postId ? { ...post, likes: res.data.likes } : post
+      )
+    );
+  } catch (err) {
+    console.error("Error liking post:", err);
+  }
+};
+
 
     return (
         // **CHANGED:** Fixed container size of 600x800, centered on the page
@@ -401,7 +409,7 @@ const UserHome = () => {
                                     </Typography>
                                 )}
                                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                    <IconButton onClick={() => handleLikeToggle(post._id)}>
+                                    <IconButton onClick={() => handleLike(post._id)}>
                                         <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
                                     </IconButton>
                                     <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
