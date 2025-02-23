@@ -19,7 +19,27 @@ const Marketplace = () => {
     }, []);
 
     return (
-        <Container sx={{ mt: 4 }}>
+
+        <Container
+            maxWidth="xs"
+            sx={{
+                width: 600,
+                height: 800,
+                position: 'relative',
+                overflow: 'hidden',
+                bgcolor: 'white',
+                borderRadius: 3,
+                p: 1,
+                border: '2px solid #000', // Added border,
+                marginTop: '50px',
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': {
+                    display: 'none',  // Hides the scrollbar
+                },
+                scrollbarWidth: 'none' // Hides scrollbar in Firefox
+
+            }}
+        >
             <Typography variant="h5" gutterBottom>Marketplace</Typography>
             <Button
                 color="inherit"
@@ -31,9 +51,9 @@ const Marketplace = () => {
             </Button>
             <Grid container spacing={3}>
                 {listings.map((item) => (
-                    <Grid item xs={12} md={4} key={item._id}>
+                    <Grid item xs={12} md={6} key={item._id}>
                         <Card>
-                            <CardMedia component="img" height="200" image={item.imageUrl} alt={item.itemName} />
+                            <CardMedia component="img" height="150" image={item.imageUrl} alt={item.itemName} />
                             <CardContent>
                                 <Typography variant="h6">{item.itemName}</Typography>
                                 <Typography variant="body1">${item.price}</Typography>

@@ -137,7 +137,7 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
-// ✅ Get all users (for search)
+//  Get all users (for search)
 const getAllUsers = async (req, res) => {
     try {
         // ✅ Fetch all users with all fields (excluding passwords for security)
@@ -149,4 +149,73 @@ const getAllUsers = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
-module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers };
+
+const followUser = async (req, res) => {
+    try {
+        const { userId, targetUserId } = req.params;
+
+        if (userId === targetUserId) {
+            return res.status(400).json({ message: "You cannot follow yourself" });
+        }
+
+        const user = await User.findById(userId);
+        const targetUser = await User.findById(targetUserId);
+
+        if (!user || !targetUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (user.followings.includes(targetUserId)) {
+            return res.status(400).json({ message: "Already following this user" });
+        }
+
+        user.followings.push(targetUserId);
+        targetUser.followers.push(userId);
+
+        user.followingsNumber = user.followings.length;
+        targetUser.followersNumber = targetUser.followers.length;
+
+        await user.save();
+        await targetUser.save();
+
+        res.status(200).json({ message: "User followed successfully", user, targetUser });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+
+// Unfollow a user
+const unfollowUser = async (req, res) => {
+    try {
+        const { userId, targetUserId } = req.params;
+
+        if (userId === targetUserId) {
+            return res.status(400).json({ message: "You cannot unfollow yourself" });
+        }
+
+        const user = await User.findById(userId);
+        const targetUser = await User.findById(targetUserId);
+
+        if (!user || !targetUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!user.followings.includes(targetUserId)) {
+            return res.status(400).json({ message: "You are not following this user" });
+        }
+
+        user.followings = user.followings.filter(id => id.toString() !== targetUserId);
+        targetUser.followers = targetUser.followers.filter(id => id.toString() !== userId);
+
+        user.followingsNumber = user.followings.length;
+        targetUser.followersNumber = targetUser.followers.length;
+
+        await user.save();
+        await targetUser.save();
+
+        res.status(200).json({ message: "User unfollowed successfully", user, targetUser });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
+module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers, followUser, unfollowUser };

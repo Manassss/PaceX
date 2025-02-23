@@ -13,7 +13,9 @@ import { useAuth } from '../auth/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { signOut } from "firebase/auth";
 import LogoutIcon from '@mui/icons-material/Logout';
-
+import GroupAddIcon from '@mui/icons-material/GroupAdd'; // Better Follow Icon
+import PersonOffIcon from '@mui/icons-material/PersonOff'; // Better Unfollow Icon
+import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 
 
 const ProfilePage = () => {
@@ -26,6 +28,8 @@ const ProfilePage = () => {
     const { id } = useParams();
     const auth = getAuth();
     const userId = id ? id : user?._id;
+    const [username, setUsername] = useState('');
+    const [following, setFollowing] = useState(true);
 
     useEffect(() => {
         if (!userId) return;
@@ -35,6 +39,8 @@ const ProfilePage = () => {
                 const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
                 setUserDetails(res.data);
                 setFormData(res.data);
+                // console.log(res.data?.name);
+                setUsername(res.data?.name)
             } catch (err) {
                 console.error("Error fetching profile:", err.message);
             }
@@ -117,6 +123,11 @@ const ProfilePage = () => {
             console.error("Error signing out:", err.message);
         }
     };
+    const handlechat = () => {
+        console.log(`rec ${userId}--${username}`);
+        navigate('/chatbox', { state: { userId: userId, username: username } })
+
+    }
 
     return (
         <Container maxWidth="xs" sx={{ width: 600, height: 800, bgcolor: 'white', borderRadius: 3, position: 'relative', overflow: 'hidden', p: 2, border: '2px solid #ccc' }}>
@@ -191,9 +202,29 @@ const ProfilePage = () => {
                             sx={{ mb: 2 }}
                         />
                     ) : (
-                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                            {userDetails.name || 'Your Name'}
-                        </Typography>
+                        <>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                                    {userDetails.name || 'Your Name'}
+                                </Typography>
+
+                                <IconButton >
+                                    {following ? (
+                                        <PersonAddAlt1Icon sx={{ color: 'gray', fill: 'transparent', stroke: 'gray' }} /> // Unfollow icon in red
+                                    ) : (
+                                        <PersonAddAlt1Icon
+                                            sx={{
+                                                color: 'gray',
+                                                fill: 'transparent',
+                                                stroke: 'gray'
+                                            }}
+                                        />
+                                    )}
+                                </IconButton>
+                                <Typography>{following ? 'Unfollow' : 'Follow'}</Typography>
+                            </Box>
+
+                        </>
                     )}
 
 
@@ -263,6 +294,11 @@ const ProfilePage = () => {
                 <IconButton onClick={handleHomeClick} sx={{ backgroundColor: '#ff4500', color: 'white', borderRadius: '50%' }}>
                     <HomeIcon />
                 </IconButton>
+                {userId != user._id && (
+                    <IconButton onClick={handlechat} sx={{ backgroundColor: '#ff4500', color: 'white', borderRadius: '50%' }}>
+                        M
+                    </IconButton>
+                )}
             </Box>
         </Container>
     );

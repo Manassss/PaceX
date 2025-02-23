@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
     graduationYear: { type: Number },
     birthdate: { type: Date },
     bio: { type: String },
+    followings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    followingsNumber: { type: Number, default: 0 },
+    followersNumber: { type: Number, default: 0 }
+
     // URL for profile ima
 });
 

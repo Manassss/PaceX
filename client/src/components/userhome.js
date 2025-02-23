@@ -27,6 +27,25 @@ const UserHome = () => {
     const [storyUser, setstoryUser] = useState([]);
     const [currentIndexStory, setCurrentIndexStory] = useState(0);
     // ✅ Function to mark a story as "viewed"
+    const followUser = async (userId, targetUserId) => {
+        try {
+            const response = await axios.post(`http://localhost:5001/api/user/${userId}/follow/${targetUserId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error following user:", error);
+            throw error;
+        }
+    };
+
+    const unfollowUser = async (userId, targetUserId) => {
+        try {
+            const response = await axios.delete(`http://localhost:5001/api/user/${userId}/unfollow/${targetUserId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Error unfollowing user:", error);
+            throw error;
+        }
+    };
     const markStoryAsViewed = async (storyId, userId) => {
         try {
             const postdata = {
@@ -220,6 +239,9 @@ const UserHome = () => {
     };
     const handleAddpost = () => {
         navigate(`/add-post`);
+    };
+    const handleMarketplace = () => {
+        navigate(`/marketplace`);
     };
 
 
@@ -445,7 +467,7 @@ const UserHome = () => {
                 >
                     <List>
                         {filteredUsers.slice(0, 5).map((user) => (
-                            <ListItem button key={user.id} onClick={() => handleProfile(user.id)}>
+                            <ListItem button key={user.id} onClick={() => handleProfile(user.id)} sx={{ backgroundColor: 'white', color: 'black' }}>
                                 <Avatar
                                     src={user.profileImage}
                                     sx={{ width: 30, height: 30, mr: 2 }}
@@ -538,7 +560,10 @@ const UserHome = () => {
                     sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
                     <AddIcon />
                 </IconButton>
-
+                <IconButton onClick={handleMarketplace}
+                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
+                    M
+                </IconButton>
             </Box>
 
         </Container>

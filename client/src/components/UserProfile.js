@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Container, Box, Avatar, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 
 const UserProfile = () => {
     const { userId } = useParams();
     const [user, setUser] = useState(null);
     const [posts, setPosts] = useState([]);
+    const { auth } = useAuth()
 
     useEffect(() => {
         // Fetch user profile data

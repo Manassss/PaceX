@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers } = require("../controllers/userController");  // ✅ Make sure loginUser is imported
+const { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers,followUser,unfollowUser } = require("../controllers/userController");  // ✅ Make sure loginUser is imported
 
 const router = express.Router();
 
@@ -14,5 +14,7 @@ router.put("/profile/:id", updateUserProfile);
 
 // ✅ Route to get all users
 router.get("/all", getAllUsers);
+router.post('/:userId/follow/:targetUserId', followUser);
+router.delete('/:userId/unfollow/:targetUserId', unfollowUser);
 
 module.exports = router;
