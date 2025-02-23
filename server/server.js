@@ -53,6 +53,6 @@ const storyroutes = require('./routes/storyRoutes');
 app.use('/api/story', storyroutes);
 
 const chatroutes = require('./routes/chatRoutes');
-app.use('/api/chat', storyroutes);
+app.use('/api/chat', chatroutes);
 
 server.listen(PORT, () => console.log(`✅ Server running on Port ${PORT}`));

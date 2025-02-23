@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import { useAuth } from '../auth/AuthContext';
 import { useParams } from 'react-router-dom';
 import { useLocation } from "react-router-dom";
+import axios from 'axios';
 
 const socket = io("http://localhost:5001", {
     transports: ["websocket", "polling"],
@@ -20,7 +21,7 @@ const Chatbox = () => {
     // Join the user's personal room when the component mounts
     useEffect(() => {
         console.log(`rec ${userId} -- ${username}`);
-
+        getmessages();
         socket.on("connect", () => {
             console.log("Connected to server");
         });
@@ -44,18 +45,19 @@ const Chatbox = () => {
 
     // Handle sending messages
     const sendMessage = () => {
+
         if (!message.trim()) return;
 
         const roomId = [user._id, userId].sort().join("_"); // Generate Room ID
-
+        console.log("chat".chatHistory);
         const messageData = {
             senderId: user._id,
             senderName: user.name,
             receiverId: userId,
-            content: message,
+            text: message,
             roomId
         };
-
+        postmessage();
         // Send message via Socket.io
         socket.emit('send_message', messageData);
 
@@ -65,6 +67,31 @@ const Chatbox = () => {
         // Clear the input field
         setMessage('');
     };
+    const getmessages = async () => {
+        try {
+
+            const response = await axios.get('http://localhost:5001/api/chat/get', {
+                params: { user1: userId, user2: user._id }
+            });
+            console.log(response.data); // Log actual data
+            setChatHistory(response.data);
+        } catch (err) {
+            console.error('Error getting messages:', err.response?.data || err.message);
+        }
+    };
+
+    const postmessage = async () => {
+        try {
+            const postData = {
+                senderId: user._id,
+                receiverId: userId,
+                text: message,
+            }
+            await axios.post('http://localhost:5001/api/chat/send', postData);
+        } catch (err) {
+            console.error('Error creating post:', err.response?.data || err.message);
+        }
+    }
 
     return (
         <Container
@@ -104,7 +131,7 @@ const Chatbox = () => {
                             }}
                         >
                             <ListItemText
-                                primary={msg.content}
+                                primary={msg.text}
                                 sx={{
                                     bgcolor: msg.senderId === user._id ? 'primary.light' : 'grey.200',
                                     borderRadius: 2,

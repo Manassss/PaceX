@@ -11,6 +11,7 @@ import MarketplaceUpload from './components/MarketplaceUplaod';
 
 import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api';
 import Chatbox from './components/Chatbox';
+import Messenger from './components/messenger';
 
 function App() {
   const GOOGLE_MAPS_API_KEY = "AIzaSyAO2ekezozP0iZGQNeyYOkASsjsl456Kn8";
@@ -31,6 +32,7 @@ function App() {
             <Route path="/marketplaceupload" element={<LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
               <MarketplaceUpload />
             </LoadScript>} />  {/* Home Route */}
+            <Route path="/messenger" element={<Messenger />} />
           </Routes>
         </Router>
       </AuthProvider>

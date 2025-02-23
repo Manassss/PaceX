@@ -21,8 +21,12 @@ const sendMessage = async (req, res) => {
 // ✅ Get chat history between two users (GET)
 const getChatHistory = async (req, res) => {
     try {
-        const { user1, user2 } = req.params;
+        const { user1, user2 } = req.query;
 
+        if (!user1 || !user2) {
+            return res.status(400).json({ error: "Missing user IDs" });
+        }
+        //console.log(`user1:${user1} user2 ${user2}`);
         const chats = await Chat.find({
             $or: [
                 { senderId: user1, receiverId: user2 },

@@ -219,6 +219,9 @@ const UserHome = () => {
     const handleMarketplace = () => {
         navigate(`/marketplace`);
     };
+    const handlemessenger = () => {
+        navigate(`/messenger`);
+    };
 
     const handleLike = async (postId) => {
         try {
@@ -471,14 +474,15 @@ const UserHome = () => {
                         <AddIcon sx={{ fontSize: 30 }} />
                     </IconButton>
 
-                    <IconButton sx={{
-                        bgcolor: '#3f51b5',
-                        color: 'white',
-                        width: 50,
-                        height: 50,
-                        borderRadius: '50%',
-                        boxShadow: 3
-                    }}>
+                    <IconButton onClick={handlemessenger}
+                        sx={{
+                            bgcolor: '#3f51b5',
+                            color: 'white',
+                            width: 50,
+                            height: 50,
+                            borderRadius: '50%',
+                            boxShadow: 3
+                        }} >
                         <ChatIcon />
                     </IconButton>
                 </Box>
@@ -687,7 +691,7 @@ const UserHome = () => {
 
                             {/* Like Button */}
                             <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                <IconButton onClick={() => handleLikeToggle(post._id)}>
+                                <IconButton onClick={() => handleLike(post._id)}>
                                     <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
                                 </IconButton>
                                 <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
@@ -697,34 +701,8 @@ const UserHome = () => {
                 })}
             </Box>
 
-            {/* Container for Profile & Add Post Buttons */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-evenly',
-                alignItems: 'center',
-                gap: 0.5,
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'RGBA(0,0,0,0.7)',
-                width: '100%'
-            }}>
-                {/* Profile Button */}
-                <IconButton onClick={() => handleProfile(user._id)}>
-                    <Avatar src={user.profileImage} sx={{ width: 50, height: 50, borderRadius: '0%' }} />
-                </IconButton>
 
-                {/* Add Post Button */}
-                <IconButton onClick={handleAddpost}
-                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
-                    <AddIcon />
-                </IconButton>
-                <IconButton onClick={handleMarketplace}
-                    sx={{ width: 50, height: 50, bgcolor: '#ff4500', color: 'white', borderRadius: '0%' }}>
-                    M
-                </IconButton>
-            </Box>
+
 
         </Container>
     );
