@@ -22,9 +22,34 @@ const Messenger = () => {
     const userId = user?._id;
     const [users, setUsers] = useState([]);
     const [defaultusers, setdefaultUsers] = useState([]);
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredUsers = users;
+
+    if (search.trim()) {
+        const fetchSearchedUsers = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5001/api/users/search`, {
+                    params: { query: search }
+                });
+                const searchResults = res.data.map(user => ({
+                    id: user._id,
+                    name: user.name,
+                    profileImage: user.profileImage,
+                }));
+
+                setUsers(prevUsers => {
+                    // Combine chat users and searched users, removing duplicates
+                    const allUsers = [...prevUsers, ...searchResults];
+                    return allUsers.filter((user, index, self) =>
+                        index === self.findIndex((u) => u.id === user.id)
+                    );
+                });
+            } catch (err) {
+                console.error("Error searching users:", err);
+            }
+        };
+
+        fetchSearchedUsers();
+    }
 
     useEffect(() => {
         if (!userId) return;
@@ -57,7 +82,7 @@ const Messenger = () => {
                 console.error('Error fetching users:', err);
             }
         };
-        fetchUsers();
+        //fetchUsers();
         fetchUserProfile();
         fetchChatUsers();
     }, [userId]);
@@ -75,7 +100,7 @@ const Messenger = () => {
                 profileImage: user.profileImage,
             }));
             console.log(transformedUsers);
-            setdefaultUsers(transformedUsers);
+            setUsers(transformedUsers);
         } catch (err) {
             console.error('Error fetching chat users:', err);
         }
@@ -113,7 +138,7 @@ const Messenger = () => {
             {/* Messages List */}
 
             <List sx={styles.messageList}>
-                {defaultusers.map((item) => (
+                {filteredUsers.map((item) => (
                     <ListItem button key={item.id} onClick={() => handleSelect(item)} style={styles.listItem}>
 
                         <ListItemAvatar>
@@ -140,7 +165,7 @@ export default Messenger;
 
 const styles = {
     container: {
-        width: 500,
+        width: 600,
         height: 800,
         margin: '20px auto',
         border: '1px solid #ddd',

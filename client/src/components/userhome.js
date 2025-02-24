@@ -458,7 +458,7 @@ const UserHome = () => {
                     mt: 2
                 }}>
                     {/* **CHANGED:** Use optional chaining for user to prevent accessing properties on null */}
-                    <IconButton onClick={() => handleProfile(user?._id)}>
+                    {/* <IconButton onClick={() => handleProfile(user?._id)}>
                         <Avatar src={user?.profileImage} sx={{ width: 50, height: 50, borderRadius: '50%' }} />
                     </IconButton>
 
@@ -484,8 +484,9 @@ const UserHome = () => {
                             boxShadow: 3
                         }} >
                         <ChatIcon />
-                    </IconButton>
+                    </IconButton> */}
                 </Box>
+
             </Box>
 
             {/* Modal for Camera Capture */}

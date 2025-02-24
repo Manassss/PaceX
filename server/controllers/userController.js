@@ -218,4 +218,24 @@ const unfollowUser = async (req, res) => {
         res.status(500).json({ message: "Server error", error });
     }
 };
-module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers, followUser, unfollowUser };
+
+const searchbyname = async (req, res) => {
+    try {
+        const { query } = req.query;
+
+        if (!query) {
+            return res.status(400).json({ error: "Search query is required" });
+        }
+
+        // Case-insensitive search using regex
+        const users = await User.find({
+            name: { $regex: query, $options: 'i' }
+        }).select('_id name profileImage'); // Select only required fields
+
+        res.json(users);
+    } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers, followUser, unfollowUser, searchbyname };
