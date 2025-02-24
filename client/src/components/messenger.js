@@ -21,6 +21,7 @@ const Messenger = () => {
     const { user } = useAuth();
     const userId = user?._id;
     const [users, setUsers] = useState([]);
+    const [defaultusers, setdefaultUsers] = useState([]);
     const filteredUsers = users.filter(user =>
         user.name.toLowerCase().includes(search.toLowerCase())
     );
@@ -58,12 +59,27 @@ const Messenger = () => {
         };
         fetchUsers();
         fetchUserProfile();
+        fetchChatUsers();
     }, [userId]);
     const handleSelect = (item) => {
         console.log(item);
         setSelectedUser(item);
         navigate('/chatbox', { state: { userId: item.id, username: item.name } })
     }
+    const fetchChatUsers = async () => {
+        try {
+            const res = await axios.get(`http://localhost:5001/api/chat/getusers/${user?._id}`);
+            const transformedUsers = res.data.map(user => ({
+                id: user._id,
+                name: user.name,
+                profileImage: user.profileImage,
+            }));
+            console.log(transformedUsers);
+            setdefaultUsers(transformedUsers);
+        } catch (err) {
+            console.error('Error fetching chat users:', err);
+        }
+    };
     return (
         <Container sx={styles.container}>
             {/* Header */}
@@ -97,7 +113,7 @@ const Messenger = () => {
             {/* Messages List */}
 
             <List sx={styles.messageList}>
-                {filteredUsers.map((item) => (
+                {defaultusers.map((item) => (
                     <ListItem button key={item.id} onClick={() => handleSelect(item)} style={styles.listItem}>
 
                         <ListItemAvatar>
