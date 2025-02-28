@@ -1,4 +1,5 @@
 const Post = require('../models/Post');
+const User = require('../models/Userdetails');
 
 const createPost = async (req, res) => {
   try {
@@ -10,6 +11,9 @@ const createPost = async (req, res) => {
       content,
       postimg
     });
+    const user = await User.findById(userId);
+    user.posts = (user.posts || 0) + 1; // Ensure posts field exists, then increment
+    await user.save()
     await newPost.save();
     res.status(201).json({ message: "Post created successfully!", post: newPost });
   } catch (err) {
