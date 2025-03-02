@@ -22,6 +22,7 @@ function AppContent() {
   const hiddenRoutes = ['/', '/register', '/login', '/home'];
 
   return (
+<<<<<<< HEAD
     <>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -46,6 +47,28 @@ function AppContent() {
 
     </>
   );
+=======
+    <div className="App">
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/home" element={<Home />} />  {/* Home Route */}
+            <Route path="/add-post" element={<AddPost />} />  {/* Add Post Route */}
+            <Route path="/profile/:id" element={<ProfilePage />} />  {/* Dynamic profile route */}
+            <Route path="/userhome/" element={<UserHome />} />
+
+            <Route path="/marketplace" element={<Marketplace />} />  {/* Home Route */}
+            <Route path="/marketplaceupload" element={<LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
+              <MarketplaceUpload />
+            </LoadScript>} />  {/* Home Route */}
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </div>)
+>>>>>>> origin/dev-manas
 }
 
 function App() {
