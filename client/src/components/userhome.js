@@ -13,7 +13,7 @@ import { Typography, Button, Container, Paper, Popover, Drawer, Dialog, DialogTi
 import Messenger from './messenger';
 import PeopleIcon from '@mui/icons-material/People';
 import SearchIcon from "@mui/icons-material/Search";
-import Navbar from "./navbar"
+import Navbar from "../components/navbar"; // Import Navbar
 import {
     FavoriteBorder,
     ChatBubbleOutline,
@@ -23,7 +23,7 @@ import {
     AppBar,
     Toolbar,
   } from "@mui/material";
-  import Logo from "../assets/PACE.png";
+import Logo from "../assets/PACE.png";
   import NotificationsIcon from "@mui/icons-material/Notifications";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import { useParams } from 'react-router-dom';
@@ -58,6 +58,10 @@ const UserHome = () => {
         const [recommendedProfiles, setRecommendedProfiles] = useState([]);
         const isTablet = useMediaQuery("(max-width: 960px)");
         const [open, setOpen] = useState(false);
+        const [isVisible, setIsVisible] = useState(true);
+        const [lastScrollY, setLastScrollY] = useState(0);
+        
+
 
 
 
@@ -296,15 +300,40 @@ const UserHome = () => {
         { label: "Marketplace", icon: <StorefrontIcon /> },
       ];
 
-
-
+      useEffect(() => {
+        let ticking = false;
+      
+        const handleScroll = () => {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              const currentScrollY = window.scrollY;
+      
+              if (currentScrollY > lastScrollY) {
+                // Scrolling down → Hide Section
+                setIsVisible(false);
+              } else {
+                // Scrolling up → Show Section
+                setIsVisible(true);
+              }
+      
+              setLastScrollY(currentScrollY);
+              ticking = false;
+            });
+      
+            ticking = true;
+          }
+        };
+      
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+      }, [lastScrollY]);
+      
 
     return (
 <Container
   maxWidth={false}
   disableGutters
   sx={{
-    height: "100vh",
     width: "100vw",
     display: "flex",
     flexDirection: "column",
@@ -348,7 +377,6 @@ const UserHome = () => {
         scrollbarWidth: "none",
         "&::-webkit-scrollbar": { display: "none" },
         cursor: "grab",
-        mb: 2,
         alignContent: "center",
         maxWidth: { xs: "90vw", md: "100%" },
       }}
@@ -448,16 +476,21 @@ const UserHome = () => {
       </Box>
 
       {/* Stats Section */}
-      <Box sx={{ display: "flex", justifyContent: "space-around", mt: 2 }}>
-        {["Posts", "Followers", "Following"].map((label, index) => (
-          <Box key={index} textAlign="center">
-            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-              {user?.[label.toLowerCase()] || 0}
-            </Typography>
-            <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>{label}</Typography>
-          </Box>
-        ))}
-      </Box>
+<Box sx={{ display: "flex", justifyContent: "space-around", mt: 2 }}>
+  {[
+    { label: "Posts", value: user?.posts || 0 },
+    { label: "Followers", value: user?.followersNumber || 0 },
+    { label: "Following", value: user?.followingsNumber || 0 },
+  ].map((item, index) => (
+    <Box key={index} textAlign="center">
+      <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+        {item.value}
+      </Typography>
+      <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>{item.label}</Typography>
+    </Box>
+  ))}
+</Box>
+
     </Paper>
   )}
 
@@ -536,7 +569,7 @@ const UserHome = () => {
           sx={{
             position: "fixed",
             right: "20px",
-            top: "50%",
+            top: "40%",
             transform: "translateY(-50%)",
             backgroundColor: "#073574",
             color: "#fff",
@@ -561,7 +594,7 @@ const UserHome = () => {
       gap: 3,
       position: "fixed",
       right: open ? "0%" : "-80%",
-      top: "50px",
+      top: "10px",
       color: "#fff",
       overflowY: "auto",
       transition: "all 0.3s ease-in-out",
@@ -572,9 +605,9 @@ const UserHome = () => {
         <IconButton
           sx={{
             alignSelf: "flex-end",
-
-            backgroundColor: "#555",
-            color: "#fff",
+            top: "350px",
+            right: "345px",
+            color: "black",
             transition: "0.3s",
             marginTop: "10%",
             "&:hover": {
