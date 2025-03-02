@@ -55,4 +55,10 @@ app.use('/api/story', storyroutes);
 const chatroutes = require('./routes/chatRoutes');
 app.use('/api/chat', chatroutes);
 
+const commentroutes = require('./routes/commentRoutes');
+app.use('/api/comment', commentroutes);
+
+const communityroutes = require('./routes/communityRoutes');
+app.use('/api/comment', communityroutes);
+
 server.listen(PORT, () => console.log(`✅ Server running on Port ${PORT}`));

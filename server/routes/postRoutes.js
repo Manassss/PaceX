@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPost, getPosts, likePost } = require('../controllers/postController');
+const { createPost, getPosts, likePost, addComment } = require('../controllers/postController');
 
 const router = express.Router();
 
@@ -11,5 +11,10 @@ router.get('/all', getPosts);
 
 // NEW: Route to like a specific post
 router.put('/like/:postId', likePost);
+
+// NEW: Route to COMMENT a specific post
+
+router.post('/addComment', addComment);
+
 
 module.exports = router;
