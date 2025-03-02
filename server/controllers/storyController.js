@@ -24,11 +24,11 @@ const createStory = async (req, res) => {
 //  Get all active (non-expired) stories
 const getStories = async (req, res) => {
     try {
-        console.log('Fetching active stories...');
+        // console.log('Fetching active stories...');
 
         const stories = await Story.find({ expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
 
-        console.log('🟢 Active Stories:', stories);
+        // console.log('🟢 Active Stories:', stories);
         res.status(200).json(stories);
     } catch (err) {
         console.error("🔥 Error fetching stories:", err);

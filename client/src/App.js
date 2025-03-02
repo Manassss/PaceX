@@ -13,6 +13,7 @@ import Chatbox from './components/Chatbox';
 import Messenger from './components/messenger';
 import BottomNav from './components/BottamNav';
 import { LoadScript } from '@react-google-maps/api';
+import Navbar from './components/navbar';
 
 function AppContent() {
   const location = useLocation(); // ✅ Now inside <Router>
@@ -32,6 +33,8 @@ function AppContent() {
         <Route path="/userhome/" element={<UserHome />} />
         <Route path="/chatbox" element={<Chatbox />} />
         <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/navbar" element={<Navbar />} />
+
         <Route path="/marketplaceupload" element={
           <LoadScript googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY" libraries={["places"]}>
             <MarketplaceUpload />
@@ -40,12 +43,7 @@ function AppContent() {
         <Route path="/messenger" element={<Messenger />} />
       </Routes>
 
-      {/* ✅ Show BottomNav only if the current route is NOT in hiddenRoutes */}
-      {!hiddenRoutes.includes(location.pathname) && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', position: 'fixed', bottom: 0, width: '100%' }}>
-          <BottomNav />
-        </Box>
-      )}
+
     </>
   );
 }

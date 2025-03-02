@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Container, TextField, List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, IconButton, Box, InputAdornment } from '@mui/material';
+import { Container, TextField, List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, IconButton, Box, InputAdornment, useMediaQuery } from '@mui/material';
 import { Search, Edit } from '@mui/icons-material';
 import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const sampleUsers = [
-    { id: 1, name: 'Ayesha', lastMessage: 'Ayesha sent an attachment.', time: '1h', img: 'https://via.placeholder.com/50' },
-    { id: 2, name: 'Macho', lastMessage: 'Saurabh sent an attachment.', time: '3h', img: 'https://via.placeholder.com/50', muted: true },
-    { id: 3, name: 'Pushkar Nagarad', lastMessage: 'Pushkar sent an attachment.', time: '12h', img: 'https://via.placeholder.com/50' },
-    { id: 4, name: 'Jemin Patel', lastMessage: 'Liked a message', time: '1d', img: 'https://via.placeholder.com/50' },
-    { id: 5, name: 'Sharon Dsouza', lastMessage: 'Reacted 😂 to your message', time: '1d', img: 'https://via.placeholder.com/50' }
-];
+import { useTheme } from '@mui/material/styles';
 
 const Messenger = () => {
     const [search, setSearch] = useState('');
@@ -21,35 +14,9 @@ const Messenger = () => {
     const { user } = useAuth();
     const userId = user?._id;
     const [users, setUsers] = useState([]);
-    const [defaultusers, setdefaultUsers] = useState([]);
-    const filteredUsers = users;
-
-    if (search.trim()) {
-        const fetchSearchedUsers = async () => {
-            try {
-                const res = await axios.get(`http://localhost:5001/api/users/search`, {
-                    params: { query: search }
-                });
-                const searchResults = res.data.map(user => ({
-                    id: user._id,
-                    name: user.name,
-                    profileImage: user.profileImage,
-                }));
-
-                setUsers(prevUsers => {
-                    // Combine chat users and searched users, removing duplicates
-                    const allUsers = [...prevUsers, ...searchResults];
-                    return allUsers.filter((user, index, self) =>
-                        index === self.findIndex((u) => u.id === user.id)
-                    );
-                });
-            } catch (err) {
-                console.error("Error searching users:", err);
-            }
-        };
-
-        fetchSearchedUsers();
-    }
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
     useEffect(() => {
         if (!userId) return;
@@ -57,56 +24,33 @@ const Messenger = () => {
             try {
                 const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
                 setUserDetails(res.data);
-
             } catch (err) {
                 console.error("Error fetching profile:", err.message);
             }
         };
-        const fetchUsers = async () => {
+        const fetchChatUsers = async () => {
             try {
-                const res = await axios.get('http://localhost:5001/api/users/all');
-                const transformedUsers = res.data.map(user => ({
+                const res = await axios.get(`http://localhost:5001/api/chat/getusers/${user?._id}`);
+                setUsers(res.data.map(user => ({
                     id: user._id,
                     name: user.name,
-                    bio: user.bio,
-                    email: user.email,
-                    role: user.role,
-                    university: user.university,
                     profileImage: user.profileImage,
-                    joinedAt: new Date(user.joinedAt).toLocaleDateString(),
-                }));
-                console.log(transformedUsers);
-                setUsers(transformedUsers);
-                //setFilteredUsers(transformedUsers);
+                })));
             } catch (err) {
-                console.error('Error fetching users:', err);
+                console.error('Error fetching chat users:', err);
             }
         };
-        //fetchUsers();
         fetchUserProfile();
         fetchChatUsers();
     }, [userId]);
+
     const handleSelect = (item) => {
-        console.log(item);
         setSelectedUser(item);
         navigate('/chatbox', { state: { userId: item.id, username: item.name } })
-    }
-    const fetchChatUsers = async () => {
-        try {
-            const res = await axios.get(`http://localhost:5001/api/chat/getusers/${user?._id}`);
-            const transformedUsers = res.data.map(user => ({
-                id: user._id,
-                name: user.name,
-                profileImage: user.profileImage,
-            }));
-            console.log(transformedUsers);
-            setUsers(transformedUsers);
-        } catch (err) {
-            console.error('Error fetching chat users:', err);
-        }
     };
+
     return (
-        <Container sx={styles.container}>
+        <Container sx={{ ...styles.container, width: isMobile ? '100%' : isTablet ? '80%' : 400, height: isMobile ? '100vh' : 800 }}>
             {/* Header */}
             <Box sx={styles.header}>
                 <Typography variant="h6" sx={styles.username}>{userDetails.username}</Typography>
@@ -134,29 +78,19 @@ const Messenger = () => {
                 />
             </Box>
 
-
             {/* Messages List */}
-
             <List sx={styles.messageList}>
-                {filteredUsers.map((item) => (
-                    <ListItem button key={item.id} onClick={() => handleSelect(item)} style={styles.listItem}>
-
+                {users.map((item) => (
+                    <ListItem button key={item.id} onClick={() => handleSelect(item)} sx={styles.listItem}>
                         <ListItemAvatar>
                             <Avatar src={item.profileImage} />
                         </ListItemAvatar>
                         <ListItemText
                             primary={<Typography sx={styles.username}>{item.name}</Typography>}
-                        // secondary={
-                        //     // <Typography sx={styles.lastMessage}>
-                        //     //     {user.lastMessage} • {user.time}
-                        //     // </Typography>
-                        // }
                         />
-
                     </ListItem>
                 ))}
             </List>
-
         </Container>
     );
 };
@@ -165,70 +99,56 @@ export default Messenger;
 
 const styles = {
     container: {
-        width: 600,
-        height: 800,
-        margin: '20px auto',
+        margin: 'auto',
         border: '1px solid #ddd',
         borderRadius: 3,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: 'white',
+        background: "white",
         boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+        transition: "0.3s",
+        color:"black",
     },
     header: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '15px',
-        borderBottom: '1px solid #ddd'
+        color: 'black',
+
     },
     username: {
         fontWeight: 'bold',
-        fontSize: '18px'
+        fontSize: '18px',
+        '&:hover': {
+            "&:hover": { transform: "scale(1.05)" },
+              "&:active": { transform: "scale(1.95)" },
+        },
+
+        color: 'black',
+
     },
     searchBar: {
         margin: '10px',
-        borderRadius: '10px',
-        backgroundColor: '#f5f5f5',
+        borderRadius: "20px", // Curved corners
     },
     messageList: {
         overflowY: 'auto',
         flexGrow: 1,
-        backgroundColor: '#9AB',
-        borderRadius: 5
+
     },
     listItem: {
         display: 'flex',
         alignItems: 'center',
         padding: '10px',
         '&:hover': {
-            backgroundColor: '#f5f5f5',
+            background: "#B0C4DE",
         },
-
-    },
-
-    userName: {
-        fontWeight: 'bold',
-        fontSize: '16px',
-    },
-    lastMessage: {
-        fontSize: '12px',
-        color: 'gray'
-    },
-    unreadDot: {
-        fontSize: '12px',
-        marginLeft: 'auto'
-    },
-    mutedIcon: {
-        fontSize: '12px',
-        marginLeft: 'auto',
-        color: 'gray'
     },
     search: {
         display: 'flex',
-
-        alignItems: 'center'
+        alignItems: 'center',
+        padding: '10px'
     }
-
 };

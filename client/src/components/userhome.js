@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Button, Container, Paper, TextField, Avatar, Box, IconButton, List, ListItem, ListItemText, Modal, MenuItem, Menu } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
@@ -10,23 +9,61 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import { Typography, Button, Container, Paper, Popover, Drawer, Dialog, DialogTitle, DialogContent, useMediaQuery, InputAdornment,TextField, Avatar, Box, IconButton, List, ListItem, ListItemText, Modal, MenuItem, Menu } from '@mui/material';
+import Messenger from './messenger';
+import PeopleIcon from '@mui/icons-material/People';
+import SearchIcon from "@mui/icons-material/Search";
+import Navbar from "./navbar"
+import {
+    FavoriteBorder,
+    ChatBubbleOutline,
+    ShareOutlined,
+  } from "@mui/icons-material";
+  import {
+    AppBar,
+    Toolbar,
+  } from "@mui/material";
+  import Logo from "../assets/PACE.png";
+  import NotificationsIcon from "@mui/icons-material/Notifications";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import { useParams } from 'react-router-dom';
+import FeedIcon from "@mui/icons-material/DynamicFeed";
+import EventIcon from "@mui/icons-material/Event";
+import GroupsIcon from "@mui/icons-material/Groups";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import AddPost from './AddPost';
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
+
+
+
+  
 
 const UserHome = () => {
-    const [posts, setPosts] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filteredUsers, setFilteredUsers] = useState([]);
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-    const [openCamera, setOpenStoryCamera] = useState(false);
-    const [stories, setStories] = useState([]);
-    const [likedPosts, setLikedPosts] = useState([]);
-    const [openStory, setOpenStory] = useState(false);
-    const [currentStories, setCurrentStories] = useState([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    // **CHANGED:** Initialize storyUser as null instead of an empty array.
-    const [storyUser, setstoryUser] = useState(null);
-    const [currentIndexStory, setCurrentIndexStory] = useState(0);
+        const [posts, setPosts] = useState([]);
+        const [users, setUsers] = useState([]);
+        const [filteredUsers, setFilteredUsers] = useState([]);
+        const { user, logout } = useAuth();
+        const navigate = useNavigate();
+        const [openCamera, setOpenStoryCamera] = useState(false);
+        const [stories, setStories] = useState([]);
+        const [likedPosts, setLikedPosts] = useState([]);
+        const [openStory, setOpenStory] = useState(false);
+        const [currentStories, setCurrentStories] = useState([]);
+        const [currentIndex, setCurrentIndex] = useState(0);
+        const [storyUser, setstoryUser] = useState(null);
+        const [currentIndexStory, setCurrentIndexStory] = useState(0);
+        const isMobile = useMediaQuery('(max-width: 768px)');
+        const [isMessengerOpen, setMessengerOpen] = useState(false); // Messenger Toggle State
+        const [userProfile, setUserProfile] = useState(null);
+        const [recommendedProfiles, setRecommendedProfiles] = useState([]);
+        const isTablet = useMediaQuery("(max-width: 960px)");
+        const [open, setOpen] = useState(false);
+
+
+
+    
+
+    
 
     // ✅ Function to mark a story as "viewed"
     const followUser = async (userId, targetUserId) => {
@@ -197,18 +234,6 @@ const UserHome = () => {
         fetchStories();
     }, []);
 
-    const handleSearchChange = (e) => {
-        const value = e.target.value;
-        setSearchTerm(value);
-        setFilteredUsers(
-            value
-                ? users.filter((u) =>
-                    u.name.toLowerCase().startsWith(value.toLowerCase()) ||
-                    u.email.toLowerCase().startsWith(value.toLowerCase())
-                )
-                : users
-        );
-    };
 
     const handleProfile = (userId) => {
         navigate(`/profile/${userId}`);
@@ -237,257 +262,420 @@ const UserHome = () => {
         }
     };
 
+    const toggleMessenger = () => {
+        setMessengerOpen((prev) => !prev);
+      };
+
+      useEffect(() => {
+        const fetchUserProfile = async () => {
+          try {
+            console.log(user?._id)
+            const res = await axios.get(`http://localhost:5001/api/users/${user?._id}`);
+            console.log("Fetched User Profile:", res.data);
+            setUserProfile(res.data);
+          } catch (err) {
+            console.error("Error fetching user profile:", err.message);
+          }
+        };
+    
+        fetchUserProfile();
+    
+        // Dummy data for recommended profiles
+        setRecommendedProfiles([
+          { id: 1, name: "John Doe", profileImage: "https://via.placeholder.com/50" },
+          { id: 2, name: "Jane Smith", profileImage: "https://via.placeholder.com/50" },
+          { id: 3, name: "Emily Johnson", profileImage: "https://via.placeholder.com/50" },
+        ]);
+      }, []);
+
+      const buttons = [
+        { label: "Feed", icon: <FeedIcon /> },
+        { label: "Friends", icon: <PeopleIcon /> },
+        { label: "Events", icon: <EventIcon /> },
+        { label: "Community", icon: <GroupsIcon /> },
+        { label: "Marketplace", icon: <StorefrontIcon /> },
+      ];
+
+
+
 
     return (
-        // **CHANGED:** Fixed container size of 600x800, centered on the page
-        <Container
+<Container
+  maxWidth={false}
+  disableGutters
+  sx={{
+    height: "100vh",
+    width: "100vw",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    alignItems: "center",
+  }}
+>
+  {/* Navbar */}
+  <Box
+    sx={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      backgroundColor: "#fff",
+      boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
+      zIndex: 1200,
+      paddingY: 1,
+    }}
+  >
+    <Navbar toggleMessenger={toggleMessenger} />
+  </Box>
+
+  {/* Story Section  */}
+  <Box
+    sx={{
+      width: "100%",
+      display: "flex",
+      justifyContent: { xs: "center", md: "flex-start" },
+      ml: { md: "64%", xs: 0 },
+      mt: { xs: "18%", sm: "15%", md: "7%" },
+    }}
+  >
+
+    <Box
+      sx={{
+        display: "flex",
+        overflowX: "auto",
+        gap: 2,
+        pb: 2,
+        scrollbarWidth: "none",
+        "&::-webkit-scrollbar": { display: "none" },
+        cursor: "grab",
+        mb: 2,
+        alignContent: "center",
+        maxWidth: { xs: "90vw", md: "100%" },
+      }}
+    >
+      {/*  Add Story Element */}
+      <Box sx={{ position: "relative", cursor: "pointer" }} onClick={() => setOpenStoryCamera(true)}>
+        <Avatar
+          src={user?.profileImage}
+          sx={{
+            width: 65,
+            height: 65,
+            border: "2px solid #ff4500",
+          }}
+        />
+        <AddIcon
+          sx={{
+            position: "absolute",
+            bottom: -2,
+            right: -2,
+            backgroundColor: "white",
+            borderRadius: "50%",
+            fontSize: 18,
+            color: "#ff4500",
+          }}
+        />
+      </Box>
+
+      {uniqueUserStories.map(({ userId, stories }, index) => {
+        const storyUser = users.find((user) => user.id === userId);
+        if (!storyUser) return null;
+        const hasSeenAllStories = stories.every(
+          (s) => Array.isArray(s.views) && s.views.includes(user?._id)
+        );
+        return (
+          <Avatar
+            key={index}
             sx={{
-                width: 600,
-                height: 800,
-                margin: '50px auto',
-                border: '2px solid #000',
-                borderRadius: 3,
-                overflow: 'hidden',
-                display: 'flex',
-                p: 0,
-                backgroundColor: 'white'
+              width: 65,
+              height: 65,
+              cursor: "pointer",
+              border: `3px solid ${hasSeenAllStories ? "gray" : "#ff4500"}`,
             }}
+            src={storyUser.profileImage}
+            onClick={() => handleStoryClick(storyUser, stories)}
+          />
+        );
+      })}
+    </Box>
+  </Box>
+  <AddPost/>
+
+
+{/*Sidenav*/}
+<Box
+  sx={{
+    width: { xs: "80%", sm: "60%", md: "20%" }, // Responsive width
+    height: "100vh",
+    padding: 2,
+    display: { xs: "none", md: "flex" }, // Always visible on md and above
+    flexDirection: "column",
+    gap: 3,
+    position: "fixed",
+    left: 0, // Ensures it's always visible
+    top: "100px",
+    background: "#073574",
+    color: "#fff",
+    overflowY: "auto",
+    boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.3)",
+  }}
+>
+  {/* Card 1: User Profile */}
+  {user && (
+    <Paper
+      sx={{
+        padding: 3,
+        borderRadius: "15px",
+        background: "#f8f2ec", 
+        backdropFilter: "blur(10px)",
+        color: "black",
+        boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+        transition: "0.3s",
+      }}
+    >
+      <Box sx={{ textAlign: "center" }}>
+        <Avatar
+          src={user.profileImage}
+          sx={{
+            width: 100,
+            height: 100,
+            margin: "0 auto",
+            border: "3px solid rgba(255, 255, 255, 0.5)",
+          }}
+        />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          {user?.name}
+        </Typography>
+      </Box>
+
+      {/* Stats Section */}
+      <Box sx={{ display: "flex", justifyContent: "space-around", mt: 2 }}>
+        {["Posts", "Followers", "Following"].map((label, index) => (
+          <Box key={index} textAlign="center">
+            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+              {user?.[label.toLowerCase()] || 0}
+            </Typography>
+            <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>{label}</Typography>
+          </Box>
+        ))}
+      </Box>
+    </Paper>
+  )}
+
+  {/* Card 2: Navigation Buttons */}
+  <Paper
+    sx={{
+      padding: 2,
+      borderRadius: "15px",
+      background: "#f8f2ec",
+      backdropFilter: "blur(10px)",
+      color: "black",
+      textAlign: "center",
+      boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+    }}
+  >
+    {buttons.map(({ label, icon }, index) => (
+      <Button
+        key={index}
+        fullWidth
+        variant="contained"
+        startIcon={icon}
+        sx={{
+          mb: 1,
+          background: "#B0C4DE",
+          color: "black",
+          transition: "0.3s",
+          borderRadius: "10px",
+          width: "200px",
+          "&:hover": { background: "#d9d9d9" },
+          "&:active": { transform: "scale(0.95)" },
+        }}
+        onClick={() => navigate(`/${label.toLowerCase()}`)}
+      >
+        {label}
+      </Button>
+    ))}
+  </Paper>
+
+  {/* Card 3: Recommended Profiles */}
+  <Paper
+    sx={{
+      padding: 2,
+      borderRadius: "15px",
+      background: "#f8f2ec",
+      backdropFilter: "blur(10px)",
+      color: "black",
+      boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+    }}
+  >
+    <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
+      Recommended for You
+    </Typography>
+    <List>
+      {recommendedProfiles.map((profile) => (
+        <ListItem
+          key={profile.id}
+          button
+          sx={{
+            borderRadius: "10px",
+            transition: "0.3s",
+            "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.2)" },
+          }}
         >
-            {/* Left Sidebar for Community */}
+          <Avatar src={profile.profileImage} sx={{ width: 40, height: 40, mr: 2 }} />
+          <ListItemText primary={profile.name} />
+        </ListItem>
+      ))}
+    </List>
+  </Paper>
+</Box>
+
+
+    {/* Messenger*/}
+    {!open && (
+        <IconButton
+          sx={{
+            position: "fixed",
+            right: "20px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            backgroundColor: "#073574",
+            color: "#fff",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              backgroundColor: "#0a4a8c",
+            },
+          }}
+          onClick={() => setOpen(true)}
+        >
+          <ChatIcon fontSize="large" />
+        </IconButton>
+      )}
+
+      {/* Messenger Sidebar  */}
+      <Box
+    sx={{
+      width: { xs: "80%", md: "25%" },
+      height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      gap: 3,
+      position: "fixed",
+      right: open ? "0%" : "-80%",
+      top: "50px",
+      color: "#fff",
+      overflowY: "auto",
+      transition: "all 0.3s ease-in-out",
+      padding: "16px",
+    }}
+  >
+        {/* Close Button (Hides Panel) */}
+        <IconButton
+          sx={{
+            alignSelf: "flex-end",
+
+            backgroundColor: "#555",
+            color: "#fff",
+            transition: "0.3s",
+            marginTop: "10%",
+            "&:hover": {
+              backgroundColor: "#777",
+            },
+          }}
+          onClick={() => setOpen(false)}
+        >
+          <ArrowForwardIcon fontSize="large" />
+        </IconButton>
+
+        <Messenger />
+      </Box>
+
+    {/* FEED*/}
+
+    <Box
+    sx={{
+      flex: 1,
+      overflowY: "auto",
+      maxHeight: "80vh",
+      padding: { xs: 1, sm: 2 },
+      "&::-webkit-scrollbar": { display: "none" },
+      scrollbarWidth: "none",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      width: "100%",
+      marginTop:"2%",
+    }}
+  >
+    {posts.map((post, index) => {
+      const postUser = users.find((user) => user.id === post.userId);
+      return (
+        <Paper
+          key={index}
+          sx={{
+            p: { xs: 2, sm: 3 },
+            mb: { xs: 2, sm: 3 },
+            width: "100%",
+            maxWidth: { xs: "100%", sm: "600px" },
+            borderRadius: "15px",
+            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+            transition: "0.3s",
+            "&:hover": { boxShadow: "0px 6px 15px rgba(0, 0, 0, 0.2)" },
+          }}
+        >
+          {postUser && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+              <Avatar
+                src={postUser.profileImage}
+                sx={{ width: { xs: 35, sm: 50 }, height: { xs: 35, sm: 50 }, cursor: "pointer" }}
+                onClick={() => handleProfile(postUser.id)}
+              />
+              <Typography variant="h6" sx={{ fontSize: { xs: "1rem", sm: "1.2rem" }, fontWeight: "bold" }}>
+                {postUser.name}
+              </Typography>
+            </Box>
+          )}
+
+          {post.postimg && (
             <Box
-                sx={{
-                    width: 50, // **CHANGED:** Fixed width to 150px
-                    flexShrink: 0,
-                    borderRight: '1px solid #ccc',
-                    overflowY: 'auto',
-                    p: 2,
-                }}
+              sx={{
+                mt: 2,
+                borderRadius: "10px",
+                overflow: "hidden",
+                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                    Community
-                </Typography>
-                <List>
-                    {/* Dummy community data */}
-                    <ListItem button>
-                        <ListItemText primary="Community 1" secondary="Description" />
-                    </ListItem>
-                    <ListItem button>
-                        <ListItemText primary="Community 2" secondary="Description" />
-                    </ListItem>
-                    <ListItem button>
-                        <ListItemText primary="Community 3" secondary="Description" />
-                    </ListItem>
-                </List>
+              <img
+                src={post.postimg}
+                alt="Post"
+                style={{
+                  width: "100%",
+                  objectFit: "fill",
+                  borderRadius: "10px",
+                }}
+              />
             </Box>
+          )}
 
-            {/* Main Content */}
-            <Box sx={{ width: '75%', position: 'relative', display: 'flex', flexDirection: 'column', p: 2 }}>
-                {/* Top Bar with App Name */}
-                <Typography
-                    variant="h5"
-                    sx={{
-                        textAlign: 'center',
-                        fontWeight: 'bold',
-                        color: 'black',
-                        mb: 2
-                    }}
-                >
-                    PaceX
-                </Typography>
+          {post.content && (
+            <Typography sx={{ mt: 2, fontSize: { xs: "14px", sm: "16px" }, lineHeight: "1.4", wordWrap: "break-word", overflowWrap: "break-word" }}>
+              {post.content}
+            </Typography>
+          )}
 
-                {/* Improved Search Bar */}
-                <TextField
-                    fullWidth
-                    placeholder="Search users..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    sx={{
-                        mb: 2,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: '30px',
-                            backgroundColor: '#f5f5f5'
-                        }
-                    }}
-                />
-                {searchTerm && (
-                    <Box
-                        sx={{
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            mb: 2,
-                            position: 'absolute',
-                            width: 'calc(75% - 32px)',
-                            zIndex: 100,
-                            backgroundColor: 'white'
-                        }}
-                    >
-                        <List>
-                            {filteredUsers.slice(0, 5).map((user) => (
-                                <ListItem button key={user.id} onClick={() => handleProfile(user.id)}>
-                                    <Avatar
-                                        src={user.profileImage}
-                                        sx={{ width: 30, height: 30, mr: 2 }}
-                                    />
-                                    <ListItemText primary={`${user.name} - ${user.email}`} />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Box>
-                )}
+          <Box sx={{ display: "flex", alignItems: "center", mt: 1, flexWrap: "wrap" }}>
+            <IconButton onClick={() => handleLike(post._id)}>
+              <FavoriteIcon sx={{ color: likedPosts[post._id] ? "red" : "gray" }} />
+            </IconButton>
+            <Typography>{likedPosts[post._id] ? "Liked" : "Like"}</Typography>
+          </Box>
+        </Paper>
+      );
+    })}
+  </Box>
 
-                {/* Story Section */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        overflowX: 'auto',
-                        gap: 2,
-                        pb: 2,
-                        scrollbarWidth: 'none',
-                        '&::-webkit-scrollbar': { display: 'none' },
-                        cursor: 'grab',
-                        mb: 2
-                    }}
-                >
-                    {/* Updated Add Story Element */}
-                    <Box
-                        sx={{ position: 'relative', cursor: 'pointer' }}
-                        onClick={() => setOpenStoryCamera(true)}
-                    >
-                        <Avatar
-                            src={user?.profileImage}
-                            sx={{
-                                width: 40,
-                                height: 40,
-                                border: '3px solid #ff4500'
-                            }}
-                        />
-                        <AddIcon
-                            sx={{
-                                position: 'absolute',
-                                bottom: -2,
-                                right: -2,
-                                backgroundColor: 'white',
-                                borderRadius: '50%',
-                                fontSize: 18,
-                                color: '#ff4500'
-                            }}
-                        />
-                    </Box>
-                    {uniqueUserStories.map(({ userId, stories }, index) => {
-                        const storyUser = users.find(user => user.id === userId);
-                        if (!storyUser) return null;
-                        const hasSeenAllStories = stories.every(
-                            s => Array.isArray(s.views) && s.views.includes(user?._id)
-                        );
-                        return (
-                            <Avatar
-                                key={index}
-                                sx={{
-                                    width: 40,
-                                    height: 40,
-                                    cursor: 'pointer',
-                                    border: `3px solid ${hasSeenAllStories ? 'gray' : '#ff4500'}`
-                                }}
-                                src={storyUser.profileImage}
-                                onClick={() => handleStoryClick(storyUser, stories)}
-                            />
-                        );
-                    })}
-                </Box>
-
-
-                {/* Posts Section */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        '&::-webkit-scrollbar': { display: 'none' },
-                        scrollbarWidth: 'none'
-                    }}
-                >
-                    {posts.map((post, index) => {
-                        const postUser = users.find((user) => user.id === post.userId);
-                        return (
-                            <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: 'transparent' }}>
-                                {postUser && (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Avatar
-                                            src={postUser.profileImage}
-                                            sx={{ width: 40, height: 40 }}
-                                            onClick={() => handleProfile(postUser.id)}
-                                        />
-                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                            {postUser.name}
-                                        </Typography>
-                                    </Box>
-                                )}
-                                {post.postimg && (
-                                    <Box sx={{ mt: 2, maxHeight: 500, overflow: 'hidden' }}>
-                                        <img src={post.postimg} alt="Post" style={{ width: '100%', height: 'auto' }} />
-                                    </Box>
-                                )}
-                                {post.content && (
-                                    <Typography sx={{ wordWrap: 'break-word', mt: 2 }}>
-                                        {post.content}
-                                    </Typography>
-                                )}
-                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                    <IconButton onClick={() => handleLike(post._id)}>
-                                        <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
-                                    </IconButton>
-                                    <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
-                                </Box>
-                            </Paper>
-                        );
-                    })}
-                </Box>
-
-                {/* Bottom Navigation */}
-                <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'space-around',
-                    alignItems: 'center',
-                    gap: 2,
-                    position: 'sticky',
-                    bottom: 0,
-                    backgroundColor: '#fff',
-                    p: 1,
-                    borderTop: '1px solid #ccc',
-                    mt: 2
-                }}>
-                    {/* **CHANGED:** Use optional chaining for user to prevent accessing properties on null */}
-                    {/* <IconButton onClick={() => handleProfile(user?._id)}>
-                        <Avatar src={user?.profileImage} sx={{ width: 50, height: 50, borderRadius: '50%' }} />
-                    </IconButton>
-
-                    <IconButton onClick={handleAddpost}
-                        sx={{
-                            bgcolor: '#ff4500',
-                            color: 'white',
-                            width: 50,
-                            height: 50,
-                            borderRadius: '50%',
-                            boxShadow: 3
-                        }}>
-                        <AddIcon sx={{ fontSize: 30 }} />
-                    </IconButton>
-
-                    <IconButton onClick={handlemessenger}
-                        sx={{
-                            bgcolor: '#3f51b5',
-                            color: 'white',
-                            width: 50,
-                            height: 50,
-                            borderRadius: '50%',
-                            boxShadow: 3
-                        }} >
-                        <ChatIcon />
-                    </IconButton> */}
-                </Box>
-
-            </Box>
 
             {/* Modal for Camera Capture */}
             <Modal open={openCamera} onClose={() => setOpenStoryCamera(false)}>
@@ -505,11 +693,11 @@ const UserHome = () => {
                 >
                     <CameraCapture onImageUpload={handleImageUpload} />
                 </Box>
-            </Modal>
+            </Modal> 
 
             {/* Modal for Story View */}
             <Modal open={openStory} onClose={handleClose}>
-                <Box
+            <Box
                     sx={{
                         position: "absolute",
                         left: "50%",
@@ -606,105 +794,7 @@ const UserHome = () => {
                         </IconButton>
                     )}
                 </Box>
-            </Modal>
-            {/* Search Users */}
-            <TextField
-                fullWidth
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                sx={{ mt: 2, bgcolor: 'white', borderRadius: 1 }}
-            />
-
-            {/* Dropdown for filtered users */}
-            {searchTerm && (
-                <Box
-                    sx={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        mt: 1,
-                        position: 'absolute',
-                        width: '100%',
-                        zIndex: 100
-                    }}
-                >
-                    <List>
-                        {filteredUsers.slice(0, 5).map((user) => (
-                            <ListItem button key={user.id} onClick={() => handleProfile(user.id)} sx={{ backgroundColor: 'white', color: 'black' }}>
-                                <Avatar
-                                    src={user.profileImage}
-                                    sx={{ width: 30, height: 30, mr: 2 }}
-                                />
-                                <ListItemText primary={`${user.name} - ${user.email}`} />
-                            </ListItem>
-                        ))}
-                    </List>
-                </Box>
-            )}
-
-
-            {/* Feed */}
-            <Box
-                sx={{
-                    mt: 2,
-                    height: 500,
-                    overflowY: 'auto',
-                    '&::-webkit-scrollbar': {
-                        display: 'none',  // Hides the scrollbar
-                    },
-                    scrollbarWidth: 'none' // Hides scrollbar in Firefox
-                }}
-            >
-                {posts.map((post, index) => {
-                    // Find the user who made the post
-                    const postUser = users.find((user) => user.id === post.userId);
-                    return (
-                        <Paper key={index} sx={{ p: 2, mb: 2, backgroundColor: 'transparent' }}>
-                            {/* Display the username and profile pic above each post */}
-                            {postUser && (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Avatar
-                                        src={postUser.profileImage}
-                                        sx={{ width: 40, height: 40 }}
-                                        onClick={() => handleProfile(postUser.id)} // Navigate to profile on click
-                                    />
-                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                        {postUser.name}
-                                    </Typography>
-                                </Box>
-                            )}
-
-                            {/* Display the post's image if available */}
-                            {post.postimg && (
-                                <Box sx={{ mt: 2, maxHeight: 400, overflow: 'hidden' }}>
-                                    <img src={post.postimg} alt="Post" style={{ width: '100%', height: 'auto' }} />
-                                </Box>
-                            )}
-
-                            {/* Display the text content if available */}
-                            {post.content && (
-                                <Typography sx={{ wordWrap: 'break-word', mt: 2 }}>
-                                    {post.content}
-                                </Typography>
-                            )}
-
-                            {/* Like Button */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                <IconButton onClick={() => handleLike(post._id)}>
-                                    <FavoriteIcon sx={{ color: likedPosts[post._id] ? 'red' : 'gray' }} />
-                                </IconButton>
-                                <Typography>{likedPosts[post._id] ? 'Liked' : 'Like'}</Typography>
-                            </Box>
-                        </Paper>
-                    );
-                })}
-            </Box>
-
-
-
-
+            </Modal> 
         </Container>
     );
 };

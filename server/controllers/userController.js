@@ -67,7 +67,7 @@ const loginUser = async (req, res) => {
         }
 
         // Debugging: Check what user object looks like
-        console.log('User found:', user);
+        // console.log('User found:', user);
 
         // Ensure the response sends the user object
         res.status(200).json({
@@ -97,8 +97,10 @@ const getUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
+            console.log("User started")
             return res.status(404).json({ message: "User not found" });
         }
+        console.log("quser.id");
         res.status(200).json(user);
     } catch (err) {
         console.error(err);
