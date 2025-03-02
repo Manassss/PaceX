@@ -51,13 +51,6 @@ app.use('/api/marketplace', marketRoutes);
 
 const storyroutes = require('./routes/storyRoutes');
 app.use('/api/story', storyroutes);
-<<<<<<< HEAD
-=======
-
-// ✅ Socket.io Connection Handling
-io.on("connection", (socket) => {
-    console.log("🟢 New client connected:", socket.id);
->>>>>>> origin/dev-manas
 
 const chatroutes = require('./routes/chatRoutes');
 app.use('/api/chat', chatroutes);
