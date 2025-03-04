@@ -48,6 +48,8 @@ const UserHome = () => {
         const [comments, setComments] = useState({});
         const [newComment, setNewComment] = useState({});
         const [expandedPosts, setExpandedPosts] = useState({});
+        const [showCommentBox, setShowCommentBox] = useState({});
+
         
 
         
@@ -344,6 +346,10 @@ const UserHome = () => {
         console.error("🔥 Error adding comment:", err.response?.data || err.message);
     }
 };
+const toggleCommentBox = (postId) => {
+  setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
+};
+
 
 // Toggle showing all comments
 const toggleShowMore = (postId) => {
@@ -628,9 +634,11 @@ const toggleShowMore = (postId) => {
         <IconButton
           sx={{
             alignSelf: "flex-end",
-            top: "350px",
-            right: "345px",
-            color: "black",
+            width:"35px",
+            height:"35px",
+            top: "80px",
+            color: "red",
+            bgcolor: "black",
             transition: "0.3s",
             marginTop: "10%",
             "&:hover": {
@@ -639,7 +647,7 @@ const toggleShowMore = (postId) => {
           }}
           onClick={() => setOpen(false)}
         >
-          <ArrowForwardIcon fontSize="large" />
+          <CloseIcon fontSize="large" />
         </IconButton>
 
         <Messenger />
@@ -647,102 +655,91 @@ const toggleShowMore = (postId) => {
 
                 {/* FEED */}
             <Box sx={{ flex: 1, overflowY: "auto", maxHeight: "80vh", padding: { xs: 1, sm: 2 }, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginTop: "2%" }}>
-                {posts.map((post, index) => {
-                    const postUser = users.find((user) => user.id === post.userId);
-                    const postComments = comments[post.postId] || [];
-                    const latestComment = postComments.length > 0 ? postComments[0] : null;
-                    const showAll = expandedPosts[post.postId];
+            {posts.map((post, index) => {
+        const postUser = users.find((user) => user.id === post.userId);
+        const postComments = comments[post.postId] || [];
+        const latestComment = postComments.length > 0 ? postComments[0] : null;
+        const showAll = expandedPosts[post.postId];
 
-                    return (
-                        <Paper
-                            key={index}
-                            sx={{
-                                p: { xs: 2, sm: 3 },
-                                mb: { xs: 2, sm: 3 },
-                                width: "100%",
-                                maxWidth: { xs: "100%", sm: "600px" },
-                                borderRadius: "15px",
-                                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-                                transition: "0.3s",
-                                "&:hover": { boxShadow: "0px 6px 15px rgba(0, 0, 0, 0.2)" },
-                            }}
+        return (
+            <Paper
+                key={index}
+                sx={{
+                    p: { xs: 2, sm: 3 },
+                    mb: { xs: 2, sm: 3 },
+                    width: "100%",
+                    maxWidth: { xs: "100%", sm: "600px" },
+                    borderRadius: "15px",
+                    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+                    transition: "0.3s",
+                    "&:hover": { boxShadow: "0px 6px 15px rgba(0, 0, 0, 0.2)" },
+                }}
+            >
+                {postUser && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Avatar src={postUser.profileImage} sx={{ width: 50, height: 50, cursor: "pointer" }} />
+                        <Typography variant="h6">{postUser.name}</Typography>
+                    </Box>
+                )}
+
+                {post.postimg && (
+                    <Box sx={{ mt: 2, borderRadius: "10px", overflow: "hidden" }}>
+                        <img src={post.postimg} alt="Post" style={{ width: "100%", borderRadius: "10px" }} />
+                    </Box>
+                )}
+
+                {post.content && <Typography sx={{ mt: 2 }}>{post.content}</Typography>}
+
+                {/* Like & Comment Icons */}
+                <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+                    <IconButton>
+                        <FavoriteIcon />
+                    </IconButton>
+                    <Typography>{post.likes} Likes</Typography>
+
+                    <IconButton onClick={() => toggleCommentBox(post.postId)}>
+                        <CommentIcon />
+                    </IconButton>
+                    <Typography>{postComments.length} Comments</Typography>
+                </Box>
+
+                {/* Comment Bar - Visible when clicking comment icon */}
+                {showCommentBox[post.postId] && (
+                    <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            placeholder="Write a comment..."
+                            value={newComment[post.postId] || ""}
+                            onChange={(e) => setNewComment({ ...newComment, [post.postId]: e.target.value })}
+                        />
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleAddComment(post.postId)}
                         >
-                            {postUser && (
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                    <Avatar src={postUser.profileImage} sx={{ width: 50, height: 50, cursor: "pointer" }} />
-                                    <Typography variant="h6">{postUser.name}</Typography>
-                                </Box>
-                            )}
+                            Post
+                        </Button>
+                    </Box>
+                )}
 
-                            {post.postimg && (
-                                <Box sx={{ mt: 2, borderRadius: "10px", overflow: "hidden" }}>
-                                    <img src={post.postimg} alt="Post" style={{ width: "100%", borderRadius: "10px" }} />
-                                </Box>
-                            )}
-
-                            {post.content && (
-                                <Typography sx={{ mt: 2 }}>{post.content}</Typography>
-                            )}
-
-                            {/* Like & Comment Icons */}
-                            <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                                <IconButton>
-                                    <FavoriteIcon />
-                                </IconButton>
-                                <Typography>{post.likes} Likes</Typography>
-
-                                <IconButton onClick={() => fetchComments(post.postId)}>
-                                    <CommentIcon />
-                                </IconButton>
-                                <Typography>{postComments.length} Comments</Typography>
-                            </Box>
-
-                            {/* Latest Comment */}
-                            {latestComment && !showAll && (
-                                <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
-                                    <Avatar src={latestComment.userId?.profileImage} sx={{ width: 30, height: 30 }} />
-                                    <Box>
-                                        <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                                            {latestComment.userId?.name}
-                                        </Typography>
-                                        <Typography variant="body2">{latestComment.text}</Typography>
-                                        <Typography variant="caption" color="gray">
-                                            {new Date(latestComment.createdAt).toLocaleString()}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            )}
-
-                            {/* Show More Button */}
-                            {postComments.length > 1 && !showAll && (
-                                <Button size="small" onClick={() => toggleShowMore(post.postId)}>
-                                    Show More Comments
-                                </Button>
-                            )}
-
-                            {/* Show All Comments */}
-                            {showAll && postComments.map((comment, i) => (
-                                <Box key={i} sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
-                                    <Avatar src={comment.userId?.profileImage} sx={{ width: 30, height: 30 }} />
-                                    <Box>
-                                        <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                                            {comment.userId?.name}
-                                        </Typography>
-                                        <Typography variant="body2">{comment.text}</Typography>
-                                        <Typography variant="caption" color="gray">
-                                            {new Date(comment.createdAt).toLocaleString()}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ))}
-
-                            {/* Hide Comments Button */}
-                            {showAll && (
-                                <Button size="small" onClick={() => toggleShowMore(post.postId)}>
-                                    Hide Comments
-                                </Button>
-                            )}
-                        </Paper>
+                {/* Latest Comment */}
+                {latestComment && !showAll && (
+                    <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                        <Avatar src={latestComment.userId?.profileImage} sx={{ width: 30, height: 30 }} />
+                        <Box>
+                            <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                                {latestComment.userId?.name}
+                            </Typography>
+                            <Typography variant="body2">{latestComment.text}</Typography>
+                            <Typography variant="caption" color="gray">
+                                {new Date(latestComment.createdAt).toLocaleString()}
+                            </Typography>
+                        </Box>
+                    </Box>
+                )}
+            </Paper>
                     );
                 })}
   </Box>
