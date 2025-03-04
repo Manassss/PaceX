@@ -12,31 +12,16 @@ import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { Typography, Button, Container, Paper, Popover, Drawer, Dialog, DialogTitle, DialogContent, useMediaQuery, InputAdornment,TextField, Avatar, Box, IconButton, List, ListItem, ListItemText, Modal, MenuItem, Menu } from '@mui/material';
 import Messenger from './messenger';
 import PeopleIcon from '@mui/icons-material/People';
-import SearchIcon from "@mui/icons-material/Search";
 import Navbar from "../components/navbar"; // Import Navbar
-import {
-    FavoriteBorder,
-    ChatBubbleOutline,
-    ShareOutlined,
-  } from "@mui/icons-material";
-  import {
-    AppBar,
-    Toolbar,
-  } from "@mui/material";
-import Logo from "../assets/PACE.png";
-  import NotificationsIcon from "@mui/icons-material/Notifications";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
-import { useParams } from 'react-router-dom';
 import FeedIcon from "@mui/icons-material/DynamicFeed";
 import EventIcon from "@mui/icons-material/Event";
 import GroupsIcon from "@mui/icons-material/Groups";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import AddPost from './AddPost';
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
+import {  ChatBubbleOutline as CommentIcon } from '@mui/icons-material';
 
 
-
-  
 
 const UserHome = () => {
         const [posts, setPosts] = useState([]);
@@ -60,14 +45,13 @@ const UserHome = () => {
         const [open, setOpen] = useState(false);
         const [isVisible, setIsVisible] = useState(true);
         const [lastScrollY, setLastScrollY] = useState(0);
+        const [comments, setComments] = useState({});
+        const [newComment, setNewComment] = useState({});
+        const [expandedPosts, setExpandedPosts] = useState({});
         
 
+        
 
-
-
-    
-
-    
 
     // ✅ Function to mark a story as "viewed"
     const followUser = async (userId, targetUserId) => {
@@ -238,6 +222,8 @@ const UserHome = () => {
         fetchStories();
     }, []);
 
+    
+
 
     const handleProfile = (userId) => {
         navigate(`/profile/${userId}`);
@@ -327,8 +313,45 @@ const UserHome = () => {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
       }, [lastScrollY]);
-      
 
+
+      // Fetch comments for a specific post
+      const fetchComments = async (postId) => {
+        try {
+            const res = await axios.get(`http://localhost:5001/api/comments/${postId}`);
+            setComments((prev) => ({ ...prev, [postId]: res.data }));
+        } catch (err) {
+            console.error("🔥 Error fetching comments:", err.response?.data || err.message);
+        }
+    };
+    
+  
+  // Handle adding a new comment
+  const handleAddComment = async (postId) => {
+    if (!newComment[postId]) return;
+
+    try {
+        const res = await axios.post("http://localhost:5001/api/comments/add", {
+            userId: user._id,
+            postId: postId,
+            text: newComment[postId],
+        });
+
+        console.log("✅ Comment Added:", res.data);
+        setNewComment({ ...newComment, [postId]: "" });
+        fetchComments(postId);
+    } catch (err) {
+        console.error("🔥 Error adding comment:", err.response?.data || err.message);
+    }
+};
+
+// Toggle showing all comments
+const toggleShowMore = (postId) => {
+    setExpandedPosts((prev) => ({ ...prev, [postId]: !prev[postId] }));
+};
+
+
+      
     return (
 <Container
   maxWidth={false}
@@ -622,91 +645,106 @@ const UserHome = () => {
         <Messenger />
       </Box>
 
-    {/* FEED*/}
+                {/* FEED */}
+            <Box sx={{ flex: 1, overflowY: "auto", maxHeight: "80vh", padding: { xs: 1, sm: 2 }, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginTop: "2%" }}>
+                {posts.map((post, index) => {
+                    const postUser = users.find((user) => user.id === post.userId);
+                    const postComments = comments[post.postId] || [];
+                    const latestComment = postComments.length > 0 ? postComments[0] : null;
+                    const showAll = expandedPosts[post.postId];
 
-    <Box
-    sx={{
-      flex: 1,
-      overflowY: "auto",
-      maxHeight: "80vh",
-      padding: { xs: 1, sm: 2 },
-      "&::-webkit-scrollbar": { display: "none" },
-      scrollbarWidth: "none",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      width: "100%",
-      marginTop:"2%",
-    }}
-  >
-    {posts.map((post, index) => {
-      const postUser = users.find((user) => user.id === post.userId);
-      return (
-        <Paper
-          key={index}
-          sx={{
-            p: { xs: 2, sm: 3 },
-            mb: { xs: 2, sm: 3 },
-            width: "100%",
-            maxWidth: { xs: "100%", sm: "600px" },
-            borderRadius: "15px",
-            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-            transition: "0.3s",
-            "&:hover": { boxShadow: "0px 6px 15px rgba(0, 0, 0, 0.2)" },
-          }}
-        >
-          {postUser && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-              <Avatar
-                src={postUser.profileImage}
-                sx={{ width: { xs: 35, sm: 50 }, height: { xs: 35, sm: 50 }, cursor: "pointer" }}
-                onClick={() => handleProfile(postUser.id)}
-              />
-              <Typography variant="h6" sx={{ fontSize: { xs: "1rem", sm: "1.2rem" }, fontWeight: "bold" }}>
-                {postUser.name}
-              </Typography>
-            </Box>
-          )}
+                    return (
+                        <Paper
+                            key={index}
+                            sx={{
+                                p: { xs: 2, sm: 3 },
+                                mb: { xs: 2, sm: 3 },
+                                width: "100%",
+                                maxWidth: { xs: "100%", sm: "600px" },
+                                borderRadius: "15px",
+                                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+                                transition: "0.3s",
+                                "&:hover": { boxShadow: "0px 6px 15px rgba(0, 0, 0, 0.2)" },
+                            }}
+                        >
+                            {postUser && (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <Avatar src={postUser.profileImage} sx={{ width: 50, height: 50, cursor: "pointer" }} />
+                                    <Typography variant="h6">{postUser.name}</Typography>
+                                </Box>
+                            )}
 
-          {post.postimg && (
-            <Box
-              sx={{
-                mt: 2,
-                borderRadius: "10px",
-                overflow: "hidden",
-                width: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <img
-                src={post.postimg}
-                alt="Post"
-                style={{
-                  width: "100%",
-                  objectFit: "fill",
-                  borderRadius: "10px",
-                }}
-              />
-            </Box>
-          )}
+                            {post.postimg && (
+                                <Box sx={{ mt: 2, borderRadius: "10px", overflow: "hidden" }}>
+                                    <img src={post.postimg} alt="Post" style={{ width: "100%", borderRadius: "10px" }} />
+                                </Box>
+                            )}
 
-          {post.content && (
-            <Typography sx={{ mt: 2, fontSize: { xs: "14px", sm: "16px" }, lineHeight: "1.4", wordWrap: "break-word", overflowWrap: "break-word" }}>
-              {post.content}
-            </Typography>
-          )}
+                            {post.content && (
+                                <Typography sx={{ mt: 2 }}>{post.content}</Typography>
+                            )}
 
-          <Box sx={{ display: "flex", alignItems: "center", mt: 1, flexWrap: "wrap" }}>
-            <IconButton onClick={() => handleLike(post._id)}>
-              <FavoriteIcon sx={{ color: likedPosts[post._id] ? "red" : "gray" }} />
-            </IconButton>
-            <Typography>{likedPosts[post._id] ? "Liked" : "Like"}</Typography>
-          </Box>
-        </Paper>
-      );
-    })}
+                            {/* Like & Comment Icons */}
+                            <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+                                <IconButton>
+                                    <FavoriteIcon />
+                                </IconButton>
+                                <Typography>{post.likes} Likes</Typography>
+
+                                <IconButton onClick={() => fetchComments(post.postId)}>
+                                    <CommentIcon />
+                                </IconButton>
+                                <Typography>{postComments.length} Comments</Typography>
+                            </Box>
+
+                            {/* Latest Comment */}
+                            {latestComment && !showAll && (
+                                <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                                    <Avatar src={latestComment.userId?.profileImage} sx={{ width: 30, height: 30 }} />
+                                    <Box>
+                                        <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                                            {latestComment.userId?.name}
+                                        </Typography>
+                                        <Typography variant="body2">{latestComment.text}</Typography>
+                                        <Typography variant="caption" color="gray">
+                                            {new Date(latestComment.createdAt).toLocaleString()}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            )}
+
+                            {/* Show More Button */}
+                            {postComments.length > 1 && !showAll && (
+                                <Button size="small" onClick={() => toggleShowMore(post.postId)}>
+                                    Show More Comments
+                                </Button>
+                            )}
+
+                            {/* Show All Comments */}
+                            {showAll && postComments.map((comment, i) => (
+                                <Box key={i} sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
+                                    <Avatar src={comment.userId?.profileImage} sx={{ width: 30, height: 30 }} />
+                                    <Box>
+                                        <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                                            {comment.userId?.name}
+                                        </Typography>
+                                        <Typography variant="body2">{comment.text}</Typography>
+                                        <Typography variant="caption" color="gray">
+                                            {new Date(comment.createdAt).toLocaleString()}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ))}
+
+                            {/* Hide Comments Button */}
+                            {showAll && (
+                                <Button size="small" onClick={() => toggleShowMore(post.postId)}>
+                                    Hide Comments
+                                </Button>
+                            )}
+                        </Paper>
+                    );
+                })}
   </Box>
 
 
