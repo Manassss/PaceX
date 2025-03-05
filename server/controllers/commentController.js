@@ -2,13 +2,13 @@ const Comment = require('../models/Comment');
 
 const addComment = async (req, res) => {
     try {
-        const { userId, postId, text } = req.body;
-
-        if (!userId || !postId || !text) {
+        const { userId, postId, text, username, userimg } = req.body;
+        console.log("add strted", req.body);
+        if (!userId || !postId || !text || !username || !userimg) {
             return res.status(400).json({ message: "userId, postId, and text are required." });
         }
 
-        const newComment = new Comment({ userId, postId, text });
+        const newComment = new Comment({ userId, postId, text, username, userimg });
 
         await newComment.save();
 
@@ -61,5 +61,20 @@ const deleteComment = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+const getCommentsByPostId = async (req, res) => {
+    try {
+        const { postId } = req.params;
 
-module.exports = { deleteComment, editComment, addComment };
+        if (!postId) {
+            return res.status(400).json({ message: "PostId is required." });
+        }
+
+        const comments = await Comment.find({ postId: postId });
+        res.status(200).json({ comments });
+    } catch (err) {
+        console.error("Error fetching comments for post:", err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+module.exports = { deleteComment, editComment, addComment, getCommentsByPostId };

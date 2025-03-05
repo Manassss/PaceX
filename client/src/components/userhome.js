@@ -182,23 +182,32 @@ const UserHome = () => {
     const fetchPosts = async () => {
       try {
         const res = await axios.get('http://localhost:5001/api/posts/all');
-        const transformedPosts = res.data.map(post => ({
-          content: post.content,
-          createdAt: new Date(post.createdAt).toLocaleString(),
-          dislikes: post.dislikes,
-          likes: post.likes,
-          postimg: post.postimg,
-          userId: post.userId,
-          userName: post.userName,
-          postId: post._id,
-        }));
-        setPosts(transformedPosts);
-        console.log(transformedPosts);
+        const postsData = res.data;
+
+        // For each post, fetch its comments and attach them immediately.
+        const postsWithComments = await Promise.all(
+          postsData.map(async (post) => {
+            const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post._id}`);
+            return {
+              content: post.content,
+              createdAt: new Date(post.createdAt).toLocaleString(),
+              dislikes: post.dislikes,
+              likes: post.likes,
+              postimg: post.postimg,
+              userId: post.userId,
+              userName: post.userName,
+              postId: post._id,
+              comments: commentsRes.data  // attach fetched comments
+            };
+          })
+        );
+
+        setPosts(postsWithComments);
+        console.log("postsWithComments", postsWithComments);
       } catch (err) {
         console.error('Error fetching posts:', err);
       }
     };
-
     const fetchUsers = async () => {
       try {
         const res = await axios.get('http://localhost:5001/api/users/all');
@@ -260,18 +269,7 @@ const UserHome = () => {
   };
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        console.log(user?._id)
-        const res = await axios.get(`http://localhost:5001/api/users/${user?._id}`);
-        console.log("Fetched User Profile:", res.data);
-        setUserProfile(res.data);
-      } catch (err) {
-        console.error("Error fetching user profile:", err.message);
-      }
-    };
 
-    fetchUserProfile();
 
     // Dummy data for recommended profiles
     setRecommendedProfiles([
@@ -321,23 +319,32 @@ const UserHome = () => {
   // Fetch comments for a specific post
   const fetchComments = async (postId) => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/comments/${postId}`);
-      setComments((prev) => ({ ...prev, [postId]: res.data }));
+      console.log("Fetching comments for post", postId);
+      const res = await axios.get(`http://localhost:5001/api/comment/${postId}`);
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.postId === postId ? { ...post, comments: res.data } : post
+        )
+      );
     } catch (err) {
-      console.error("🔥 Error fetching comments:", err.response?.data || err.message);
+      console.error("Error fetching comments:", err.response?.data || err.message);
     }
   };
 
 
   // Handle adding a new comment
   const handleAddComment = async (postId) => {
+    console.log("ps", posts)
     if (!newComment[postId]) return;
 
     try {
-      const res = await axios.post("http://localhost:5001/api/comments/add", {
+      console.log(user);
+      const res = await axios.post("http://localhost:5001/api/comment/add", {
         userId: user._id,
         postId: postId,
         text: newComment[postId],
+        username: user?.name,
+        userimg: user?.profileImage
       });
 
       console.log("✅ Comment Added:", res.data);
@@ -658,8 +665,8 @@ const UserHome = () => {
       <Box sx={{ flex: 1, overflowY: "auto", maxHeight: "80vh", padding: { xs: 1, sm: 2 }, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginTop: "2%" }}>
         {posts.map((post, index) => {
           const postUser = users.find((user) => user.id === post.userId);
-          const postComments = comments[post.postId] || [];
-          const latestComment = postComments.length > 0 ? postComments[0] : null;
+          const postComments = post.comments;
+          // const latestComment = postComments.length > 0 ? postComments[0] : null;
           const showAll = expandedPosts[post.postId];
 
           return (
@@ -701,7 +708,7 @@ const UserHome = () => {
                 <IconButton onClick={() => toggleCommentBox(post.postId)}>
                   <CommentIcon />
                 </IconButton>
-                <Typography>{postComments.length} Comments</Typography>
+                <Typography>{post.comments.comments.length} Comments</Typography>
               </Box>
 
               {/* Comment Bar - Visible when clicking comment icon */}
@@ -726,20 +733,35 @@ const UserHome = () => {
               )}
 
               {/* Latest Comment */}
-              {latestComment && !showAll && (
-                <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
-                  <Avatar src={latestComment.userId?.profileImage} sx={{ width: 30, height: 30 }} />
+
+              {post.comments.comments.map((comment) => (
+                <Box
+                  key={comment._id}
+                  sx={{
+                    mt: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <Avatar
+                    src={comment.userimg}
+                    sx={{ width: 30, height: 30 }}
+                  />
                   <Box>
-                    <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                      {latestComment.userId?.name}
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                      {comment.username}
                     </Typography>
-                    <Typography variant="body2">{latestComment.text}</Typography>
+                    <Typography variant="body2">{comment.text}</Typography>
                     <Typography variant="caption" color="gray">
-                      {new Date(latestComment.createdAt).toLocaleString()}
+                      {new Date(comment.createdAt).toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
-              )}
+              ))}
+
+
+
             </Paper>
           );
         })}

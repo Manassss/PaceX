@@ -82,7 +82,7 @@ const commentroutes = require('./routes/commentRoutes');
 app.use('/api/comment', commentroutes);
 
 const communityroutes = require('./routes/communityRoutes');
-app.use('/api/comment', communityroutes);
+app.use('/api/community', communityroutes);
 
 const notificationroutes = require('./routes/notificationRoutes');
 app.use('/api/notify', notificationroutes);

@@ -15,6 +15,10 @@ import Messenger from './components/messenger';
 import BottomNav from './components/BottamNav';
 import { LoadScript } from '@react-google-maps/api';
 import Navbar from './components/navbar';
+import { useAuth } from "./auth/AuthContext";
+import io from 'socket.io-client';
+import { ToastContainer, toast } from 'react-toastify';
+
 
 // Initialize socket connection
 const socket = io("http://localhost:5001", { transports: ["websocket"] });
