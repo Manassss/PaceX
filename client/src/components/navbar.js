@@ -121,50 +121,50 @@ const Navbar = () => {
           }}
           onClick={() => navigate("/userhome")}
         />
-  
+
         {/* Search Bar */}
-        <Box sx={{ width: { xs: "50%", sm: "60%", md: "40%" }, position: "relative"}}>
-        <TextField
-  color="white"
-  fullWidth
-  variant="outlined"
-  placeholder="Search account..."
-  value={searchTerm}
-  onChange={handleSearchChange}
-  sx={{
-    color:"white",
-    backgroundColor:"white",
-    borderRadius: "20px", // Curved corners
-    border: "1px solid black", // Thin black border
-    "& .MuiOutlinedInput-root": {
-      borderRadius: "20px",
-      "& fieldset": { borderColor: "white" },
-      "&:hover fieldset": { borderColor: "white" },
-      "&.Mui-focused fieldset": { borderColor: "white" },
-    },
-  }}
-/>
+        <Box sx={{ width: { xs: "50%", sm: "60%", md: "40%" }, position: "relative" }}>
+          <TextField
+            color="white"
+            fullWidth
+            variant="outlined"
+            placeholder="Search account..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            sx={{
+              color: "white",
+              backgroundColor: "white",
+              borderRadius: "20px", // Curved corners
+              border: "1px solid black", // Thin black border
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "20px",
+                "& fieldset": { borderColor: "white" },
+                "&:hover fieldset": { borderColor: "white" },
+                "&.Mui-focused fieldset": { borderColor: "white" },
+              },
+            }}
+          />
 
           {/* Search Results */}
           {searchTerm && (
-                      <Paper
-                      sx={{
-                        position: "absolute",
-                        width: "100%",
-                        zIndex: 10,
-                        mt: 1,
-                        maxHeight: "150px",
-                        overflowY: "auto",
-                        borderRadius: "15px", // Curved dropdown
-                        backgroundColor: "white", // Slight transparency
-                        backdropFilter: "blur(5px)", // Adds subtle blur effect
-                        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Soft shadow
-                      }}
-                    >
-            <List>
-              {filteredUsers.length > 0 ? (
-  filteredUsers.slice(0, 3).map((user) => ( // Show only 3 results at a time
-    <ListItem button key={user._id} onClick={() => handleProfile(user._id)}>
+            <Paper
+              sx={{
+                position: "absolute",
+                width: "100%",
+                zIndex: 10,
+                mt: 1,
+                maxHeight: "150px",
+                overflowY: "auto",
+                borderRadius: "15px", // Curved dropdown
+                backgroundColor: "white", // Slight transparency
+                backdropFilter: "blur(5px)", // Adds subtle blur effect
+                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Soft shadow
+              }}
+            >
+              <List>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.slice(0, 3).map((user) => ( // Show only 3 results at a time
+                    <ListItem button key={user._id} onClick={() => handleProfile(user.id)}>
 
                       <Avatar src={user.profileImage} sx={{ width: 30, height: 30, mr: 1 }} />
                       <ListItemText primary={user.name} />

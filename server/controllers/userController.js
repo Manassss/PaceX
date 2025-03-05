@@ -224,7 +224,8 @@ const getAllUsers = async (req, res) => {
 const toggleFollow = async (req, res) => {
     try {
         const { userId, targetUserId } = req.body; // userId: who is following, targetUserId: who is being followed
-
+        console.log("user", userId);
+        console.log("tartegt", targetUserId);
         if (!userId || !targetUserId) {
             return res.status(400).json({ message: "User IDs are required" });
         }

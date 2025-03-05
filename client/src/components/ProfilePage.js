@@ -34,6 +34,7 @@ import { signOut } from "firebase/auth";
 import axios from 'axios';
 import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
+import CircularProgress from "@mui/material/CircularProgress";
 
 
 const ProfilePage = () => {
@@ -52,14 +53,38 @@ const ProfilePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const vistinguser = id === user?._id ? false : true;
   const auth = getAuth();
   const userId = id ? id : user?._id;
+  const [isConnected, setIsConnected] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleConnectToggle = async () => {
+    setLoading(true);
+    try {
+      // Simulating API call with a timeout (Replace with actual API request)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Toggle connection state
+      setIsConnected((prev) => !prev);
+      handleFollowToggle(userId);
+    } catch (error) {
+      console.error("Error updating connection:", error);
+    }
+    setLoading(false);
+  };
+
+
 
   useEffect(() => {
+    console.log("id", id);
     if (!userId) return;
     const fetchUserProfile = async () => {
       try {
+
         const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+        console.log(res.data)
+        setIsConnected(res.data.followers.includes(user?._id) ? true : false);
         setUserDetails(res.data);
         setFormData(res.data);
       } catch (err) {
@@ -210,12 +235,13 @@ const ProfilePage = () => {
 
   const handleFollowToggle = async (targetUserId) => {
     try {
-      const response = await fetch('/api/toggleFollow', {
+      console.log(`user id ${user?._id} and targetid ${targetUserId}`);
+      const response = await fetch('http://localhost:5001/api/users/follow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: user?.id, targetUserId }),
+        body: JSON.stringify({ userId: user?._id, targetUserId: targetUserId }),
       });
 
       const data = await response.json();
@@ -239,73 +265,115 @@ const ProfilePage = () => {
         }}
       >
         {/* Left Sidebar - User Info */}
+        {/* Left Sidebar - User Info */}
         <Box
           sx={{
-            width: { xs: "30%", sm: "25%", md: "20%" },
+            width: { xs: "100%", sm: "30%", md: "25%" }, // Full width on very small screens
+            minWidth: "250px", // Prevents sidebar from becoming too narrow
             height: "100vh",
             backgroundColor: "#073574",
             color: "#fff",
-            padding: 3,
+            padding: { xs: 2, sm: 3 }, // Adjust padding for small screens
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             boxShadow: "3px 0px 10px rgba(0, 0, 0, 0.2)",
-            marginTop: "100px",
+            //  position: "fixed", // Keeps sidebar fixed while scrolling
+            top: 0,
+            left: 0,
+            overflowY: "auto", // Prevents content from overflowing,
+            marginTop: '70px'
+
           }}
         >
           {/* Profile Image */}
           <Avatar
             src={userDetails.profileImage}
             sx={{
-              width: 300,
-              height: 300,
+              width: "250px", // Fixed size for consistency
+              height: "250px",
               mb: 2,
               border: "3px solid rgba(255, 255, 255, 0.5)",
+              mt: 5
             }}
           />
-          <Typography
-            variant="h5" // Increased font size
-            sx={{ fontWeight: "bold" }} // Makes it bold
-          >
+          <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "center" }}>
             {userDetails.name || "Your Name"}
           </Typography>
 
-          <Typography
-            variant="body1" // Slightly bigger than "body2"
-            sx={{ opacity: 0.8 }}
-          >
+          <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center" }}>
             {userDetails.bio || "No bio available"}
           </Typography>
 
-
           {/* User Stats */}
-          <Box sx={{ display: "flex", gap: 4, mt: 3, alignItems: "center" }}>
+          <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
             {[
               { label: "Posts", value: posts.length },
               { label: "Followers", value: userDetails.followers?.length || 0 },
               { label: "Following", value: userDetails.following?.length || 0 },
             ].map((item, index) => (
               <Box key={index} textAlign="center">
-                <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                   {item.value}
                 </Typography>
-                <Typography variant="body1" sx={{ fontSize: "16px", opacity: 0.8 }}>
+                <Typography variant="body2" sx={{ fontSize: "14px", opacity: 0.8 }}>
                   {item.label}
                 </Typography>
               </Box>
             ))}
           </Box>
 
-          {/* Edit Profile Button */}
-          <Button
-            variant="contained"
-            color="secondary"
-            sx={{ mt: 8, borderRadius: 2 }}
-            onClick={() => setEditMode(!editMode)}
+          {/* follow and edit Buttons */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              gap: 1.5,
+              mt: 3,
+              width: "100%",
+              justifyContent: "center",
+            }}
           >
-            {editMode ? "Cancel" : "Edit Profile"}
-          </Button>
+            {vistinguser ? <Button
+              variant="contained"
+              sx={{
+                borderRadius: 2,
+                padding: "6px 12px",
+                fontSize: "14px",
+                backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
+                color: isConnected ? "#000" : "#fff",
+                "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
+              }}
+              onClick={handleConnectToggle}
+              disabled={loading}
+            >
+              {loading ? (
+                <CircularProgress size={20} sx={{ color: "inherit" }} />
+              ) : isConnected ? (
+                <>
+                  Following <span style={{ marginLeft: "5px" }}>▼</span>
+                </>
+              ) : (
+                "Connect"
+              )}
+            </Button> : <></>}
 
+            {!vistinguser ?
+              <Button
+                variant="contained"
+                color="secondary"
+                sx={{
+                  borderRadius: 2,
+                  padding: "6px 12px",
+                  fontSize: "14px",
+                }}
+                onClick={() => setEditMode(!editMode)}
+              >
+                {editMode ? "Cancel" : "Edit Profile"}
+              </Button>
+              : <></>}
+
+          </Box>
         </Box>
 
         {/* Right Side - Main Content */}
@@ -367,22 +435,33 @@ const ProfilePage = () => {
           )}
 
           {/* Posts Section */}
-          <Box sx={{ mt: 15 }}>
+          <Box sx={{ mt: 10 }}>
             {posts.length > 0 ? (
-              <Grid container spacing={2}>
+              <Grid container spacing={1.5} sx={{ borderCollapse: "separate", borderSpacing: "4px" }}>
                 {posts.map((post, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
-                    <Box sx={{ width: "100%", height: 250, overflow: "hidden", borderRadius: 2 }}>
+                    <Box
+                      sx={{
+                        width: "100%",
+                        aspectRatio: "3 / 4", // Ensures a square container
+                        overflow: "hidden",
+                        borderRadius: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "#f9f9f9",
+                        border: "1px solid rgba(0, 0, 0, 0.1)", // Subtle border as grid lines
+                        boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Adds a soft shadow for subtle separation
+                      }}
+                    >
                       <img
                         src={post.postimg}
                         alt="Post"
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          gap: "16px",
-                          objectFit: "contain", // Ensures the entire image is visible without being cut
+                          width: "95%",
+                          height: "95%",
+                          objectFit: "cover", // Ensures images fill the square while maintaining aspect ratio
                           borderRadius: "10px",
-                          backgroundColor: "#f9f9f9", // Ensures a neutral background
                         }}
                       />
                     </Box>
