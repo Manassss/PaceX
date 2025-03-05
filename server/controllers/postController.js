@@ -1,5 +1,6 @@
 const Post = require('../models/Post');
 const User = require('../models/Userdetails');
+const Notification = require('../models/Notification')
 
 const createPost = async (req, res) => {
   try {
@@ -36,20 +37,23 @@ const getPosts = async (req, res) => {
 
 //  Like a specific post
 const likePost = async (req, res) => {
-  try {
-    const { postId } = req.params;
-    // Increment the like count for this post
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { $inc: { likes: 1 } },
-      { new: true }
-    );
-    res.status(200).json(updatedPost);
-  } catch (err) {
-    console.error("Error liking post:", err);
-    res.status(500).json({ message: "Server Error" });
+  const { postId, userId } = req.body;
+  const post = await Post.findById(postId);
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
+  if (!post.likes.includes(userId)) {
+    post.likes.push(userId);
+    await post.save();
+
+    // 🔔 Create Notification for Post Owner
+    const notification = new Notification({
+      recipient: post.userId, sender: userId, type: "like", postId
+    });
+    await notification.save();
   }
+  res.json(post);
 };
+
 
 const addComment = async (req, res) => {
   try {
@@ -78,6 +82,11 @@ const addComment = async (req, res) => {
 
     // Save the updated post
     await post.save();
+    const notification = new Notification({
+      recipient: post.userId, sender: userId, type: "comment", postId
+    });
+    await notification.save();
+
 
     res.status(201).json({ message: "Comment added successfully!", post });
   } catch (err) {
@@ -85,4 +94,4 @@ const addComment = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-module.exports = { createPost, getPosts, likePost };
+module.exports = { createPost, getPosts, likePost, addComment };

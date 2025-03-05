@@ -206,6 +206,24 @@ const ProfilePage = () => {
     setOpenPostModal(true);
   };
 
+  const handleFollowToggle = async (targetUserId) => {
+    try {
+      const response = await fetch('/api/toggleFollow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user?.id, targetUserId }),
+      });
+
+      const data = await response.json();
+      alert(data.message); // Show follow/unfollow message
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+
   return (
     <>
       <Container
@@ -402,7 +420,7 @@ const ProfilePage = () => {
         </Box>
 
         {/* Bottom Navigation - Fixed to Bottom */}
-        <Box sx={{
+        {/* <Box sx={{
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -444,7 +462,7 @@ const ProfilePage = () => {
           >
             <HomeIcon fontSize="large" />
           </IconButton>
-        </Box>
+        </Box> */}
       </Container>
 
       {/* Modal for Post Details */}

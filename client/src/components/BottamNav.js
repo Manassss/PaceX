@@ -31,7 +31,7 @@ const BottomNav = () => {
             display: 'flex',
             justifyContent: 'space-around',
             alignItems: 'center',
-            width: '63%', // ✅ Set the navigation width to 50%
+            width: 580, // ✅ Set the navigation width to 50%
             backgroundColor: 'RGBA(0,0,0,1)',
             p: 1,
             borderTop: '1px solid #ccc',

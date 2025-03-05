@@ -15,8 +15,11 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^5.0.1",
+    "react-toast": "^1.0.3",
+    "react-toastify": "^11.0.5",
     "react-webcam": "^7.2.0",
+    "sisteransi": "^1.0.5",
     "socket.io-client": "^4.8.1",
     "use-places-autocomplete": "^4.0.1",
     "web-vitals": "^4.2.4"

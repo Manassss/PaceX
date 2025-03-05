@@ -6,6 +6,7 @@ const socketIO = require("socket.io");  // Import Socket.io
 require("dotenv").config();
 const http = require("http");  // For creating HTTP server
 const app = express();
+const Notification = require("./models/Notification");
 connectDB();
 app.use(cors());
 app.use(express.json());
@@ -18,25 +19,47 @@ const io = require("socket.io")(server, {
 });
 
 io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
+    console.log("✅ User Connected:", socket.id);
 
-    // User joins a private chat room
+    // ✅ JOIN CHAT ROOM
     socket.on("join_room", (room) => {
         socket.join(room);
         console.log(`User joined room: ${room}`);
     });
 
-    // Handle message sending
+    // ✅ HANDLE MESSAGES
     socket.on("send_message", (data) => {
-        console.log("Message sent:", data);
+        console.log("💬 Message Sent:", data);
         io.to(data.roomId).emit("receive_message", data);
     });
 
+    // ✅ HANDLE NOTIFICATIONS
+    socket.on("sendNotification", async ({ recipient, sender, type, postId, messageId }) => {
+        try {
+            // Save to DB (Optional)
+            const newNotification = new Notification({
+                recipient,
+                sender,
+                type,
+                postId,
+                messageId,
+                createdAt: new Date(),
+            });
+            await newNotification.save();
+
+            // Emit notification event to recipient
+            io.emit(`notification-${recipient}`, newNotification);
+            console.log(`📩 Notification sent to user: ${recipient}`);
+        } catch (error) {
+            console.error(" Error sending notification:", error);
+        }
+    });
+
+    // ✅ HANDLE DISCONNECT
     socket.on("disconnect", () => {
-        console.log("User disconnected");
+        console.log(" User Disconnected:", socket.id);
     });
 });
-// Middleware
 
 
 // ✅ Ensure routes are properly mounted
@@ -60,5 +83,8 @@ app.use('/api/comment', commentroutes);
 
 const communityroutes = require('./routes/communityRoutes');
 app.use('/api/comment', communityroutes);
+
+const notificationroutes = require('./routes/notificationRoutes');
+app.use('/api/notify', notificationroutes);
 
 server.listen(PORT, () => console.log(`✅ Server running on Port ${PORT}`));

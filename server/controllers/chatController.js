@@ -1,5 +1,6 @@
 const Chat = require("../models/Chat");
 const User = require('../models/Userdetails')
+const Notification = require('../models/Notification')
 
 // ✅ Send a message (POST)
 const sendMessage = async (req, res) => {
@@ -12,6 +13,11 @@ const sendMessage = async (req, res) => {
 
         const newMessage = new Chat({ senderId, receiverId, text });
         await newMessage.save();
+        console.log("sender", senderId);
+        const notification = new Notification({
+            recipient: receiverId, sender: senderId, type: "message", messageId: newMessage._id
+        });
+        await notification.save();
 
         res.status(201).json({ message: "Message sent successfully", chat: newMessage });
     } catch (error) {
