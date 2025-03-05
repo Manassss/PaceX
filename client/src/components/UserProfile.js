@@ -2,13 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Container, Box, Avatar, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+<<<<<<< HEAD
 import { useAuth } from '../auth/AuthContext';
+
+const UserProfile = () => {
+    const { userId } = useParams(); // Get userId from the URL params
+    const [user, setUser] = useState(null);
+    const [posts, setPosts] = useState([]);
+    const { auth } = useAuth();
+=======
 
 const UserProfile = () => {
     const { userId } = useParams();
     const [user, setUser] = useState(null);
     const [posts, setPosts] = useState([]);
-    const { auth } = useAuth()
+>>>>>>> origin/dev-manas
 
     useEffect(() => {
         // Fetch user profile data
@@ -18,6 +26,30 @@ const UserProfile = () => {
                 console.log('Fetched User Profile:', res.data);
                 setUser(res.data);
             } catch (err) {
+<<<<<<< HEAD
+                console.error('Error fetching user profile:', err.message);
+            }
+        };
+
+        // Fetch posts for the user
+        const fetchUserPosts = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5001/api/posts/user/${userId}`); // Fetch posts by userId
+                const transformedPosts = res.data.map(post => ({
+                    content: post.content,
+                    createdAt: new Date(post.createdAt).toLocaleString(),
+                    dislikes: post.dislikes,
+                    likes: post.likes,
+                    postimg: post.postimg,
+                    userId: post.userId,
+                    userName: post.userName,
+                    postId: post._id, // Now correctly assigned
+                }));
+                console.log('Fetched and Transformed User Posts:', transformedPosts);
+                setPosts(transformedPosts);
+            } catch (err) {
+                console.error('Error fetching posts:', err.message);
+=======
                 console.error('Error fetching user profile:', err.message); // Log the error message
             }
         };
@@ -40,6 +72,7 @@ const UserProfile = () => {
                 setPosts(transformedPosts); // Store the transformed posts in state
             } catch (err) {
                 console.error('Error fetching posts:', err.message); // Log the error message
+>>>>>>> origin/dev-manas
             }
         };
 
@@ -52,7 +85,11 @@ const UserProfile = () => {
             {user && (
                 <Box sx={{ textAlign: 'center', mt: 5 }}>
                     {/* Profile Information */}
+<<<<<<< HEAD
+                    <Avatar src={user.profileImage} sx={{ width: 100, height: 100, margin: '0 auto' }} />
+=======
                     <Avatar src={user.profilePic} sx={{ width: 100, height: 100, margin: '0 auto' }} />
+>>>>>>> origin/dev-manas
                     <Typography variant="h4" sx={{ mt: 2 }}>
                         {user.name}
                     </Typography>
@@ -64,7 +101,11 @@ const UserProfile = () => {
                             <Typography>Posts</Typography>
                         </Box>
                         <Box>
+<<<<<<< HEAD
+                            <Typography variant="h6">{user?.followers.length}</Typography>
+=======
                             <Typography variant="h6">{user.followers.length}</Typography>
+>>>>>>> origin/dev-manas
                             <Typography>Followers</Typography>
                         </Box>
                         <Box>
@@ -76,8 +117,13 @@ const UserProfile = () => {
                     {/* Posts Section */}
                     <Box sx={{ mt: 4 }}>
                         <Typography variant="h5">Posts</Typography>
+<<<<<<< HEAD
+                        {posts.map((post) => (
+                            <Paper key={post.postId} sx={{ p: 2, mb: 2 }}>
+=======
                         {posts.map((post, index) => (
                             <Paper key={index} sx={{ p: 2, mb: 2 }}>
+>>>>>>> origin/dev-manas
                                 <Typography variant="h6">{post.userName}</Typography>
                                 {/* Display Post Image */}
                                 {post.postimg && <img src={post.postimg} alt="Post" style={{ width: '100%' }} />}

@@ -31,13 +31,13 @@ const BottomNav = () => {
             display: 'flex',
             justifyContent: 'space-around',
             alignItems: 'center',
-            width: 580, // ✅ Set the navigation width to 50%
+            width: '30.5%', // ✅ Set the navigation width to 50%
             backgroundColor: 'RGBA(0,0,0,1)',
             p: 1,
             borderTop: '1px solid #ccc',
             boxShadow: 3,
             position: 'fixed',
-            bottom: 30,
+            bottom: 0,
             left: '50%', // ✅ Start positioning from center
             transform: 'translateX(-50%)', // ✅ Center the box perfectly
             borderRadius: '5px' // Optional: Adds rounded edges,

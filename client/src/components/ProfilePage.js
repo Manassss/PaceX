@@ -33,6 +33,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { signOut } from "firebase/auth";
 import axios from 'axios';
 import CameraCapture from './CameraComponent';
+import Navbar from "../components/navbar"; // Import Navbar
+
 
 const ProfilePage = () => {
   const [userDetails, setUserDetails] = useState({});
@@ -227,104 +229,108 @@ const ProfilePage = () => {
   return (
     <>
       <Container
+        maxWidth={false}
+        disableGutters
         sx={{
-          width: 600,
-          height: 800,
-          margin: '50px auto',
-          backgroundColor: '#fff',
-          borderRadius: 3,
-          position: 'relative',
-          overflow: 'hidden',
-          p: 2,
-          border: '2px solid #ccc'
+          display: "flex",
+          height: "100vh",
+          overflow: "hidden",
+          backgroundColor: "#f9f9f9",
         }}
       >
-        {/* Top Section: Logout & Settings */}
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <IconButton onClick={handleLogout} color="secondary">
-            <LogoutIcon />
-          </IconButton>
-          <IconButton onClick={() => setEditMode(!editMode)} color="primary">
-            <SettingsIcon />
-          </IconButton>
+        {/* Left Sidebar - User Info */}
+        <Box
+          sx={{
+            width: { xs: "30%", sm: "25%", md: "20%" },
+            height: "100vh",
+            backgroundColor: "#073574",
+            color: "#fff",
+            padding: 3,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            boxShadow: "3px 0px 10px rgba(0, 0, 0, 0.2)",
+            marginTop: "100px",
+          }}
+        >
+          {/* Profile Image */}
+          <Avatar
+            src={userDetails.profileImage}
+            sx={{
+              width: 300,
+              height: 300,
+              mb: 2,
+              border: "3px solid rgba(255, 255, 255, 0.5)",
+            }}
+          />
+          <Typography
+            variant="h5" // Increased font size
+            sx={{ fontWeight: "bold" }} // Makes it bold
+          >
+            {userDetails.name || "Your Name"}
+          </Typography>
+
+          <Typography
+            variant="body1" // Slightly bigger than "body2"
+            sx={{ opacity: 0.8 }}
+          >
+            {userDetails.bio || "No bio available"}
+          </Typography>
+
+
+          {/* User Stats */}
+          <Box sx={{ display: "flex", gap: 4, mt: 3, alignItems: "center" }}>
+            {[
+              { label: "Posts", value: posts.length },
+              { label: "Followers", value: userDetails.followers?.length || 0 },
+              { label: "Following", value: userDetails.following?.length || 0 },
+            ].map((item, index) => (
+              <Box key={index} textAlign="center">
+                <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+                  {item.value}
+                </Typography>
+                <Typography variant="body1" sx={{ fontSize: "16px", opacity: 0.8 }}>
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Edit Profile Button */}
+          <Button
+            variant="contained"
+            color="secondary"
+            sx={{ mt: 8, borderRadius: 2 }}
+            onClick={() => setEditMode(!editMode)}
+          >
+            {editMode ? "Cancel" : "Edit Profile"}
+          </Button>
+
         </Box>
 
-        <Box display="flex" flexDirection="column" alignItems="center">
-          {/* Profile Image: In edit mode, wrapped in a label; in view mode, clicking opens stories.
-              If there are user stories, add a glowing border */}
-          {editMode ? (
-            <label htmlFor="file-input">
-              <Avatar
-                src={formData.profileImage || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"}
-                sx={{ width: 100, height: 100, mb: 2, cursor: 'pointer' }}
-              />
-            </label>
-          ) : (
-            <IconButton onClick={handleStoriesClick} sx={{ p: 0 }}>
-              <Avatar
-                src={formData.profileImage || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"}
-                sx={{
-                  width: 100,
-                  height: 100,
-                  mb: 2,
-                  ...(userStories.length > 0 && {
-                    border: '3px solid #ff4500',
-                    boxShadow: '0 0 10px 2px #ff9800'
-                  })
-                }}
-              />
-            </IconButton>
-          )}
-          {editMode && (
-            <>
-              <input
-                id="file-input"
-                type="file"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  size="small"
-                  sx={{ textTransform: 'none', borderRadius: 2 }}
-                  onClick={handleImageUpload}
-                >
-                  Upload Image
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  size="small"
-                  sx={{ textTransform: 'none', borderRadius: 2 }}
-                  onClick={() => setOpenCamera(true)}
-                >
-                  Open Camera
-                </Button>
-              </Box>
-            </>
-          )}
+        {/* Right Side - Main Content */}
+        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
+          {/* Navbar at the Top */}
+          <Navbar />
 
-          {/* Profile Info / Settings Form */}
-          {editMode ? (
+          {/* Profile Edit Section */}
+          {editMode && (
             <Paper
               sx={{
                 p: 3,
-                mt: 2,
-                backgroundColor: '#e3f2fd',
+                mt: 15,
+                backgroundColor: "#e3f2fd",
                 borderRadius: 2,
                 boxShadow: 3,
-                width: '100%'
               }}
             >
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
+              <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
                 Edit Profile
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <TextField
                   name="username"
-                  value={formData.username || ''}
+                  value={formData.username || ""}
                   onChange={handleChange}
                   label="Username"
                   variant="outlined"
@@ -332,7 +338,7 @@ const ProfilePage = () => {
                 />
                 <TextField
                   name="name"
-                  value={formData.name || ''}
+                  value={formData.name || ""}
                   onChange={handleChange}
                   label="Full Name"
                   variant="outlined"
@@ -340,7 +346,7 @@ const ProfilePage = () => {
                 />
                 <TextField
                   name="bio"
-                  value={formData.bio || ''}
+                  value={formData.bio || ""}
                   onChange={handleChange}
                   label="Bio"
                   variant="outlined"
@@ -351,118 +357,45 @@ const ProfilePage = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  sx={{ mt: 2, textTransform: 'none', borderRadius: 2, width: '100%' }}
+                  sx={{ mt: 2, borderRadius: 2 }}
                   onClick={handleSave}
                 >
                   Save Changes
                 </Button>
               </Box>
             </Paper>
-          ) : (
-            <>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                {userDetails.username || ''}
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                {userDetails.name || 'Your Name'}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                {userDetails.bio || ''}
-              </Typography>
-            </>
           )}
+
+          {/* Posts Section */}
+          <Box sx={{ mt: 15 }}>
+            {posts.length > 0 ? (
+              <Grid container spacing={2}>
+                {posts.map((post, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Box sx={{ width: "100%", height: 250, overflow: "hidden", borderRadius: 2 }}>
+                      <img
+                        src={post.postimg}
+                        alt="Post"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          gap: "16px",
+                          objectFit: "contain", // Ensures the entire image is visible without being cut
+                          borderRadius: "10px",
+                          backgroundColor: "#f9f9f9", // Ensures a neutral background
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Typography variant="body2" sx={{ textAlign: "center", color: "gray", fontStyle: "italic" }}>
+                No Posts Available
+              </Typography>
+            )}
+          </Box>
         </Box>
-
-        {/* User Stats */}
-        <Box sx={{ display: 'flex', gap: 3, mt: 3, justifyContent: 'center' }}>
-          <Typography variant="body2">Posts: {posts.length}</Typography>
-          <Typography variant="body2">Followers: {userDetails.followers?.length || 0}</Typography>
-          <Typography variant="body2">Following: {userDetails.following?.length || 0}</Typography>
-        </Box>
-
-        {/* Posts Grid */}
-        <Box sx={{ mt: 5, pt: 3, px: 2, flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
-          {posts.length > 0 ? (
-            <Grid container spacing={3}>
-              {posts.map((post, index) => (
-                <Grid item xs={12} sm={6} md={4} key={index}>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      backgroundColor: 'transparent',
-                      borderRadius: 2,
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => {
-                      setSelectedPost(post);
-                      setOpenPostModal(true);
-                    }}
-                  >
-                    {post.postimg && (
-                      <Box sx={{ mb: 2 }}>
-                        <img
-                          src={post.postimg}
-                          alt="Post"
-                          style={{ width: '100%', height: '150px', objectFit: 'cover' }}
-                        />
-                      </Box>
-                    )}
-                    <Typography variant="body2">{post.content}</Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Typography variant="body2" sx={{ textAlign: 'center', color: 'gray', fontStyle: 'italic' }}>
-              No Posts Available
-            </Typography>
-          )}
-        </Box>
-
-        {/* Bottom Navigation - Fixed to Bottom */}
-        {/* <Box sx={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          p: 1,
-          borderTop: '1px solid #ccc'
-        }}>
-          <IconButton onClick={() => handleProfile(user?._id)}>
-            <Avatar src={user?.profileImage} sx={{ width: 50, height: 50, borderRadius: '50%' }} />
-          </IconButton>
-
-          <IconButton onClick={handleAddpost}
-            sx={{
-              bgcolor: '#ff4500',
-              color: 'white',
-              width: 50,
-              height: 50,
-              borderRadius: '50%',
-              boxShadow: 3
-            }}>
-            <AddIcon sx={{ fontSize: 30 }} />
-          </IconButton>
-
-          <IconButton
-            onClick={handleHomeClick}
-            sx={{
-              backgroundColor: '#ff9800',
-              color: 'white',
-              borderRadius: '50%',
-              width: 50,
-              height: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <HomeIcon fontSize="large" />
-          </IconButton>
-        </Box> */}
       </Container>
 
       {/* Modal for Post Details */}
