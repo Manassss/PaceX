@@ -31,34 +31,41 @@ const AddPost = () => {
   const { user } = useAuth();
 
   const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
-
-  const handleImageUpload = async () => {
-    if (!selectedFile) {
-      alert("Please select an image or video first!");
-      return;
+    const file = event.target.files[0];
+    setSelectedFile(file);
+    
+    if (file) {
+      handleImageUpload(file);
     }
-    const storageRef = ref(storage, `postPictures/${user?._id}/${selectedFile.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, selectedFile);
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        console.log(`Upload progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%`);
-      },
-      (error) => {
-        console.error("Upload error:", error);
-        alert("Upload failed. Check Firebase Storage permissions.");
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        console.log("Downloaded URL:", downloadURL);
-        setPostimg(downloadURL);
-        alert("File uploaded successfully!");
-      }
-    );
   };
+  
+ const handleImageUpload = async (file) => {
+  if (!file) {
+    alert("Please select an image or video first!");
+    return;
+  }
+  const storageRef = ref(storage, `postPictures/${user?._id}/${file.name}`);
+  const uploadTask = uploadBytesResumable(storageRef, file);
+
+  uploadTask.on(
+    "state_changed",
+    (snapshot) => {
+      console.log(`Upload progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%`);
+    },
+    (error) => {
+      console.error("Upload error:", error);
+      alert("Upload failed. Check Firebase Storage permissions.");
+    },
+    async () => {
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+      console.log("Downloaded URL:", downloadURL);
+      setPostimg(downloadURL);
+      alert("File uploaded successfully!");
+    }
+  );
+};
+
+  
 
   const handleSubmit = async () => {
     try {
@@ -71,6 +78,8 @@ const AddPost = () => {
       console.log('Post Data:', postData);
       await axios.post('http://localhost:5001/api/posts/add', postData);
       alert('Post created successfully!');
+      setContent('');
+      setPostimg('');
       navigate('/userhome');
     } catch (err) {
       console.error('Error creating post:', err.response?.data || err.message);
@@ -90,76 +99,79 @@ const AddPost = () => {
         padding: 2,
         borderRadius: 3,
         boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-        background: "#fff",
+        background: "#eddecf",
         margin: "auto",
         mt: 3,
+        
       }}
     >
-      <Typography variant="h6" align="center" sx={{ fontWeight: 'bold' }}>
+      <Typography variant="h6" align="center" sx={{ fontWeight: 'bold', color:'black' }}>
         Create a New Post
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {/* Text Input */}
         <TextField
-          label="What's on your mind?"
-          variant="outlined"
-          multiline
-          rows={1}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          fullWidth
-          required
+  sx={{
+    backgroundColor: '#f8f2ec', 
+    borderRadius: '30px',       
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: '#f8f2ec',  
+      border: 'none',               
+      boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',  
+      '& fieldset': {
+        border: 'none',             
+      },
+      paddingRight: '50px'
+    },
+    '& .MuiInputLabel-root': {
+      color: '#000', 
+    },
+  }}
+  label="What's on your mind?"
+  variant="outlined"
+  multiline
+  rows={1}
+  value={content}
+  onChange={(e) => setContent(e.target.value)}
+  fullWidth
+  InputProps={{
+    endAdornment: (
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        
+        {/* Choose a File Button */}
+        <Input
+          type="file"
+          onChange={handleFileChange}
+          sx={{ display: 'none' }}
+          id="upload-file"
+          inputProps={{ accept: "image/*,video/*" }}
         />
-
-        {/* File Upload, Camera, Upload & Post Buttons - Next to Each Other */}
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center", alignItems: "center", mt: 1 }}>
-          
-          {/* Choose a File Button */}
-          <Input
-            type="file"
-            onChange={handleFileChange}
-            sx={{ display: 'none' }}
-            id="upload-file"
-            inputProps={{ accept: "image/*,video/*" }}
-          />
-          <label htmlFor="upload-file">
-            <Tooltip title="Choose a File">
-              <IconButton component="span" color="primary">
-                <ImageIcon />
-              </IconButton>
-            </Tooltip>
-          </label>
-
-          {/* Open Camera Button */}
-          <Tooltip title="Open Camera">
-            <IconButton color="secondary" onClick={() => setOpenCamera(true)}>
-              <PhotoCameraIcon />
+        <label htmlFor="upload-file">
+          <Tooltip title="Choose a File">
+            <IconButton component="span" color="primary">
+              <ImageIcon />
             </IconButton>
           </Tooltip>
+        </label>
 
-          {/* Upload File Button */}
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<UploadIcon />}
-            onClick={handleImageUpload}
-          >
-            Upload
-          </Button>
+        {/* Open Camera Button */}
+        <Tooltip title="Open Camera">
+          <IconButton color="secondary" onClick={() => setOpenCamera(true)}>
+            <PhotoCameraIcon />
+          </IconButton>
+        </Tooltip>
 
-          {/* Post Button */}
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SendIcon />}
-            sx={{ fontSize: 12, padding: "12px 24px" }}
-            onClick={handleSubmit}
-          >
-            Post
-          </Button>
-
-        </Box>
+        {/* Post Button */}
+        <Tooltip title="Post">
+          <IconButton color="primary" onClick={handleSubmit}>
+            <SendIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    ),
+  }}
+/>
 
         {/* Preview Selected Image with Close Button */}
         {postimg && (

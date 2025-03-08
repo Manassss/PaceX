@@ -7,6 +7,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from '../firebase'; // ✅ Firebase storage import
 import Navbar from './navbar';
 import { useAuth } from '../auth/AuthContext';
+import Logo from '../assets/PACE.png';
 
 const Marketplace = () => {
     const [listings, setListings] = useState([]);
@@ -108,12 +109,24 @@ const Marketplace = () => {
                 paddingTop: '110px',
             }}
         >
-            {/* Marketplace Heading */}
-            <Box display="flex" justifyContent="center" alignItems="center" mb={4}>
-                <Typography variant="h3" fontWeight="bold" color="#333">
-                    🛍️ Marketplace
-                </Typography>
-            </Box>
+{/* Marketplace Heading */}
+<Box display="flex" justifyContent="center" alignItems="center" mb={4}>
+<Typography variant="h3" fontWeight="bold" color="#333">
+         Pace
+        </Typography>
+    <Box display="flex" alignItems="center" justifyContent="center">
+        <img 
+            src={Logo} 
+            alt="Marketplace Logo" 
+            style={{ height: "60px", width: "auto", marginRight: "3px", justifyContent:"center", alignItems:"center" }} // ✅ Ensure visibility
+        />
+        <Typography variant="h3" fontWeight="bold" color="#333">
+         Marketplace
+        </Typography>
+    </Box>
+</Box>
+
+
 
             {/* Add Item Button */}
             <Box display="flex" justifyContent="center" mb={4}>
@@ -127,6 +140,7 @@ const Marketplace = () => {
                         fontSize: '16px',
                         borderRadius: 3,
                         boxShadow: '0px 5px 15px rgba(255, 111, 97, 0.3)',
+                    
                     }}
                 >
                     + Add Item
@@ -135,20 +149,123 @@ const Marketplace = () => {
 
             {/* Upload Item Modal */}
             <Modal open={openModal} onClose={() => setOpenModal(false)}>
-                <Container maxWidth="sm">
-                    <Paper elevation={3} sx={{ p: 4, mt: 5, borderRadius: 3, backgroundColor: '#fff' }}>
-                        <Typography variant="h5" gutterBottom>Sell an Item</Typography>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField label="Item Name" name="itemName" onChange={handleChange} required />
-                            <TextField label="Description" name="description" multiline rows={3} onChange={handleChange} required />
-                            <TextField label="Price" name="price" type="number" onChange={handleChange} required />
-                            <TextField label="Address" name="address" onChange={handleChange} required />
-                            <input type="file" onChange={handleFileChange} required />
-                            <Button variant="contained" type="submit">Upload & Submit</Button>
-                        </Box>
-                    </Paper>
-                </Container>
-            </Modal>
+    <Container maxWidth="sm">
+        <Paper 
+            elevation={5} 
+            sx={{ 
+                p: 4, 
+                mt: "50%", 
+                borderRadius: 3, 
+                bgcolor: "white", 
+                boxShadow: "0px 10px 30px rgba(0,0,0,0.2)" 
+            }}
+        >
+            <Typography variant="h5" fontWeight="bold" textAlign="center" gutterBottom>
+                Sell an Item
+            </Typography>
+
+            <Box 
+                component="form" 
+                onSubmit={handleSubmit} 
+                sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+            >
+                <TextField 
+                    label="Item Name" 
+                    name="itemName" 
+                    onChange={handleChange} 
+                    required 
+                    fullWidth 
+                    sx={{ borderRadius: 2, bgcolor: "#f7f7f7" }}
+                />
+                
+                <TextField 
+                    label="Description" 
+                    name="description" 
+                    multiline rows={3} 
+                    onChange={handleChange} 
+                    required 
+                    fullWidth 
+                    sx={{ borderRadius: 2, bgcolor: "#f7f7f7" }}
+                />
+                
+                <TextField 
+                    label="Price ($)" 
+                    name="price" 
+                    type="number" 
+                    onChange={handleChange} 
+                    required 
+                    fullWidth 
+                    sx={{ borderRadius: 2, bgcolor: "#f7f7f7" }}
+                />
+                
+                <TextField 
+                    label="Address" 
+                    name="address" 
+                    onChange={handleChange} 
+                    required 
+                    fullWidth 
+                    sx={{ borderRadius: 2, bgcolor: "#f7f7f7" }}
+                />
+
+                {/* File Upload Input with Image Preview */}
+                <Box 
+                    sx={{ 
+                        display: "flex", 
+                        flexDirection: "column", 
+                        alignItems: "center", 
+                        gap: 2, 
+                        mt: 2 
+                    }}
+                >
+                    <Button
+                        variant="outlined"
+                        component="label"
+                        sx={{
+                            width: "100%",
+                            color: "#073574",
+                            borderColor: "#073574",
+                            "&:hover": { backgroundColor: "#073574", color: "white" }
+                        }}
+                    >
+                        Upload Image
+                        <input 
+                            type="file" 
+                            onChange={handleFileChange} 
+                            hidden 
+                            accept="image/*"
+                            required 
+                        />
+                    </Button>
+
+                    {/* Image Preview */}
+                    {selectedFile && (
+                        <img 
+                            src={URL.createObjectURL(selectedFile)} 
+                            alt="Preview" 
+                            style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "10px" }} 
+                        />
+                    )}
+                </Box>
+
+                {/* Submit Button */}
+                <Button 
+                    variant="contained" 
+                    type="submit" 
+                    fullWidth 
+                    sx={{ 
+                        mt: 2, 
+                        borderRadius: 2, 
+                        backgroundColor: "#e65a50", 
+                        "&:hover": { backgroundColor: "#c44a3d" } 
+                    }}
+                >
+                    Upload & Submit
+                </Button>
+            </Box>
+        </Paper>
+    </Container>
+</Modal>
+
 
             {/* Grid Layout for Listings */}
             <Grid container spacing={4}>

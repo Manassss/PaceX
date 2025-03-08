@@ -1,2 +1,4 @@
 node_modules/
 routes/notificationRoutes 2.js
+# Ignore all Firebase key files
+*.json

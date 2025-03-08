@@ -121,50 +121,50 @@ const Navbar = () => {
           }}
           onClick={() => navigate("/userhome")}
         />
-  
+
         {/* Search Bar */}
-        <Box sx={{ width: { xs: "50%", sm: "60%", md: "40%" }, position: "relative"}}>
-        <TextField
-  color="white"
-  fullWidth
-  variant="outlined"
-  placeholder="Search account..."
-  value={searchTerm}
-  onChange={handleSearchChange}
-  sx={{
-    color:"white",
-    backgroundColor:"white",
-    borderRadius: "20px", // Curved corners
-    border: "1px solid black", // Thin black border
-    "& .MuiOutlinedInput-root": {
-      borderRadius: "20px",
-      "& fieldset": { borderColor: "white" },
-      "&:hover fieldset": { borderColor: "white" },
-      "&.Mui-focused fieldset": { borderColor: "white" },
-    },
-  }}
-/>
+        <Box sx={{ width: { xs: "50%", sm: "60%", md: "40%" }, position: "relative" }}>
+          <TextField
+            color="white"
+            fullWidth
+            variant="outlined"
+            placeholder="Search account..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            sx={{
+              color: "white",
+              backgroundColor: "white",
+              borderRadius: "20px", // Curved corners
+              border: "1px solid black", // Thin black border
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "20px",
+                "& fieldset": { borderColor: "white" },
+                "&:hover fieldset": { borderColor: "white" },
+                "&.Mui-focused fieldset": { borderColor: "white" },
+              },
+            }}
+          />
 
           {/* Search Results */}
           {searchTerm && (
-                      <Paper
-                      sx={{
-                        position: "absolute",
-                        width: "100%",
-                        zIndex: 10,
-                        mt: 1,
-                        maxHeight: "150px",
-                        overflowY: "auto",
-                        borderRadius: "15px", // Curved dropdown
-                        backgroundColor: "white", // Slight transparency
-                        backdropFilter: "blur(5px)", // Adds subtle blur effect
-                        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Soft shadow
-                      }}
-                    >
-            <List>
-              {filteredUsers.length > 0 ? (
-  filteredUsers.slice(0, 3).map((user) => ( // Show only 3 results at a time
-    <ListItem button key={user._id} onClick={() => handleProfile(user._id)}>
+            <Paper
+              sx={{
+                position: "absolute",
+                width: "100%",
+                zIndex: 10,
+                mt: 1,
+                maxHeight: "150px",
+                overflowY: "auto",
+                borderRadius: "15px", // Curved dropdown
+                backgroundColor: "white", // Slight transparency
+                backdropFilter: "blur(5px)", // Adds subtle blur effect
+                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Soft shadow
+              }}
+            >
+              <List>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.slice(0, 3).map((user) => ( // Show only 3 results at a time
+                    <ListItem button key={user._id} onClick={() => handleProfile(user.id)}>
 
                       <Avatar src={user.profileImage} sx={{ width: 30, height: 30, mr: 1 }} />
                       <ListItemText primary={user.name} />
@@ -218,12 +218,45 @@ const Navbar = () => {
             />
           </Box>
 
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-            <MenuItem onClick={() => navigate(`/profile/${user?._id}`)}>Profile</MenuItem>
-            <MenuItem onClick={() => navigate("/saved")}>Saved Posts</MenuItem>
-            <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
-            <MenuItem onClick={() => navigate("/logout")}>Logout</MenuItem>
-          </Menu>
+          <Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={handleClose}
+  sx={{
+    "& .MuiPaper-root": {
+      backgroundColor: " #f8f2ec", // Background color of menu
+      borderRadius: "10px",
+      color: "#073574", // Text color
+      boxShadow: "0px 4px 10px rgba(0,0,0,0.3)", // Shadow effect
+      minWidth: "200px",
+    },
+  }}
+>
+  {[
+    { label: "Profile", path: `/profile/${user?._id}` },
+    { label: "Saved Posts", path: "/saved" },
+    { label: "Settings", path: "/settings" },
+    { label: "Logout", path: "/home" },
+  ].map((item, index) => (
+    <MenuItem
+      key={index}
+      onClick={() => navigate(item.path)}
+      sx={{
+        fontSize: "16px",
+        fontWeight: "500",
+        padding: "12px 20px",
+        transition: "0.3s",
+        "&:hover": {
+          backgroundColor: "#0a4a8c", // Hover color
+          color: "#fff",
+        },
+      }}
+    >
+      {item.label}
+    </MenuItem>
+  ))}
+</Menu>
+
         </Box>
       </Toolbar>
     </AppBar>

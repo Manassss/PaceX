@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Box, TextField, Button, Typography, Paper, List, ListItem, ListItemText, Container } from '@mui/material';
+import { Box, TextField, Button, Typography, List, ListItem, ListItemText, Container } from '@mui/material';
 import io from 'socket.io-client';
 import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
-import { Send } from '@mui/icons-material'; // Importing the Send icon
-
+import { Send } from '@mui/icons-material';
 
 const socket = io("http://localhost:5001", {
     transports: ["websocket", "polling"],
@@ -12,8 +11,8 @@ const socket = io("http://localhost:5001", {
 });
 
 const Chatbox = ({ userId, username }) => {
-    const { user } = useAuth();  // Get the logged-in user
-    const [message, setMessage] = useState('');
+    const { user } = useAuth();
+    const [message, setMessage] = useState("");
     const [chatHistory, setChatHistory] = useState([]);
 
     useEffect(() => {
@@ -27,7 +26,7 @@ const Chatbox = ({ userId, username }) => {
         });
 
         if (user && user._id) {
-            const roomId = [user._id, userId].sort().join("_");  // Unique Room ID for 1-on-1 chat
+            const roomId = [user._id, userId].sort().join("_");
             socket.emit('join_room', roomId);
         }
 
@@ -39,17 +38,18 @@ const Chatbox = ({ userId, username }) => {
         return () => {
             socket.off('receive_message');
         };
-    }, [user, userId]);
+    }, [userId, username]);
 
     const sendMessage = () => {
-        if (!message.trim()) return;
+        if (!message || typeof message !== "string" || message.trim() === "") return;
 
-        const roomId = [user._id, userId].sort().join("_"); 
+        const roomId = [user._id, userId].sort().join("_");
+
         const messageData = {
             senderId: user._id,
             senderName: user.name,
             receiverId: userId,
-            text: message,
+            text: message.trim(),
             roomId
         };
 
@@ -74,7 +74,7 @@ const Chatbox = ({ userId, username }) => {
             const postData = {
                 senderId: user._id,
                 receiverId: userId,
-                text: message,
+                text: message.trim(),
             };
             await axios.post('http://localhost:5001/api/chat/send', postData);
         } catch (err) {
@@ -83,95 +83,99 @@ const Chatbox = ({ userId, username }) => {
     };
 
     return (
-<Container
-    maxWidth="lg"
-    sx={{
-        height: '90vh',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 2,
-        boxShadow: 2,
-        p: 1,
-    }}
->
-    {/* Chat History List */}
-    <List
-        sx={{
-            flexGrow: 1, // Expands to take available space
-            maxHeight: '65%', // Ensures it does not overlap input field
-            overflowY: 'auto', // Enables scrolling
-            mb: 2, // Adds space before input
-        }}
-    >
-        {chatHistory.map((msg, index) => (
-            <ListItem
-                key={index}
-                sx={{
-                    justifyContent: msg.senderId === user._id ? 'flex-end' : 'flex-start',
-                    mb: 1,
-                }}
-            >
-                <ListItemText
-                    primary={msg.text}
-                    sx={{
-                        bgcolor: msg.senderId === user._id ? '#f8f2ec' : '#073574',
-                        color: msg.senderId === user._id ? 'black' : 'white',
-                        borderRadius: 2,
-                        p: 1,
-                        maxWidth: '50%',
-                        boxShadow: 1,
-                    }}
-                />
-            </ListItem>
-        ))}
-    </List>
-
-    {/* Fixed Message Input Section */}
-    <Box
-        sx={{
-            display: "flex",
-            position: "fixed", // Fixed positioning for input box
-            bottom: 10, // Adjust this value for spacing above the bottom
-            right: "-8%",
-            transform: "translateX(-50%)", // Centering horizontally
-            width: "20%", // Adjust input box width
-            p: 1,
-        }}
-    >
-        <TextField
-            fullWidth
-            placeholder="Type your message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            size="small"
+        <Container
+            maxWidth="lg"
             sx={{
-                backgroundColor: 'white',
-                borderRadius: 50, // Fully rounded input
-                '& .MuiInputBase-root': { borderRadius: 50 },
-                '& .MuiInputBase-input': {
-                    padding: '12px 15px',
-                },
-            }}
-        />
-        <Button
-            onClick={sendMessage}
-            sx={{
-                minWidth: 0,
-                p: 1.5,
-                borderRadius: '50%', // Circular button
-                bgcolor: "#2196F3",
-                color: "white",
-                ml: -5, // Moves button inside the input field
-                ':hover': { bgcolor: "#1976D2" },
+                height: "80vh",
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: 2,
+                boxShadow: 2,
+                p: 1,
+                width: '100%',
+                background: "#f8f2ec",
+                overflow: 'hidden',
             }}
         >
-            <Send />
-        </Button>
-    </Box>
-</Container>
+                {/* Chat History List */}
+                <List
+                    sx={{
+                        flexGrow: 1,
+                        overflowY: 'auto',
+                        maxHeight: "calc(100% - 60px)", // Leaves space for input
+                        "&::-webkit-scrollbar": { display: "none" }
+                    }}
+                >
+                    {chatHistory.map((msg, index) => (
+                        <ListItem
+                            key={index}
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: msg.senderId === user._id ? "flex-end" : "flex-start",
+                                width: "100%",
+                                mb: 1,
+                            }}
+                        >
+                            {/* Chat Bubble */}
+                            <Box
+                                sx={{
+                                    backgroundColor: msg.senderId === user._id ? "#fff" : "#073574",
+                                    color: msg.senderId === user._id ? "black" : "white",
+                                    borderRadius: "12px",
+                                    padding: "10px 15px",
+                                    maxWidth: "65%",
+                                    boxShadow: 1,
+                                    textAlign: "left",
+                                }}
+                            >
+                                <Typography>{msg.text}</Typography>
+                            </Box>
+                        </ListItem>
+                    ))}
+                </List>
 
+                {/* ✅ SINGLE FIXED MESSAGE INPUT AT BOTTOM */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        width: "100%",
+                        paddingTop: "10px",
+                    }}
+                >
+                   <TextField
+    fullWidth
+    placeholder="Type your message..."
+    value={message}
+    onChange={(e) => setMessage(e.target.value)}
+    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+    size="small"
+    variant="outlined" // ✅ Changed from "standard" to "outlined"
+    sx={{
+        backgroundColor: 'white',
+        borderRadius: 50,
+        '& fieldset': { border: 'none' }, // ✅ Removes the thin line
+        '& .MuiInputBase-input': { padding: '12px 15px' },
+    }}
+/>
 
+                    <Button
+                        onClick={sendMessage}
+                        sx={{
+                            minWidth: 0,
+                            p: 1.5,
+                            borderRadius: '50%',
+                            bgcolor: "#073574",
+                            color: "white",
+                            ml: 1,
+                            ':hover': { bgcolor: "#1976D2" },
+                        }}
+                    >
+                        <Send />
+                    </Button>
+                </Box>
+        </Container>
     );
 };
 
