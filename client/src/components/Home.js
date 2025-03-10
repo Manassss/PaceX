@@ -27,7 +27,7 @@ const Home = () => {
     width: "80px",
     height: "auto",
     borderRadius: "50%", // Make it circular
-    boxShadow: "0 4px 8px rgba(0,0,0,0.3)", // Add shadow for better visibility
+    boxShadow: "0 4px 8px rgba(0,0,0,0.2)", // Add shadow for better visibility
     zIndex: 10, // Ensure it's above other elements
   };
 
@@ -42,7 +42,7 @@ const Home = () => {
     textDecoration: "none",
     padding: "8px 16px",
     borderRadius: "4px",
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.2)",
     transition: "background-color 0.3s",
     zIndex: 10,
   };

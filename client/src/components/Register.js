@@ -19,7 +19,7 @@ const StyledTextField = styled(TextField)({
       borderColor: 'transparent',
     },
     '&:hover fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.3)',
+      borderColor: 'rgba(255, 255, 255, 0.2)',
     },
     '&.Mui-focused fieldset': {
       borderColor: 'rgba(255, 255, 255, 0.5)',
@@ -154,7 +154,7 @@ const Register = () => {
             <Box
                 sx={{
                     width: '447px',
-                    height: '612px',
+                    height: '529px',
                     background: 'linear-gradient(180deg, rgba(105, 100, 100, 0.46) 1.5%, rgba(255, 255, 255, 0.01) 100%)',
                     borderRadius: '33px',
                     position: 'relative',
