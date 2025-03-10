@@ -2,8 +2,53 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { useNavigate } from 'react-router-dom';
-import backgroundImage from "../assets/paceuni.jpg"; // ✅ Import background image
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import backgroundImage from "../assets/background.jpg"; // ✅ Import background image
+import logoImage from "../assets/logo.jpg"; // Import logo image
+import { styled } from '@mui/material/styles';
+
+// Custom styled components
+const StyledTextField = styled(TextField)({
+  '& .MuiOutlinedInput-root': {
+    height: '53px',
+    width: '313px',
+    background: 'rgba(41, 0, 0, 0.46)',
+    borderRadius: '16px',
+    color: 'rgba(255, 255, 255, 0.74)',
+    '& fieldset': {
+      borderColor: 'transparent',
+    },
+    '&:hover fieldset': {
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: 'rgba(255, 255, 255, 0.74)',
+    fontFamily: 'Inter',
+    fontStyle: 'normal',
+    fontWeight: 400,
+    fontSize: '16px',
+  },
+});
+
+const StyledButton = styled(Button)({
+  width: '187px',
+  height: '53px',
+  background: 'rgba(41, 0, 0, 0.46)',
+  borderRadius: '16px',
+  color: 'rgba(255, 255, 255, 0.74)',
+  fontFamily: 'Inter',
+  fontStyle: 'normal',
+  fontWeight: 700,
+  fontSize: '16px',
+  textTransform: 'uppercase',
+  '&:hover': {
+    background: 'rgba(41, 0, 0, 0.6)',
+  },
+});
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -55,75 +100,168 @@ const Register = () => {
     return (
         <Box
             sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '100vh',
+                minHeight: "100vh",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
                 backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                padding: 3
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                position: "relative",
             }}
         >
-            <Paper
-                elevation={6}
+            {/* Logo in the upper left corner */}
+            <Box
+                component="img"
+                src={logoImage}
+                alt="PaceX Logo"
                 sx={{
-                    p: 5,
-                    borderRadius: 4,
-                    width: '100%',
-                    maxWidth: 400,
-                    textAlign: 'center',
-                    backdropFilter: 'blur(10px)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)'
+                    position: "absolute",
+                    top: "20px",
+                    left: "20px",
+                    width: "80px",
+                    height: "auto",
+                    borderRadius: "50%", // Make it circular
+                    boxShadow: "0 4px 8px rgba(0,0,0,0.3)", // Add shadow for better visibility
+                    zIndex: 10, // Ensure it's above other elements
+                }}
+            />
+            
+            {/* Home link in the upper right corner */}
+            <RouterLink to="/" style={{ textDecoration: 'none' }}>
+                <Box
+                    sx={{
+                        position: "absolute",
+                        top: "20px",
+                        right: "20px",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        fontSize: "18px",
+                        padding: "8px 16px",
+                        borderRadius: "4px",
+                        backgroundColor: "rgba(0,0,0,0.3)",
+                        transition: "background-color 0.3s",
+                        '&:hover': {
+                            backgroundColor: "rgba(0,0,0,0.5)",
+                        },
+                        zIndex: 10,
+                    }}
+                >
+                    Home
+                </Box>
+            </RouterLink>
+            
+            <Box
+                sx={{
+                    width: '447px',
+                    height: '612px',
+                    background: 'linear-gradient(180deg, rgba(105, 100, 100, 0.46) 1.5%, rgba(255, 255, 255, 0.01) 100%)',
+                    borderRadius: '33px',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '40px 20px',
                 }}
             >
-                <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                    Sign Up
+                <Typography 
+                    variant="h4" 
+                    component="h1" 
+                    sx={{
+                        fontFamily: 'Inter',
+                        fontWeight: 700,
+                        fontSize: '24px',
+                        color: '#FFFFFF',
+                        textShadow: '0px 5px 2px rgba(0, 0, 0, 0.25)',
+                        mb: 4,
+                        textAlign: 'center',
+                    }}
+                >
+                    SIGN UP
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-                    Create an account to get started!
-                    <p> Please use your Pace Id to create account!</p>
-                </Typography>
-                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField
-                        label="First Name"
+                
+                <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 3, alignItems: 'center' }}>
+                    <StyledTextField
+                        placeholder="FIRST NAME"
                         variant="outlined"
                         name="firstName"
                         onChange={handleChange}
                         required
-                        fullWidth
+                        InputProps={{
+                            style: { color: 'rgba(255, 255, 255, 0.74)' }
+                        }}
                     />
-                    <TextField
-                        label="Email (.edu)"
+                    <StyledTextField
+                        placeholder="EMAIL ID (.edu)"
                         variant="outlined"
                         name="email"
                         type="email"
                         onChange={handleChange}
                         required
-                        fullWidth
+                        InputProps={{
+                            style: { color: 'rgba(255, 255, 255, 0.74)' }
+                        }}
                     />
-                    <TextField
-                        label="Password"
+                    <StyledTextField
+                        placeholder="PASSWORD"
                         variant="outlined"
                         name="password"
                         type="password"
                         onChange={handleChange}
                         required
-                        fullWidth
+                        InputProps={{
+                            style: { color: 'rgba(255, 255, 255, 0.74)' }
+                        }}
                     />
-                    <Button variant="contained" color="primary" type="submit" sx={{ mt: 2, borderRadius: 2 }}>
+                    
+                    <StyledButton type="submit">
                         Register
-                    </Button>
-                    <Typography variant="body2" sx={{ mt: 2 }}>
-                        Already have an account? <Link href="/login">Login</Link>
+                    </StyledButton>
+                    
+                    <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', width: '313px', justifyContent: 'center' }}>
+                        <Box sx={{ width: '135px', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }} />
+                        <Typography sx={{ 
+                            mx: 2, 
+                            fontFamily: 'Inter',
+                            fontStyle: 'normal',
+                            fontWeight: 300,
+                            fontSize: '12px',
+                            color: '#FFFFFF',
+                        }}>
+                            or
+                        </Typography>
+                        <Box sx={{ width: '135px', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }} />
+                    </Box>
+                    
+                    <Typography sx={{ 
+                        mt: 1,
+                        fontFamily: 'Inter',
+                        fontStyle: 'normal',
+                        fontWeight: 300,
+                        fontSize: '14px',
+                        color: '#FFFFFF',
+                    }}>
+                    </Typography>
+                    
+                    
+                    <Typography sx={{ 
+                        fontFamily: 'Inter',
+                        fontStyle: 'normal',
+                        fontWeight: 400,
+                        fontSize: '12px',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                    }}>
+                        Already a member? <Link href="/login" sx={{ color: 'rgba(255, 255, 255, 0.9)', textDecoration: 'none' }}>Sign in</Link>
                     </Typography>
                 </Box>
+                
                 {message && (
-                    <Typography variant="body1" color="success.main" sx={{ mt: 2 }}>
+                    <Typography variant="body1" sx={{ mt: 2, color: message.includes('❌') ? '#ff6b6b' : '#4ecca3' }}>
                         {message}
                     </Typography>
                 )}
-            </Paper>
+            </Box>
         </Box>
     );
 };
