@@ -197,8 +197,8 @@ const UserHome = () => {
             return {
               content: post.content,
               createdAt: new Date(post.createdAt).toLocaleString(),
-              dislikes: post.dislikes,
-              likes: post.likes,
+              dislikes: post.dislikes || [], // ✅ Ensure dislikes is an array
+              likes: Array.isArray(post.likes) ? post.likes : [], // ✅ Ensure likes is always an array  
               postimg: post.postimg,
               userId: post.userId,
               userName: post.userName,
@@ -311,19 +311,7 @@ const UserHome = () => {
     navigate(`/messenger`);
   };
 
-  const handleLike = async (postId) => {
-    try {
-      const res = await axios.put(`http://localhost:5001/api/posts/like/${postId}`);
-      // Update your state to reflect the new like count from the response
-      setPosts(prevPosts =>
-        prevPosts.map(post =>
-          post.postId === postId ? { ...post, likes: res.data.likes } : post
-        )
-      );
-    } catch (err) {
-      console.error("Error liking post:", err);
-    }
-  };
+  
 
   const toggleMessenger = () => {
     setMessengerOpen((prev) => !prev);
@@ -515,6 +503,103 @@ const handleShowMore = () => {
   setVisibleCount(recommendedUsers.length);  // Set the visible count to display all profiles
 };
 
+
+// Like functionality
+const handleLikePost = async (postId) => {
+  if (!user || !user._id) {
+    console.error("🚨 User is not logged in or undefined!");
+    return;
+  }
+
+  try {
+    const post = posts.find((p) => p.postId === postId);
+    if (!post || !post.likes) {
+      console.warn("⚠️ Post not found or likes array is undefined!");
+      return;
+    }
+
+    const alreadyLiked = post.likes.includes(user._id);
+
+    const response = alreadyLiked
+      ? await axios.delete("http://localhost:5001/api/likes/remove", {
+          data: { userId: user._id, postId },
+        })
+      : await axios.post("http://localhost:5001/api/likes/add", { userId: user._id, postId });
+
+    console.log("✅ Like toggled:", response.data);
+
+    setLikedPosts((prevLikedPosts) =>
+      alreadyLiked
+        ? prevLikedPosts.filter((id) => id !== postId)
+        : [...prevLikedPosts, postId]
+    );
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post.postId === postId
+          ? {
+              ...post,
+              likes: alreadyLiked
+                ? post.likes.filter((id) => id !== user._id)
+                : [...post.likes, user._id],
+            }
+          : post
+      )
+    );
+  } catch (error) {
+    console.error("🔥 Error toggling like:", error.response?.data || error.message);
+  }
+};
+
+
+
+
+useEffect(() => {
+  const fetchUserStats = async () => {
+    try {
+      if (!user?._id) {
+        console.warn("⚠️ User ID is undefined, skipping fetch.");
+        return;
+      }
+
+      console.log(`🔍 Fetching user stats for ID: ${user._id}`);
+
+      const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+
+      if (!res.data) {
+        console.warn("🚨 No user data received!");
+        return;
+      }
+
+      console.log("✅ User stats response:", res.data);
+
+      setUserProfile({
+        userId: res.data._id,
+        name: res.data.name,
+        username: res.data.username,
+        email: res.data.email,
+        bio: res.data.bio || "No bio available",
+        role: res.data.role,
+        university: res.data.university || "Not specified",
+        profileImage: res.data.profileImage || "No image available",
+        postsCount: res.data.posts || 0,
+        followersCount: res.data.followers?.length || 0,
+        followingCount: res.data.followings?.length || 0,
+        joinedAt: new Date(res.data.joinedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+      });
+    } catch (err) {
+      console.error("❌ Error fetching user stats:", err);
+    }
+  };
+
+  if (user?._id) {
+    fetchUserStats();
+  }
+}, [user]);
 
 
 
@@ -879,10 +964,20 @@ const handleShowMore = () => {
 
         {/* Like & Comment Icons */}
         <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                <IconButton>
-                  <FavoriteIcon />
-                </IconButton>
-                <Typography>{post.likes} Likes</Typography>
+        <IconButton
+  onClick={() => handleLikePost(post.postId)}
+  sx={{
+    color: post.likes?.includes(user?._id) ? "#073574" : "#fff",
+  }}
+>
+  <FavoriteIcon />
+</IconButton>
+<Typography>{post.likes ? post.likes.length : 0} Likes</Typography>
+
+
+
+
+
 
                 <IconButton onClick={() => toggleCommentBox(post.postId)}>
                   <CommentIcon />

@@ -18,6 +18,10 @@ const io = require("socket.io")(server, {
     }
 });
 
+
+// ✅ Attach io to app for use in controllers
+app.set('io', io);
+
 io.on("connection", (socket) => {
     console.log("✅ User Connected:", socket.id);
 
@@ -84,7 +88,19 @@ app.use('/api/comment', commentroutes);
 const communityroutes = require('./routes/communityRoutes');
 app.use('/api/community', communityroutes);
 
-const notificationroutes = require('./routes/notificationRoutes');
+const notificationroutes = require('./routes/notificationRoute');
 app.use('/api/notify', notificationroutes);
+
+const likeRoute = require('./routes/likeRoute'); // ✅ Match file name
+app.use('/api/likes', likeRoute);
+
+app.use("/api/notifications", require("./routes/notificationRoute"));
+
+const sendNotification = (recipientId, notificationData) => {
+    const eventName = `notification-${recipientId}`;
+    console.log(`📡 Sending Notification to ${recipientId}:`, notificationData);
+    io.emit(eventName, notificationData);
+};
+module.exports = { io, sendNotification };
 
 server.listen(PORT, () => console.log(`✅ Server running on Port ${PORT}`));

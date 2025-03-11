@@ -23,17 +23,25 @@ const createPost = async (req, res) => {
   }
 };
 
-// GET all posts, optionally filtering by userId query parameter
 const getPosts = async (req, res) => {
   try {
     const filter = req.query.userId ? { userId: req.query.userId } : {};
     const posts = await Post.find(filter).sort({ createdAt: -1 });
-    res.status(200).json(posts);
+
+    // Ensure each post has `likes` and `dislikes` as an array
+    const formattedPosts = posts.map(post => ({
+      ...post._doc,  // ✅ Spread existing post data
+      likes: Array.isArray(post.likes) ? post.likes : [], // ✅ Ensure `likes` is an array
+      dislikes: Array.isArray(post.dislikes) ? post.dislikes : [], // ✅ Ensure `dislikes` is an array
+    }));
+
+    res.status(200).json(formattedPosts);
   } catch (err) {
-    console.error('Error fetching posts:', err);
+    console.error('🔥 Error fetching posts:', err);
     res.status(500).json({ message: "Server Error" });
   }
 };
+
 
 //  Like a specific post
 const likePost = async (req, res) => {

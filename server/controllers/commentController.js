@@ -1,4 +1,6 @@
 const Comment = require('../models/Comment');
+const Notification = require("../models/Notification");
+
 
 const addComment = async (req, res) => {
     try {
@@ -11,6 +13,16 @@ const addComment = async (req, res) => {
         const newComment = new Comment({ userId, postId, text, username, userimg });
 
         await newComment.save();
+
+        // ✅ Create Notification
+        if (post.userId.toString() !== userId) { 
+            await Notification.create({
+                userId: post.userId, // Post owner
+                senderId: userId,
+                type: "comment",
+                postId: postId,
+            });
+        }
 
         res.status(201).json({ message: "Comment added successfully!", comment: newComment });
     } catch (err) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { io } from "socket.io-client"; // ✅ Import socket.io-client
 import {
   AppBar,
   Toolbar,
@@ -15,6 +16,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Badge
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
@@ -30,6 +32,73 @@ const Navbar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchAnchorEl, setSearchAnchorEl] = useState(null);
+  const [notifAnchorEl, setNotifAnchorEl] = useState(null); // Notification Menu
+  const [notifications, setNotifications] = useState([]); // Store notifications
+  const [unreadCount, setUnreadCount] = useState(0); // Count unread notifications
+
+
+
+   // ✅ Fetch Notifications
+   
+  // ✅ Initialize socket connection
+  const socket = io("http://localhost:5001", { transports: ["websocket"] });
+
+  // ✅ Fetch Notifications from API
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5001/api/notifications/${user._id}`);
+        console.log("🔍 Notifications Response:", res.data);  // ✅ Log the response
+
+        setNotifications(res.data);
+        setUnreadCount(res.data.filter(n => !n.read).length);
+      } catch (error) {
+        console.error("🔥 Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+
+  // ✅ Listen for Real-Time Notifications
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const eventName = `notification-${user._id}`;
+    console.log(`📡 Listening for notifications on "${eventName}"`);
+
+    const handleNotification = (notification) => {
+      console.log("📩 New notification:", notification);
+      setNotifications(prev => [notification, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    };
+
+    socket.on(eventName, handleNotification);
+
+    return () => {
+      socket.off(eventName, handleNotification);
+    };
+  }, [user]);
+
+  // ✅ Open & Close Notification Dropdown
+  const handleNotifClick = (event) => {
+    setNotifAnchorEl(event.currentTarget);
+    setUnreadCount(0); // Mark all as read when opened
+  };
+
+  const handleNotifClose = async () => {
+    setNotifAnchorEl(null);
+
+    // ✅ Mark notifications as read
+    try {
+      await axios.put(`http://localhost:5001/api/notifications/mark-read/${user._id}`);
+    } catch (error) {
+      console.error("🔥 Error marking notifications as read:", error);
+    }
+  };
 
   // Fetch users from API
   useEffect(() => {
@@ -182,8 +251,54 @@ const Navbar = () => {
 
         {/* Icons and User Profile */}
         <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 2, sm: 5 } }}>
+          {/* Notification Bell with Badge */}
+          <IconButton sx={{ color: "white" }} onClick={handleNotifClick}>
+            <Badge badgeContent={unreadCount} color="error">
+              <NotificationsIcon fontSize="medium" />
+            </Badge>
+          </IconButton>
+
+          {/* Notification Dropdown */}
+          <Menu
+  anchorEl={notifAnchorEl}
+  open={Boolean(notifAnchorEl)}
+  onClose={handleNotifClose}
+  sx={{
+    "& .MuiPaper-root": {
+      backgroundColor: "white",
+      borderRadius: "10px",
+      minWidth: "250px",
+      boxShadow: "0px 4px 10px rgba(0,0,0,0.3)",
+    }
+  }}
+>
+  {notifications.length === 0 ? (
+    <MenuItem disabled>No new notifications</MenuItem>
+  ) : (
+    notifications.map((notif, index) => (
+      <MenuItem key={index} onClick={() => navigate(notif.postId ? `/post/${notif.postId}` : `/profile/${notif.sender}`)}>
+        <Avatar src={notif.senderProfile || "/default-avatar.png"} sx={{ width: 30, height: 30, marginRight: 1 }} />
+        <ListItemText
+          primary={
+            notif.type === "follow"
+              ? `${notif.senderName || "Unknown User"} started following you`
+              : notif.type === "like"
+              ? `${notif.senderName || "Unknown User"} liked your post`
+              : notif.type
+          }
+        />
+      </MenuItem>
+    ))
+  )}
+</Menu>
+
+
+
+
+
+
           <IconButton sx={{ color: "white" }}>
-            <NotificationsIcon fontSize={"medium"} />
+            <BookmarkIcon fontSize={"medium"} />
           </IconButton>
 
           <IconButton sx={{ color: "white" }}>
