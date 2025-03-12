@@ -9,7 +9,7 @@ import axios from 'axios';
 import { useTheme } from '@mui/material/styles';
 import Chatbox from './Chatbox'; // Import Chatbox inside Messenger
 
-const Messenger = () => {
+const Messenger = ({ resetChatbox = false }) => { // Ensure default value
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [userDetails, setUserDetails] = useState({});
@@ -48,6 +48,12 @@ const Messenger = () => {
         fetchChatUsers();
     }, [userId]);
 
+    useEffect(() => {
+        if (resetChatbox) {
+            setSelectedUser(null);
+        }
+    }, [resetChatbox]); 
+
     const handleSelect = (item) => {
         setSelectedUser(item); // Set selected user to open chat inside Messenger
     };
@@ -57,16 +63,55 @@ const Messenger = () => {
     };
 
     return (
-        <Container sx={{ ...styles.container, width: isMobile ? '100%' : 400, height: isMobile ? '100vh' : 800 }}>
+<Container
+  sx={{
+    ...styles.container,
+    width: isMobile ? "100%" : 400,
+    height: isMobile ? "80vh" : 800,
+    background: "#eddecf",
+    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.2)", // ✅ Added soft shadow
+    borderRadius: "20px", // ✅ Optional: Rounded corners for a sleek look
+    padding: "20px", // ✅ Optional: Adds spacing inside the container
+  }}
+>
             {selectedUser ? (
                 <Paper sx={styles.chatContainer}>
                     {/* Back button to return to user list */}
                     <Box sx={styles.chatHeader}>
-                        <IconButton onClick={handleBack}>
-                            <ArrowBack />
-                        </IconButton>
-                        <Typography variant="h6">{selectedUser.name}</Typography>
-                    </Box>
+    {/* Back button */}
+    <IconButton onClick={handleBack}>
+        <ArrowBack />
+    </IconButton>
+
+    {/* Profile Image & Name (With Only Image Shadow) */}
+    <Box
+        sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1, // Keeps name close to image
+        }}
+    >
+        <Avatar
+            src={selectedUser.profileImage}
+            sx={{
+                width: 50,
+                height: 50,
+                borderRadius: "8px", // ✅ Square shape with slightly rounded edges
+                boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.2)", // ✅ Subtle shadow effect
+            }}
+        />
+        <Typography
+            variant="h6"
+            sx={{
+                fontWeight: "bold",
+                color: "black",
+            }}
+        >
+            {selectedUser.name}
+        </Typography>
+    </Box>
+</Box>
+
 
                     {/* Chatbox component (embedded in Messenger) */}
                     <Chatbox userId={selectedUser.id} username={selectedUser.name} />
@@ -74,31 +119,26 @@ const Messenger = () => {
             ) : (
                 <>
                     {/* Header */}
-                    <Box sx={styles.header}>
-                        <Typography variant="h6" sx={styles.username}>{userDetails.username}</Typography>
-                        <IconButton>
-                        </IconButton>
-                    </Box>
+                    <Box sx={{ textAlign: 'center', p: 2 }}>
+                <Avatar src={userDetails.profileImage} sx={{ width: 60, height: 60, mx: 'auto' }} />
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'black', cursor: 'pointer', '&:hover': { opacity: 0.7 } }}>
+                    {userDetails.name}
+                </Typography>
+            </Box>
 
-                    {/* Search Bar */}
-                    <Box sx={styles.search}>
-                        <TextField
-                            variant="outlined"
-                            placeholder="Search"
-                            fullWidth
-                            size="small"
-                            sx={styles.searchBar}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <Search />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                    </Box>
+            {/* Search Bar */}
+            <Box sx={{ p: 2 }}>
+                <TextField
+                    fullWidth
+                    placeholder="Search..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    InputProps={{
+                        startAdornment: <Search sx={{ mr: 1 }} />,
+                        sx: { borderRadius: '20px', boxShadow: '0px 4px 6px rgba(0,0,0,0.1)', bgcolor: "white" }
+                    }}
+                />
+            </Box>
 
                     {/* Messages List */}
                     <List sx={styles.messageList}>
@@ -140,6 +180,8 @@ const styles = {
         alignItems: 'center',
         padding: '15px',
         color: 'black',
+        cursor:'pointer',
+
     },
     username: {
         fontWeight: 'bold',
@@ -148,6 +190,9 @@ const styles = {
             transform: "scale(1.05)",
         },
         color: 'black',
+        cursor:'pointer',
+
+        
     },
     searchBar: {
         margin: '10px',
@@ -156,10 +201,13 @@ const styles = {
     messageList: {
         overflowY: 'auto',
         flexGrow: 1,
+        cursor:'pointer',
     },
     listItem: {
         display: 'flex',
         alignItems: 'center',
+        cursor:'pointer',
+
         padding: '10px',
         '&:hover': {
             background: "#B0C4DE",
@@ -182,5 +230,8 @@ const styles = {
         alignItems: 'center',
         padding: '10px',
         borderBottom: '1px solid #ddd',
+        cursor:'pointer',
+        bgcolor:'#f3f8ff',
+
     },
 };

@@ -12,11 +12,11 @@ const communitySchema = new mongoose.Schema({
             joinedAt: { type: Date, default: Date.now },
         }
     ],
-    // posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }], // Posts related to the community
-
+    admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    posts: { type: Number, default: 0 },
     rules: { type: [String], default: [] }, // List of community rules
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Creator of the community
-    createdAt: { type: Date, default: Date.now },
+
 });
 
 module.exports = mongoose.model("Community", communitySchema);

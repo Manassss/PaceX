@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/Userdetails");  // ✅ Importing the User model
 const admin = require("../config/firebaseConfig"); // Import Firebase Admin
+const Notification = require("../models/Notification"); // Import Notification model
+
 
 const registerUser = async (req, res) => {
     try {
@@ -223,52 +225,58 @@ const getAllUsers = async (req, res) => {
 
 const toggleFollow = async (req, res) => {
     try {
-        const { userId, targetUserId } = req.body; // userId: who is following, targetUserId: who is being followed
-        console.log("user", userId);
-        console.log("tartegt", targetUserId);
+        const { userId, targetUserId } = req.body;
         if (!userId || !targetUserId) {
             return res.status(400).json({ message: "User IDs are required" });
         }
 
-        // Find both users
-        const user = await User.findById(userId);
+        const user = await User.findById(userId); // ✅ Fetch the sender's details
         const targetUser = await User.findById(targetUserId);
-
         if (!user || !targetUser) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Check if already following
         const isFollowing = user.followings.includes(targetUserId);
-
         if (isFollowing) {
-            // Unfollow: Remove targetUserId from followings and userId from followers
             user.followings.pull(targetUserId);
             targetUser.followers.pull(userId);
         } else {
-            // Follow: Add targetUserId to followings and userId to followers
             user.followings.push(targetUserId);
             targetUser.followers.push(userId);
+
+            // ✅ Create Follow Notification and include sender details
+            const notification = await Notification.create({
+                userId: targetUserId,
+                senderId: userId,
+                senderName: user.name, // ✅ Store sender’s name in DB
+                senderProfile: user.profileImage, // ✅ Store sender’s profile image in DB
+                type: "follow",
+            });
+
+            console.log(`✅ Notification Created: ${user.name} followed ${targetUser.name}`);
+
+            // ✅ Emit Real-Time Notification with sender details
+            req.app.get('io').emit(`notification-${targetUserId}`, {
+                sender: userId,
+                senderName: user.name,  // ✅ Ensure sender name is included
+                senderProfile: user.profileImage,  // ✅ Ensure profile image is included
+                type: "follow",
+                notificationId: notification._id
+            });
         }
 
-        // Update follow count
-        user.followingsNumber = user.followings.length;
-        targetUser.followersNumber = targetUser.followers.length;
-
-        // Save updates
         await user.save();
         await targetUser.save();
 
-        res.status(200).json({
-            message: isFollowing ? "Unfollowed successfully" : "Followed successfully",
-            followingsCount: user.followingsNumber,
-            followersCount: targetUser.followersNumber
-        });
-
+        res.status(200).json({ message: isFollowing ? "Unfollowed" : "Followed" });
     } catch (error) {
+        console.error("🔥 Error toggling follow:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+
+
+
 const searchbyname = async (req, res) => {
     try {
         const { query } = req.query;

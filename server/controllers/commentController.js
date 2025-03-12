@@ -1,16 +1,29 @@
 const Comment = require('../models/Comment');
+const Notification = require("../models/Notification");
+
 
 const addComment = async (req, res) => {
     try {
-        const { userId, postId, text, username, userimg } = req.body;
+        const { userId, postId, text, username, userimg, post_userid
+        } = req.body;
         console.log("add strted", req.body);
-        if (!userId || !postId || !text || !username || !userimg) {
+        if (!userId || !postId || !text || !username || !userimg || !post_userid) {
             return res.status(400).json({ message: "userId, postId, and text are required." });
         }
 
-        const newComment = new Comment({ userId, postId, text, username, userimg });
+        const newComment = new Comment({ userId, postId, text, username, userimg, post_userid });
 
         await newComment.save();
+
+        // ✅ Create Notification
+        if (post_userid.toString() !== userId) {
+            await Notification.create({
+                userId: post_userid, // Post owner
+                senderId: userId,
+                type: "comment",
+                postId: postId,
+            });
+        }
 
         res.status(201).json({ message: "Comment added successfully!", comment: newComment });
     } catch (err) {

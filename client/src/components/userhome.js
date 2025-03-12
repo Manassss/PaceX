@@ -20,6 +20,8 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import AddPost from './AddPost';
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
 import { ChatBubbleOutline as CommentIcon } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
+
 
 
 
@@ -49,6 +51,10 @@ const UserHome = () => {
   const [newComment, setNewComment] = useState({});
   const [expandedPosts, setExpandedPosts] = useState({});
   const [showCommentBox, setShowCommentBox] = useState({});
+  const [following, setFollowing] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(3); // Show 3 users initially
+
+
 
 
 
@@ -191,8 +197,8 @@ const UserHome = () => {
             return {
               content: post.content,
               createdAt: new Date(post.createdAt).toLocaleString(),
-              dislikes: post.dislikes,
-              likes: post.likes,
+              dislikes: post.dislikes || [], // ✅ Ensure dislikes is an array
+              likes: Array.isArray(post.likes) ? post.likes : [], // ✅ Ensure likes is always an array  
               postimg: post.postimg,
               userId: post.userId,
               userName: post.userName,
@@ -234,6 +240,61 @@ const UserHome = () => {
     fetchStories();
   }, []);
 
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      try {
+        if (!user?._id) {
+          console.warn("⚠️ User ID is undefined, skipping fetch.");
+          return;
+        }
+
+        console.log(`🔍 Fetching user stats for ID: ${user._id}`);
+
+        const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+
+        console.log("✅ User stats response:", res.data); // Debugging: Check API response
+
+        // Extract and transform user data
+        const transformedData = {
+          userId: res.data._id,
+          name: res.data.name,
+          username: res.data.username,
+          email: res.data.email,
+          bio: res.data.bio || "No bio available",
+          role: res.data.role,
+          university: res.data.university || "Not specified",
+          profileImage: res.data.profileImage || "No image available",
+          postsCount: res.data.posts || 0,
+          followersCount: res.data.followers?.length || 0,
+          followingCount: res.data.followings?.length || 0,
+          joinedAt: new Date(res.data.joinedAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        };
+
+        console.log("📝 Transformed User Data:", transformedData);
+
+        setUserProfile(transformedData); // Store transformed user profile
+
+      } catch (err) {
+        console.error("❌ Error fetching user stats:", err);
+      }
+    };
+
+    // Execute function if user ID exists
+    if (user?._id) {
+      console.log("🔄 User ID exists, fetching stats...");
+      fetchUserStats();
+    } else {
+      console.warn("🚨 User ID is undefined, skipping fetch.");
+    }
+
+
+  }, [user]);
+
+
 
 
 
@@ -250,19 +311,7 @@ const UserHome = () => {
     navigate(`/messenger`);
   };
 
-  const handleLike = async (postId) => {
-    try {
-      const res = await axios.put(`http://localhost:5001/api/posts/like/${postId}`);
-      // Update your state to reflect the new like count from the response
-      setPosts(prevPosts =>
-        prevPosts.map(post =>
-          post.postId === postId ? { ...post, likes: res.data.likes } : post
-        )
-      );
-    } catch (err) {
-      console.error("Error liking post:", err);
-    }
-  };
+
 
   const toggleMessenger = () => {
     setMessengerOpen((prev) => !prev);
@@ -280,11 +329,10 @@ const UserHome = () => {
   }, []);
 
   const buttons = [
-    { label: "Feed", icon: <FeedIcon /> },
-    { label: "Friends", icon: <PeopleIcon /> },
-    { label: "Events", icon: <EventIcon /> },
-    { label: "Community", icon: <GroupsIcon /> },
-    { label: "Marketplace", icon: <StorefrontIcon /> },
+    { label: "Friends", icon: <PeopleIcon />, url: "/userhome" },
+    { label: "Events", icon: <EventIcon />, url: "/userhome" },
+    { label: "Community", icon: <GroupsIcon />, url: "/community" },
+    { label: "Marketplace", icon: <StorefrontIcon />, url: "/marketplace" },
   ];
 
   useEffect(() => {
@@ -333,7 +381,7 @@ const UserHome = () => {
 
 
   // Handle adding a new comment
-  const handleAddComment = async (postId) => {
+  const handleAddComment = async (postId, postuserId) => {
     console.log("ps", posts)
     if (!newComment[postId]) return;
 
@@ -344,7 +392,8 @@ const UserHome = () => {
         postId: postId,
         text: newComment[postId],
         username: user?.name,
-        userimg: user?.profileImage
+        userimg: user?.profileImage,
+        post_userid: postuserId
       });
 
       console.log("✅ Comment Added:", res.data);
@@ -364,6 +413,196 @@ const UserHome = () => {
     setExpandedPosts((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
 
+  //follow unfollow 
+  useEffect(() => {
+    const fetchFollowing = async () => {
+      try {
+        if (!user?._id) return;
+        const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+
+        console.log("🔄 Fetching Following List:", res.data.followings);
+        setFollowing(res.data.followings || []); // ✅ Ensure array format
+      } catch (err) {
+        console.error("Error fetching following list:", err);
+      }
+    };
+
+    fetchFollowing();
+  }, [user]); // ✅ Runs when user updates
+
+  const handleFollowToggle = async (targetUserId) => {
+    try {
+      const isFollowing = following.includes(targetUserId);
+      console.log(`🔄 Toggling follow status for ${targetUserId} | Currently following: ${isFollowing}`);
+
+      // Make the follow/unfollow API call
+      const response = await axios.post('http://localhost:5001/api/users/follow', {
+        userId: user?._id,
+        targetUserId,
+      });
+
+      console.log("✅ Follow API Response:", response.data);
+
+      // Immediately update the following state for a responsive UI
+      setFollowing((prevFollowing) =>
+        isFollowing ? prevFollowing.filter((id) => id !== targetUserId) : [...prevFollowing, targetUserId]
+      );
+
+      // Re-fetch user stats to update the follower count
+      fetchUserStats(); // Re-fetch user stats after follow/unfollow to update counts in stat section
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      if (!user?._id) {
+        console.warn("⚠️ User ID is undefined, skipping fetch.");
+        return;
+      }
+
+      console.log(`🔍 Fetching user stats for ID: ${user._id}`);
+
+      const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+
+      console.log("✅ User stats response:", res.data); // Debugging: Check API response
+
+      // Extract and transform user data
+      const transformedData = {
+        userId: res.data._id,
+        name: res.data.name,
+        username: res.data.username,
+        email: res.data.email,
+        bio: res.data.bio || "No bio available",
+        role: res.data.role,
+        university: res.data.university || "Not specified",
+        profileImage: res.data.profileImage || "No image available",
+        postsCount: res.data.posts || 0,
+        followersCount: res.data.followers?.length || 0,  // Make sure this is being updated correctly
+        followingCount: res.data.followings?.length || 0,
+        joinedAt: new Date(res.data.joinedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+      };
+
+      console.log("📝 Transformed User Data:", transformedData);
+
+      setUserProfile(transformedData); // Store transformed user profile
+    } catch (err) {
+      console.error("❌ Error fetching user stats:", err);
+    }
+  };
+
+  const recommendedUsers = users.filter((userProfile) =>
+    !following.includes(userProfile.id)
+  );
+
+  const handleShowMore = () => {
+    setVisibleCount(recommendedUsers.length);  // Set the visible count to display all profiles
+  };
+
+
+  // Like functionality
+  const handleLikePost = async (postId) => {
+    if (!user || !user._id) {
+      console.error("🚨 User is not logged in or undefined!");
+      return;
+    }
+
+    try {
+      const post = posts.find((p) => p.postId === postId);
+      if (!post || !post.likes) {
+        console.warn("⚠️ Post not found or likes array is undefined!");
+        return;
+      }
+
+      const alreadyLiked = post.likes.includes(user._id);
+
+      const response = alreadyLiked
+        ? await axios.delete("http://localhost:5001/api/likes/remove", {
+          data: { userId: user._id, postId },
+        })
+        : await axios.post("http://localhost:5001/api/likes/add", { userId: user._id, postId });
+
+      console.log("✅ Like toggled:", response.data);
+
+      setLikedPosts((prevLikedPosts) =>
+        alreadyLiked
+          ? prevLikedPosts.filter((id) => id !== postId)
+          : [...prevLikedPosts, postId]
+      );
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.postId === postId
+            ? {
+              ...post,
+              likes: alreadyLiked
+                ? post.likes.filter((id) => id !== user._id)
+                : [...post.likes, user._id],
+            }
+            : post
+        )
+      );
+    } catch (error) {
+      console.error("🔥 Error toggling like:", error.response?.data || error.message);
+    }
+  };
+
+
+
+
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      try {
+        if (!user?._id) {
+          console.warn("⚠️ User ID is undefined, skipping fetch.");
+          return;
+        }
+
+        console.log(`🔍 Fetching user stats for ID: ${user._id}`);
+
+        const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+
+        if (!res.data) {
+          console.warn("🚨 No user data received!");
+          return;
+        }
+
+        console.log("✅ User stats response:", res.data);
+
+        setUserProfile({
+          userId: res.data._id,
+          name: res.data.name,
+          username: res.data.username,
+          email: res.data.email,
+          bio: res.data.bio || "No bio available",
+          role: res.data.role,
+          university: res.data.university || "Not specified",
+          profileImage: res.data.profileImage || "No image available",
+          postsCount: res.data.posts || 0,
+          followersCount: res.data.followers?.length || 0,
+          followingCount: res.data.followings?.length || 0,
+          joinedAt: new Date(res.data.joinedAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        });
+      } catch (err) {
+        console.error("❌ Error fetching user stats:", err);
+      }
+    };
+
+    if (user?._id) {
+      fetchUserStats();
+    }
+  }, [user]);
+
+
 
 
   return (
@@ -374,8 +613,9 @@ const UserHome = () => {
         width: "100vw",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden",
         alignItems: "center",
+        background: "#f8f2ec",
+        position: "relative",
       }}
     >
       {/* Navbar */}
@@ -463,87 +703,95 @@ const UserHome = () => {
           })}
         </Box>
       </Box>
+
+      {/*Add Post*/}
+
       <AddPost />
 
 
       {/*Sidenav*/}
       <Box
         sx={{
-          width: { xs: "80%", sm: "60%", md: "20%" }, // Responsive width
+          width: { xs: "80%", sm: "60%", md: "20%" },
           height: "100vh",
           padding: 2,
-          display: { xs: "none", md: "flex" }, // Always visible on md and above
+          display: { xs: "none", md: "flex" },
           flexDirection: "column",
           gap: 3,
           position: "fixed",
-          left: 0, // Ensures it's always visible
+          left: 0,
           top: "100px",
           background: "#073574",
           color: "#fff",
           overflowY: "auto",
           boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.3)",
+          "&::-webkit-scrollbar": { display: "none" },  // Hide scrollbar for webkit browsers
+          scrollbarWidth: "none",  // Hide scrollbar for Firefox
         }}
       >
         {/* Card 1: User Profile */}
         {user && (
           <Paper
             sx={{
-              padding: 3,
               borderRadius: "15px",
               background: "#f8f2ec",
-              backdropFilter: "blur(10px)",
               color: "black",
               boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
               transition: "0.3s",
+              padding: '20px',
             }}
           >
             <Box sx={{ textAlign: "center" }}>
-              <Avatar
-                src={user.profileImage}
-                sx={{
-                  width: 100,
-                  height: 100,
-                  margin: "0 auto",
-                  border: "3px solid rgba(255, 255, 255, 0.5)",
-                }}
-              />
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                {user?.name}
-              </Typography>
+              <Link to={`/profile/${user?._id}`} style={{ textDecoration: 'none' }}>
+                <Avatar
+                  src={user.profileImage}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    margin: "0 auto",
+                    border: "3px solid rgba(255, 255, 255, 0.5)",
+                  }}
+                />
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  {user?.name}
+                </Typography>
+              </Link>
             </Box>
 
             {/* Stats Section */}
             <Box sx={{ display: "flex", justifyContent: "space-around", mt: 2 }}>
-              {[
-                { label: "Posts", value: user?.posts || 0 },
-                { label: "Followers", value: user?.followersNumber || 0 },
-                { label: "Following", value: user?.followingsNumber || 0 },
-              ].map((item, index) => (
-                <Box key={index} textAlign="center">
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    {item.value}
-                  </Typography>
-                  <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>{item.label}</Typography>
-                </Box>
-              ))}
+              {userProfile &&
+                [
+                  { label: "Posts", value: userProfile.postsCount || 0 },
+                  { label: "Followers", value: userProfile.followersCount || 0 },
+                  { label: "Following", value: userProfile.followingCount || 0 },
+                ].map((item, index) => (
+                  <Box key={index} textAlign="center">
+                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                      {item.value}
+                    </Typography>
+                    <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
+                      {item.label}
+                    </Typography>
+                  </Box>
+                ))}
             </Box>
-
           </Paper>
         )}
 
         {/* Card 2: Navigation Buttons */}
         <Paper
           sx={{
-            padding: 2,
             borderRadius: "15px",
             background: "#f8f2ec",
             backdropFilter: "blur(10px)",
             color: "black",
             textAlign: "center",
             boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+            padding: "10px",
           }}
         >
-          {buttons.map(({ label, icon }, index) => (
+          {buttons.map(({ label, icon, url }, index) => (
             <Button
               key={index}
               fullWidth
@@ -559,7 +807,7 @@ const UserHome = () => {
                 "&:hover": { background: "#d9d9d9" },
                 "&:active": { transform: "scale(0.95)" },
               }}
-              onClick={() => navigate(`/${label.toLowerCase()}`)}
+              onClick={() => navigate(`${url}`)}
             >
               {label}
             </Button>
@@ -580,8 +828,9 @@ const UserHome = () => {
           <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
             Recommended for You
           </Typography>
-          <List>
-            {recommendedProfiles.map((profile) => (
+          <List sx={{ padding: 0 }}>
+            {/* Display the first 3 profiles initially */}
+            {recommendedUsers.slice(0, visibleCount).map((profile) => (
               <ListItem
                 key={profile.id}
                 button
@@ -589,18 +838,31 @@ const UserHome = () => {
                   borderRadius: "10px",
                   transition: "0.3s",
                   "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.2)" },
+                  padding: "8px 16px", // Ensures padding for each list item
                 }}
               >
-                <Avatar src={profile.profileImage} sx={{ width: 40, height: 40, mr: 2 }} />
-                <ListItemText primary={profile.name} />
+                {/* Wrap Avatar and ListItemText in Link for profile navigation */}
+                <Link to={`/profile/${profile.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <Avatar src={profile.profileImage} sx={{ width: 40, height: 40, mr: 2 }} />
+                  <ListItemText primary={profile.name} />
+                </Link>
               </ListItem>
             ))}
           </List>
+
+          {/* Show More Button */}
+          {recommendedUsers.length > visibleCount && (
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Button onClick={handleShowMore} variant="contained" color="primary">
+                Show More
+              </Button>
+            </Box>
+          )}
         </Paper>
       </Box>
 
 
-      {/* Messenger*/}
+      {/* Messenger Button */}
       {!open && (
         <IconButton
           sx={{
@@ -611,82 +873,85 @@ const UserHome = () => {
             backgroundColor: "#073574",
             color: "#fff",
             transition: "all 0.3s ease-in-out",
-            "&:hover": {
-              backgroundColor: "#0a4a8c",
-            },
+            "&:hover": { backgroundColor: "#0a4a8c" },
           }}
-          onClick={() => setOpen(true)}
+          onClick={() => setOpen(true)} // Open Messenger
         >
           <ChatIcon fontSize="large" />
         </IconButton>
       )}
 
-      {/* Messenger Sidebar  */}
+      {/* Messenger Sidebar */}
       <Box
         sx={{
-          width: { xs: "80%", md: "25%" },
-          height: "100vh",
           display: "flex",
           flexDirection: "column",
           gap: 3,
           position: "fixed",
           right: open ? "0%" : "-80%",
-          top: "10px",
-          color: "#fff",
+          top: "180px",
           overflowY: "auto",
           transition: "all 0.3s ease-in-out",
-          padding: "16px",
         }}
       >
-        {/* Close Button (Hides Panel) */}
+        {/* Close Button */}
         <IconButton
           sx={{
+            position: "absolute",
             alignSelf: "flex-end",
             width: "35px",
             height: "35px",
-            top: "80px",
-            color: "red",
-            bgcolor: "black",
+            top: "-20px",
+            color: "#555",
             transition: "0.3s",
             marginTop: "10%",
-            "&:hover": {
-              backgroundColor: "#777",
-            },
           }}
-          onClick={() => setOpen(false)}
+          onClick={() => setOpen(false)} // Close Messenger
         >
-          <CloseIcon fontSize="large" />
+          <CloseIcon fontSize="medium" />
         </IconButton>
 
-        <Messenger />
+        {/* ✅ Fix: Pass resetChatbox as a prop */}
+        <Messenger resetChatbox={!open} />
       </Box>
 
       {/* FEED */}
-      <Box sx={{ flex: 1, overflowY: "auto", maxHeight: "80vh", padding: { xs: 1, sm: 2 }, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginTop: "2%" }}>
+      <Box sx={{ flex: 1, overflowY: "auto", maxHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", width: "100%", marginTop: "1%" }}>
         {posts.map((post, index) => {
           const postUser = users.find((user) => user.id === post.userId);
-          const postComments = post.comments;
-          // const latestComment = postComments.length > 0 ? postComments[0] : null;
-          const showAll = expandedPosts[post.postId];
+          const isFollowing = following.includes(postUser?.id); // ✅ Check updated following state
 
           return (
             <Paper
               key={index}
               sx={{
-                p: { xs: 2, sm: 3 },
                 mb: { xs: 2, sm: 3 },
                 width: "100%",
                 maxWidth: { xs: "100%", sm: "600px" },
-                borderRadius: "15px",
-                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-                transition: "0.3s",
-                "&:hover": { boxShadow: "0px 6px 15px rgba(0, 0, 0, 0.2)" },
+                backgroundColor: "transparent",
+                boxShadow: "none",
               }}
             >
               {postUser && (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Avatar src={postUser.profileImage} sx={{ width: 50, height: 50, cursor: "pointer" }} />
                   <Typography variant="h6">{postUser.name}</Typography>
+
+                  {/* ✅ Corrected Follow/Disconnect Button */}
+                  {postUser.id !== user?._id && (
+                    <Button
+                      variant={isFollowing ? "outlined" : "contained"}
+                      size="small"
+                      sx={{
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        marginLeft: "auto",
+                      }}
+                      onClick={() => handleFollowToggle(postUser.id)}
+                    >
+                      {isFollowing ? "Disconnect" : "Connect"}
+                    </Button>
+                  )}
                 </Box>
               )}
 
@@ -700,10 +965,20 @@ const UserHome = () => {
 
               {/* Like & Comment Icons */}
               <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                <IconButton>
+                <IconButton
+                  onClick={() => handleLikePost(post.postId)}
+                  sx={{
+                    color: post.likes?.includes(user?._id) ? "#073574" : "#fff",
+                  }}
+                >
                   <FavoriteIcon />
                 </IconButton>
-                <Typography>{post.likes?.length} Likes</Typography>
+                <Typography>{post.likes ? post.likes.length : 0} Likes</Typography>
+
+
+
+
+
 
                 <IconButton onClick={() => toggleCommentBox(post.postId)}>
                   <CommentIcon />
@@ -725,7 +1000,7 @@ const UserHome = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => handleAddComment(post.postId)}
+                    onClick={() => handleAddComment(post.postId, post.userId)}
                   >
                     Post
                   </Button>
@@ -760,13 +1035,10 @@ const UserHome = () => {
                 </Box>
               ))}
 
-
-
             </Paper>
           );
         })}
       </Box>
-
 
       {/* Modal for Camera Capture */}
       <Modal open={openCamera} onClose={() => setOpenStoryCamera(false)}>
@@ -909,6 +1181,9 @@ const UserHome = () => {
         </Box>
       </Modal>
     </Container>
+
+
+
   );
 };
 

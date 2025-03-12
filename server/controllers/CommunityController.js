@@ -4,17 +4,29 @@ const Community = require("../models/Community");
 //  Create a Community
 const createCommunity = async (req, res) => {
     try {
-        const { name, description, category, university, createdBy } = req.body;
+        const { name, description, createdBy, coverImage, rules } = req.body;
+        console.log("create started", req.body);
+        // Create a new community based on the schema
         const newCommunity = new Community({
-            name, description, category, university, createdBy,
-            members: [{ userId: createdBy, role: "admin" }]
+            name,
+            description,
+            coverImage: coverImage || "", // Default empty string if not provided
+            rules: rules || [], // Default empty array if not provided
+            members: [{ userId: createdBy, role: "admin" }], // Add creator as admin
+            posts: 0, // Default post count
+            createdBy
         });
+
+        // Save community to the database
         await newCommunity.save();
+
         res.status(201).json({ message: "Community created successfully", community: newCommunity });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
+module.exports = { createCommunity };
 
 //  Edit Community Details
 const editCommunity = async (req, res) => {
@@ -27,32 +39,74 @@ const editCommunity = async (req, res) => {
     }
 };
 
-//  Add a Member to Community
-const addMember = async (req, res) => {
+// ✅ Toggle Membership (Add or Remove Member)
+const toggleMembership = async (req, res) => {
     try {
-        const { communityId } = req.params;
+        const { communityId } = req.body;
         const { userId } = req.body;
+
         const community = await Community.findById(communityId);
         if (!community) return res.status(404).json({ message: "Community not found" });
 
-        community.members.push({ userId, role: "member" });
-        await community.save();
-        res.json({ message: "Member added successfully", community });
+        const memberIndex = community.members.findIndex(member => member.userId.toString() === userId);
+
+        if (memberIndex !== -1) {
+            // User is already a member, remove them
+            community.members.splice(memberIndex, 1);
+            await community.save();
+            return res.json({ message: "Member removed successfully", community });
+        } else {
+            // User is not a member, add them
+            community.members.push({ userId, role: "member" });
+            await community.save();
+            return res.json({ message: "Member added successfully", community });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-//  Remove a Member from Community
-const removeMember = async (req, res) => {
+
+// ✅ Get All Communities
+const getAllCommunities = async (req, res) => {
     try {
-        const { communityId, userId } = req.params;
+        const communities = await Community.find();
+        res.json(communities);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+// ✅ Get a Community by ID
+const getCommunityById = async (req, res) => {
+    try {
+        const { communityId } = req.params;
+        const community = await Community.findById(communityId);
+        if (!community) {
+            return res.status(404).json({ message: "Community not found" });
+        }
+        res.json(community);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+// ✅ Delete a Community
+const deleteCommunity = async (req, res) => {
+    try {
+        const { communityId } = req.params;
+
+        // Find the community
         const community = await Community.findById(communityId);
         if (!community) return res.status(404).json({ message: "Community not found" });
 
-        community.members = community.members.filter(member => member.userId.toString() !== userId);
-        await community.save();
-        res.json({ message: "Member removed successfully", community });
+        // Delete all associated posts
+        //   await CommunityPost.deleteMany({ communityId });
+
+        // Delete the community
+        await Community.findByIdAndDelete(communityId);
+
+        res.json({ message: "Community deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -154,4 +208,17 @@ const addComment = async (req, res) => {
     }
 };
 
-module.exports = { createCommunity, editCommunity, addMember, removeMember, createPost, commentOnPost, likePost, deletePost, addComment };
+// Add the new function to module exports
+module.exports = {
+    createCommunity,
+    editCommunity,
+    toggleMembership,
+    createPost,
+    commentOnPost,
+    likePost,
+    deletePost,
+    addComment,
+    getAllCommunities,
+    getCommunityById,
+    deleteCommunity // ✅ Export the delete function
+};

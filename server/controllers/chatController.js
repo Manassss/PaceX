@@ -13,6 +13,15 @@ const sendMessage = async (req, res) => {
 
         const newMessage = new Chat({ senderId, receiverId, text });
         await newMessage.save();
+
+        // ✅ Send notification for the message
+        await Notification.create({
+            userId: receiverId, // The recipient of the message
+            senderId: senderId, // The sender of the message
+            type: "message",
+            messageId: newMessage._id,
+        });
+
         console.log("sender", senderId);
         const notification = new Notification({
             recipient: receiverId, sender: senderId, type: "message", messageId: newMessage._id
