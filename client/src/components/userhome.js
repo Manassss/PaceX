@@ -703,7 +703,7 @@ const UserHome = () => {
                 <IconButton>
                   <FavoriteIcon />
                 </IconButton>
-                <Typography>{post.likes} Likes</Typography>
+                <Typography>{post.likes?.length} Likes</Typography>
 
                 <IconButton onClick={() => toggleCommentBox(post.postId)}>
                   <CommentIcon />
