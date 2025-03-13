@@ -4,13 +4,14 @@ const Notification = require('../models/Notification')
 
 const createPost = async (req, res) => {
   try {
-    const { userId, userName, content, postimg } = req.body;
+    const { userId, userName, content, postimg, images } = req.body;
     console.log(postimg);
     const newPost = new Post({
       userId,
       userName,
       content,
-      postimg
+      postimg,
+      images
     });
     const user = await User.findById(userId);
     user.posts = (user.posts || 0) + 1; // Ensure posts field exists, then increment

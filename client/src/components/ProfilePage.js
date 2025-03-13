@@ -20,6 +20,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -35,6 +36,7 @@ import axios from 'axios';
 import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
+
 
 
 const ProfilePage = () => {
@@ -65,7 +67,7 @@ const ProfilePage = () => {
   const [showCommentBox, setShowCommentBox] = useState({});
   const [expandedPosts, setExpandedPosts] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
-
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
 
   // Fetch comments for a specific post
@@ -107,10 +109,6 @@ const ProfilePage = () => {
     }
   };
 
-
-
-
-
   // Add a new comment
   const handleAddComment = async (postId) => {
     if (!newComment[postId]) return;  // Ensure input is not empty
@@ -133,13 +131,10 @@ const ProfilePage = () => {
     }
   };
 
-
-
   // Toggle comment box visibility
   const toggleCommentBox = (postId) => {
     setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
-
 
   // Handle post like (optional)
   const handleLike = async (postId) => {
@@ -154,7 +149,6 @@ const ProfilePage = () => {
       console.error("Error liking post:", err);
     }
   };
-
 
 
   const handleConnectToggle = async () => {
@@ -234,6 +228,7 @@ const ProfilePage = () => {
             userId: post.userId,
             userName: post.userName,
             postId: post._id,
+            images: post.images
           }));
 
         // Fetch comments for each post and attach them
@@ -371,6 +366,9 @@ const ProfilePage = () => {
     setSelectedPost(post);
     await fetchComments(post.postId);  // 🔥 Fetch comments before opening modal
     setShowCommentBox((prev) => ({ ...prev, [post.postId]: true })); // 🔥 Ensure comment section is shown
+    // Find index of clicked post
+    const postIndex = posts.findIndex(p => p.postId === post.postId);
+    setCurrentPostIndex(postIndex);
     setOpenPostModal(true);
   };
 
@@ -623,16 +621,34 @@ const ProfilePage = () => {
                       }}
                       onClick={() => handlePostClick(post)} // Open modal on click
                     >
-                      <img
-                        src={post.postimg}
-                        alt="Post"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          borderRadius: "4px",
-                        }}
-                      />
+                      <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+                        <img
+                          src={post.postimg || (post.images?.length > 0 ? post.images[0] : "default_image_url")}
+                          alt="Post"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
+                        />
+                        {post.images?.length > 1 && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 8,
+                              right: 8,
+                              backgroundColor: "rgba(0, 0, 0, 0.6)",
+                              color: "white",
+                              fontSize: "12px",
+                              padding: "2px 6px",
+                              borderRadius: "10px",
+                            }}
+                          >
+                            {post.images.length}+
+                          </Box>
+                        )}
+                      </Box>
                     </Box>
                   </Grid>
                 ))}
@@ -653,7 +669,7 @@ const ProfilePage = () => {
       {selectedPost && (
         <Modal
           open={openPostModal}
-          onClose={() => setOpenPostModal(false)}
+          onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0) }}
           BackdropProps={{
             sx: {
               backdropFilter: "blur(10px)", // ✅ Blur background when modal is open
@@ -668,7 +684,7 @@ const ProfilePage = () => {
               left: "50%",
               transform: "translate(-50%, -50%)",
               width: "90vw",
-              maxWidth: "500px",
+              maxWidth: "600px",
               bgcolor: "#f8f2ec",
               p: 3,
               borderRadius: 2,
@@ -676,22 +692,7 @@ const ProfilePage = () => {
             }}
           >
             {/* Left Arrow - Navigate to Previous Post */}
-            {selectedPost?.userId === user?._id && (
-              <IconButton
-                onClick={() => handleDeleteClick(selectedPost.postId)}
-                sx={{
-                  position: "absolute",
-                  top: 200, // Set a fixed top position
-                  right: 100, // Set a fixed right position
-                  backgroundColor: "rgba(255, 0, 0, 0.7)",
-                  color: "white",
-                  "&:hover": { backgroundColor: "red" },
-                  zIndex: 10 // Ensure it appears above other elements
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            )}
+
             {currentPostIndex > 0 && (
               <IconButton
                 onClick={handlePrevPost}
@@ -708,16 +709,63 @@ const ProfilePage = () => {
               </IconButton>
             )}
 
-            {/* Post Image */}
-            <img
-              src={selectedPost.postimg}
-              alt="Post Detail"
-              style={{
-                width: "100%",
-                height: "auto",
-                borderRadius: "10px",
-              }}
-            />
+            {/* Post Images - Show Multiple Images if Available */}
+            <Box sx={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {selectedPost.images?.length > 0 ? (
+                <>
+                  {currentImageIndex > 0 && (
+                    <IconButton
+                      onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
+                      sx={{
+                        position: "absolute",
+                        left: 30,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        backgroundColor: "rgba(0, 0, 0, 0.3)",
+                        color: "white",
+                      }}
+                    >
+                      <ArrowBackIosNewIcon />
+                    </IconButton>
+                  )}
+                  <img
+                    src={selectedPost.images[currentImageIndex]}
+                    alt={`Post Image ${currentImageIndex + 1}`}
+                    style={{
+                      width: "90%",
+                      height: "auto",
+                      borderRadius: "10px",
+
+                    }}
+                  />
+                  {currentImageIndex < selectedPost.images.length - 1 && (
+                    <IconButton
+                      onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
+                      sx={{
+                        position: "absolute",
+                        right: 30,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        backgroundColor: "rgba(0, 0, 0, 0.3)",
+                        color: "white",
+                      }}
+                    >
+                      <ArrowForwardIosIcon />
+                    </IconButton>
+                  )}
+                </>
+              ) : (
+                <img
+                  src={selectedPost.postimg}
+                  alt="Post Detail"
+                  style={{
+                    width: "90%",
+                    height: "auto",
+                    borderRadius: "10px",
+                  }}
+                />
+              )}
+            </Box>
 
             {/* Caption */}
             {selectedPost?.content && (
@@ -742,6 +790,22 @@ const ProfilePage = () => {
               <IconButton onClick={() => toggleCommentBox(selectedPost.postId)}>
                 <ChatBubbleOutlineIcon sx={{ fontSize: "28px" }} />
               </IconButton>
+              {selectedPost?.userId === user?._id && (
+                <IconButton
+                  onClick={() => handleDeleteClick(selectedPost.postId)}
+                  sx={{
+                    position: "absolute",
+
+                    right: 100, // Set a fixed right position
+                    backgroundColor: "rgba(255, 0, 0, 0.7)",
+                    color: "white",
+                    "&:hover": { backgroundColor: "red" },
+                    zIndex: 10 // Ensure it appears above other elements
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
             </Box>
 
             {/* Comment Section */}

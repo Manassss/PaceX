@@ -53,34 +53,9 @@ const UserHome = () => {
   const [showCommentBox, setShowCommentBox] = useState({});
   const [following, setFollowing] = useState([]);
   const [visibleCount, setVisibleCount] = useState(3); // Show 3 users initially
-
-
-
-
-
-
-
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // ✅ Function to mark a story as "viewed"
-  const followUser = async (userId, targetUserId) => {
-    try {
-      const response = await axios.post(`http://localhost:5001/api/user/${userId}/follow/${targetUserId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error following user:", error);
-      throw error;
-    }
-  };
-
-  const unfollowUser = async (userId, targetUserId) => {
-    try {
-      const response = await axios.delete(`http://localhost:5001/api/user/${userId}/unfollow/${targetUserId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error unfollowing user:", error);
-      throw error;
-    }
-  };
   const markStoryAsViewed = async (storyId, userId) => {
     try {
       const postdata = { storyId, userId };
@@ -203,7 +178,8 @@ const UserHome = () => {
               userId: post.userId,
               userName: post.userName,
               postId: post._id,
-              comments: commentsRes.data  // attach fetched comments
+              comments: commentsRes.data,  // attach fetched comments
+              images: post.images
             };
           })
         );
@@ -295,9 +271,6 @@ const UserHome = () => {
   }, [user]);
 
 
-
-
-
   const handleProfile = (userId) => {
     navigate(`/profile/${userId}`);
   };
@@ -311,15 +284,11 @@ const UserHome = () => {
     navigate(`/messenger`);
   };
 
-
-
   const toggleMessenger = () => {
     setMessengerOpen((prev) => !prev);
   };
 
   useEffect(() => {
-
-
     // Dummy data for recommended profiles
     setRecommendedProfiles([
       { id: 1, name: "John Doe", profileImage: "https://via.placeholder.com/50" },
@@ -955,9 +924,51 @@ const UserHome = () => {
                 </Box>
               )}
 
-              {post.postimg && (
-                <Box sx={{ mt: 2, borderRadius: "10px", overflow: "hidden" }}>
-                  <img src={post.postimg} alt="Post" style={{ width: "100%", borderRadius: "10px" }} />
+              {(post.postimg || post.images?.length > 0) && (
+                <Box sx={{ mt: 2, borderRadius: "10px", overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {post.images?.length > 0 ? (
+                    <>
+                      {currentImageIndex > 0 && (
+                        <IconButton
+                          onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
+                          sx={{
+                            position: "absolute",
+                            left: 10,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            backgroundColor: "rgba(0, 0, 0, 0.3)",
+                            color: "white",
+                          }}
+                        >
+                          <ArrowBackIosNewIcon />
+                        </IconButton>
+                      )}
+
+                      <img
+                        src={post.images[currentImageIndex]}
+                        alt="Post"
+                        style={{ width: "100%", borderRadius: "10px" }}
+                      />
+
+                      {currentImageIndex < post.images.length - 1 && (
+                        <IconButton
+                          onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
+                          sx={{
+                            position: "absolute",
+                            right: 10,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            backgroundColor: "rgba(0, 0, 0, 0.3)",
+                            color: "white",
+                          }}
+                        >
+                          <ArrowForwardIosIcon />
+                        </IconButton>
+                      )}
+                    </>
+                  ) : (
+                    <img src={post.postimg} alt="Post" style={{ width: "100%", borderRadius: "10px" }} />
+                  )}
                 </Box>
               )}
 
