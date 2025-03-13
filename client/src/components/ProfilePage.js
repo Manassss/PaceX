@@ -622,7 +622,7 @@ const ProfilePage = () => {
 
           {/* Posts Section */}
           <Box sx={{ mt: 12 }}>
-            {(userDetails.private === false || userDetails.followers?.includes(user?._id)) ? (
+            {(userDetails.private === false || userDetails.followers?.includes(user?._id)) || userDetails.id === user?._id ? (
               posts.length > 0 ? (
                 <Grid container spacing={1} sx={{ justifyContent: "center" }}>
                   {posts.map((post, index) => (
