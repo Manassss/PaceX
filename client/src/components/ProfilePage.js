@@ -13,7 +13,9 @@ import {
   Input,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -25,6 +27,7 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import LockIcon from '@mui/icons-material/Lock';
 import ShareIcon from '@mui/icons-material/Share';
 import { getAuth } from "firebase/auth";
 import { storage } from '../firebase';
@@ -166,42 +169,45 @@ const ProfilePage = () => {
     setLoading(false);
   };
 
+  const fetchUserProfile = async () => {
+    try {
+
+      const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+      console.log("Fetched User Data:", res.data); // Debugging output
+
+      // Transform the data
+      const transformedData = {
+        id: res.data._id,
+        username: res.data.username,
+        name: res.data.name,
+        email: res.data.email,
+        bio: res.data.bio || "No bio available",
+        university: res.data.university || "Unknown University",
+        role: res.data.role || "N/A",
+        profileImage: res.data.profileImage || "default_profile_image_url",
+        postsCount: res.data.posts || 0, // Assuming it's a number
+        followersCount: res.data.followersNumber || res.data.followers?.length || 0,
+        followingCount: res.data.followingsNumber || res.data.followings?.length || 0,
+        joinedAt: new Date(res.data.joinedAt).toLocaleDateString(),
+        private: res.data.private,
+        followers: res.data.followers,
+        followings: res.data.followings
+      };
+
+      console.log("Transformed Data:", transformedData); // Debugging output
+
+      setIsConnected(res.data.followers?.includes(user?._id) ? true : false);
+      setUserDetails(transformedData);
+      setFormData(transformedData);
+    } catch (err) {
+      console.error("Error fetching profile:", err.message);
+    }
+  };
 
 
   useEffect(() => {
     console.log("id", id);
     if (!userId) return;
-    const fetchUserProfile = async () => {
-      try {
-
-        const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
-        console.log("Fetched User Data:", res.data); // Debugging output
-
-        // Transform the data
-        const transformedData = {
-          id: res.data._id,
-          username: res.data.username,
-          name: res.data.name,
-          email: res.data.email,
-          bio: res.data.bio || "No bio available",
-          university: res.data.university || "Unknown University",
-          role: res.data.role || "N/A",
-          profileImage: res.data.profileImage || "default_profile_image_url",
-          postsCount: res.data.posts || 0, // Assuming it's a number
-          followersCount: res.data.followersNumber || res.data.followers?.length || 0,
-          followingCount: res.data.followingsNumber || res.data.followings?.length || 0,
-          joinedAt: new Date(res.data.joinedAt).toLocaleDateString(),
-        };
-
-        console.log("Transformed Data:", transformedData); // Debugging output
-
-        setIsConnected(res.data.followers?.includes(user?._id) ? true : false);
-        setUserDetails(transformedData);
-        setFormData(transformedData);
-      } catch (err) {
-        console.error("Error fetching profile:", err.message);
-      }
-    };
 
     fetchUserProfile();
 
@@ -384,6 +390,7 @@ const ProfilePage = () => {
       });
 
       const data = await response.json();
+      fetchUserProfile();
       alert(data.message); // Show follow/unfollow message
     } catch (error) {
       console.error("Error:", error);
@@ -589,6 +596,17 @@ const ProfilePage = () => {
                   variant="outlined"
                   fullWidth
                 />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.private || false}
+                      onChange={(e) => setFormData({ ...formData, private: e.target.checked })}
+                      color="primary"
+                    />
+                  }
+                  label={formData.private ? "Private Account" : "Public Account"}
+                  sx={{ alignSelf: "center", mt: 2 }}
+                />
                 <Button
                   variant="contained"
                   color="primary"
@@ -604,62 +622,99 @@ const ProfilePage = () => {
 
           {/* Posts Section */}
           <Box sx={{ mt: 12 }}>
-            {posts.length > 0 ? (
-              <Grid container spacing={1} sx={{ justifyContent: "center" }}>
-                {posts.map((post, index) => (
-                  <Grid item xs={6} sm={4} md={3} key={index}>
-                    <Box
-                      sx={{
-                        width: "100%",
-                        aspectRatio: "1",
-                        overflow: "hidden",
-                        borderRadius: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer", // Makes it clickable
-                      }}
-                      onClick={() => handlePostClick(post)} // Open modal on click
-                    >
-                      <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
-                        <img
-                          src={post.postimg || (post.images?.length > 0 ? post.images[0] : "default_image_url")}
-                          alt="Post"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            borderRadius: "4px",
-                          }}
-                        />
-                        {post.images?.length > 1 && (
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 8,
-                              right: 8,
-                              backgroundColor: "rgba(0, 0, 0, 0.6)",
-                              color: "white",
-                              fontSize: "12px",
-                              padding: "2px 6px",
-                              borderRadius: "10px",
+            {(userDetails.private === false || userDetails.followers?.includes(user?._id)) ? (
+              posts.length > 0 ? (
+                <Grid container spacing={1} sx={{ justifyContent: "center" }}>
+                  {posts.map((post, index) => (
+                    <Grid item xs={6} sm={4} md={3} key={index}>
+                      <Box
+                        sx={{
+                          width: "100%",
+                          aspectRatio: "1",
+                          overflow: "hidden",
+                          borderRadius: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => handlePostClick(post)}
+                      >
+                        <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+                          <img
+                            src={post.postimg || (post.images?.length > 0 ? post.images[0] : "default_image_url")}
+                            alt="Post"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: "4px",
                             }}
-                          >
-                            {post.images.length}+
-                          </Box>
-                        )}
+                          />
+                          {post.images?.length > 1 && (
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                                color: "white",
+                                fontSize: "12px",
+                                padding: "2px 6px",
+                                borderRadius: "10px",
+                              }}
+                            >
+                              {post.images.length}+
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Typography
+                  variant="body2"
+                  sx={{ textAlign: "center", color: "gray", fontStyle: "italic" }}
+                >
+                  No Posts Available
+                </Typography>
+              )
             ) : (
-              <Typography
-                variant="body2"
-                sx={{ textAlign: "center", color: "gray", fontStyle: "italic" }}
-              >
-                No Posts Available
-              </Typography>
+              <Box sx={{ textAlign: "center", mt: 5 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                  <LockIcon sx={{ fontSize: 50, color: "gray" }} />
+                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    This account is private
+                  </Typography>
+                  <Typography sx={{ color: "gray" }}>
+                    Follow to see their photos and videos.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      borderRadius: 2,
+                      padding: "6px 12px",
+                      fontSize: "14px",
+                      backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
+                      color: isConnected ? "#000" : "#fff",
+                      "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
+                    }}
+                    onClick={handleConnectToggle}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <CircularProgress size={20} sx={{ color: "inherit" }} />
+                    ) : isConnected ? (
+                      <>
+                        Following <span style={{ marginLeft: "5px" }}>▼</span>
+                      </>
+                    ) : (
+                      "Connect"
+                    )}
+                  </Button>
+                </Box>
+              </Box>
             )}
           </Box>
         </Box>
@@ -879,10 +934,6 @@ const ProfilePage = () => {
           </Box>
         </Modal>
       )}
-
-
-
-
 
 
       {/* Delete Confirmation Modal */}
