@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 // Define a schema for community posts
 const communityPostSchema = new mongoose.Schema({
     communityId: { type: mongoose.Schema.Types.ObjectId, ref: "Community", required: true }, // Reference to the community
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Creator of the post
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    username: { type: String, required: true }, // Creator of the post
+    userimg: { type: String, default: "" },
     content: { type: String, required: true, maxlength: 2000 }, // Post content
     image: { type: String, default: "" }, // Optional image URL
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Users who liked the post
@@ -16,6 +18,7 @@ const communityPostSchema = new mongoose.Schema({
     ], // Embedded comments inside the post
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
+
 });
 
 module.exports = mongoose.model("CommunityPost", communityPostSchema);

@@ -10,7 +10,8 @@ router.post("/togglemember", communityController.toggleMembership);
 router.delete("/:communityId", communityController.deleteCommunity);
 
 
-router.post("/:communityId/post", communityController.createPost);
+router.post("/post", communityController.createPost);
+router.get("/post/:communityId", communityController.getCommunityPosts);
 router.post("/:postId/comment", communityController.commentOnPost);
 router.post("/:postId/like", communityController.likePost);
 router.delete("/:postId", communityController.deletePost);

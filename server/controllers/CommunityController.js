@@ -1,6 +1,6 @@
 const CommunityPost = require("../models/CommunityPost");
 const Community = require("../models/Community");
-
+const mongoose = require("mongoose");
 //  Create a Community
 const createCommunity = async (req, res) => {
     try {
@@ -25,8 +25,6 @@ const createCommunity = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
-module.exports = { createCommunity };
 
 //  Edit Community Details
 const editCommunity = async (req, res) => {
@@ -66,8 +64,7 @@ const toggleMembership = async (req, res) => {
     }
 };
 
-
-// ✅ Get All Communities
+//  Get All Communities
 const getAllCommunities = async (req, res) => {
     try {
         const communities = await Community.find();
@@ -90,8 +87,7 @@ const getCommunityById = async (req, res) => {
     }
 };
 
-
-// ✅ Delete a Community
+//  Delete a Community
 const deleteCommunity = async (req, res) => {
     try {
         const { communityId } = req.params;
@@ -112,24 +108,43 @@ const deleteCommunity = async (req, res) => {
     }
 };
 
+//------------ Community Posts--------------------
 
-
-// ✅ Add a Community Post
+//  Add a Community Post
 const createPost = async (req, res) => {
     try {
-        const { communityId } = req.params;
-        const { userId, content, image } = req.body;
+        console.log("posting started")
+        const { userId, content, communityId, username, userimg } = req.body;
 
-        const post = new CommunityPost({ communityId, userId, content, image });
+        const post = new CommunityPost({ communityId, userId, content, username, userimg });
         await post.save();
 
-        await Community.findByIdAndUpdate(communityId, { $push: { posts: post._id } });
+        await Community.findByIdAndUpdate(communityId, { $inc: { posts: 1 } });
 
         res.status(201).json({ message: "Post created successfully", post });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
+// ✅ Get All Posts for a Community
+const getCommunityPosts = async (req, res) => {
+    try {
+        console.log("fetch started ", req.params)
+        const { communityId } = req.params;
+
+        const posts = await CommunityPost.find({ communityId: new mongoose.Types.ObjectId(communityId) });
+        console.log("fetch comleted")
+
+
+        console.log("Returning posts to client.");
+        res.json(posts);
+    } catch (error) {
+        console.error("Server Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 // ✅ Comment on a Community Post
 const commentOnPost = async (req, res) => {
@@ -220,5 +235,6 @@ module.exports = {
     addComment,
     getAllCommunities,
     getCommunityById,
-    deleteCommunity // ✅ Export the delete function
+    deleteCommunity,
+    getCommunityPosts // ✅ Export the delete function
 };
