@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPost, getPosts, likePost, addComment } = require('../controllers/postController');
+const { createPost, getPosts, likePost, addComment, deletePost } = require('../controllers/postController');
 
 const router = express.Router();
 
@@ -15,6 +15,7 @@ router.put('/like/:postId', likePost);
 // NEW: Route to COMMENT a specific post
 
 router.post('/addComment', addComment);
+router.post('/delete/:postId', deletePost);
 
 
 module.exports = router;

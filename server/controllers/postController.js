@@ -42,7 +42,6 @@ const getPosts = async (req, res) => {
   }
 };
 
-
 //  Like a specific post
 const likePost = async (req, res) => {
   const { postId, userId } = req.body;
@@ -61,7 +60,6 @@ const likePost = async (req, res) => {
   }
   res.json(post);
 };
-
 
 const addComment = async (req, res) => {
   try {
@@ -102,4 +100,29 @@ const addComment = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
-module.exports = { createPost, getPosts, likePost, addComment };
+
+const deletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    console.log("del started");
+    // Find the post
+    const post = await Post.findById(postId);
+    console.log("pos", post);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Remove the post
+    await Post.findByIdAndDelete(postId);
+
+    // Decrease post count for the user
+    await User.findByIdAndUpdate(post.userId, { $inc: { posts: -1 } });
+
+    res.status(200).json({ message: "Post deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting post:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+module.exports = { createPost, getPosts, likePost, addComment, deletePost };

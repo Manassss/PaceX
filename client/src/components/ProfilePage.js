@@ -50,6 +50,8 @@ const ProfilePage = () => {
   const [currentIndexStory, setCurrentIndexStory] = useState(0);
   const [openPostModal, setOpenPostModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -81,6 +83,27 @@ const ProfilePage = () => {
       }));
     } catch (err) {
       console.error("Error fetching comments:", err.message);
+    }
+  };
+
+  // Function to handle delete button click
+  const handleDeleteClick = (postId) => {
+    setPostToDelete(postId);
+    setDeleteConfirmation(true);
+  };
+
+  // Function to delete the post
+  const handleDeletePost = async () => {
+    if (!postToDelete) return;
+
+    try {
+      console.log("postid", postToDelete)
+      await axios.post(`http://localhost:5001/api/posts/delete/${postToDelete}`);
+      setPosts((prevPosts) => prevPosts.filter(post => post.postId !== postToDelete));
+      setDeleteConfirmation(false);
+      setOpenPostModal(false);
+    } catch (error) {
+      console.error("Error deleting post:", error);
     }
   };
 
@@ -653,6 +676,22 @@ const ProfilePage = () => {
             }}
           >
             {/* Left Arrow - Navigate to Previous Post */}
+            {selectedPost?.userId === user?._id && (
+              <IconButton
+                onClick={() => handleDeleteClick(selectedPost.postId)}
+                sx={{
+                  position: "absolute",
+                  top: 200, // Set a fixed top position
+                  right: 100, // Set a fixed right position
+                  backgroundColor: "rgba(255, 0, 0, 0.7)",
+                  color: "white",
+                  "&:hover": { backgroundColor: "red" },
+                  zIndex: 10 // Ensure it appears above other elements
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            )}
             {currentPostIndex > 0 && (
               <IconButton
                 onClick={handlePrevPost}
@@ -781,6 +820,32 @@ const ProfilePage = () => {
 
 
 
+
+      {/* Delete Confirmation Modal */}
+      <Modal open={deleteConfirmation} onClose={() => setDeleteConfirmation(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "white",
+            p: 3,
+            borderRadius: 2,
+            textAlign: "center"
+          }}
+        >
+          <Typography variant="h6">Are you sure you want to delete this post?</Typography>
+          <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
+            <Button variant="contained" color="error" onClick={handleDeletePost}>
+              Yes, Delete
+            </Button>
+            <Button variant="outlined" onClick={() => setDeleteConfirmation(false)}>
+              Cancel
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* Modal for Camera Capture */}
       <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
