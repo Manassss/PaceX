@@ -6,6 +6,6 @@ const router = express.Router();
 router.post('/add', createStory);
 router.get('/all', getStories);
 router.put('/view', viewStory);
-router.delete('/delete', deleteStory);
+router.delete('/delete/:storyId', deleteStory);
 
 module.exports = router;

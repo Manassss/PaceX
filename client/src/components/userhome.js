@@ -21,6 +21,7 @@ import AddPost from './AddPost';
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
 import { ChatBubbleOutline as CommentIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 
 
@@ -101,6 +102,7 @@ const UserHome = () => {
     console.log("storyUser", storyUser);
     setstoryUser(storyUser);
     setCurrentStories(stories);
+    console.log("currentstory", currentStories);
     setCurrentIndex(0);
     setOpenStory(true);
   };
@@ -149,9 +151,10 @@ const UserHome = () => {
         userName: story.userName,
         mediaUrl: story.mediaUrl,
         mediaType: story.mediaType,
-        views: story.views
+        views: story.views,
       }));
       console.log("story", todaystories);
+      console.log("userid", user?._id)
       setStories(todaystories);
     }
     catch (err) {
@@ -518,6 +521,24 @@ const UserHome = () => {
       );
     } catch (error) {
       console.error("🔥 Error toggling like:", error.response?.data || error.message);
+    }
+  };
+  const handleDeleteStory = async (storyId) => {
+    try {
+      await axios.delete(`http://localhost:5001/api/story/delete/${storyId}`);
+      console.log("✅ Story deleted successfully");
+
+      // Remove the deleted story from the state
+      setCurrentStories((prevStories) => prevStories.filter((story) => story.storyId !== storyId));
+      setStories((prevStories) => prevStories.filter((story) => story.storyId !== storyId))
+      // If no more stories remain, close the modal
+      if (currentStories.length === 1) {
+        handleClose();
+      } else {
+        setCurrentIndexStory((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : 0));
+      }
+    } catch (err) {
+      console.error("❌ Error deleting story:", err.response?.data || err.message);
     }
   };
 
@@ -1119,19 +1140,35 @@ const UserHome = () => {
             </>
           )}
 
-          {/* Close Button */}
-          <IconButton
-            onClick={handleClose}
-            sx={{
-              position: "absolute",
-              top: 10,
-              right: 10,
-              backgroundColor: "rgba(255, 255, 255, 0.5)",
-              color: "white",
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
+          {/* Close and Delete Buttons */}
+          <Box sx={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 1 }}>
+            {/* Close Button */}
+            <IconButton
+              onClick={handleClose}
+              sx={{
+                backgroundColor: "rgba(255, 255, 255, 0.5)",
+                color: "white",
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+
+            {/* Delete Button - Only show if the user owns the story */}
+
+            {storyUser?.id === user?._id && (
+              <IconButton
+                onClick={() => handleDeleteStory(currentStories[currentIndexStory].storyId)}
+                sx={{
+                  backgroundColor: "rgba(255, 0, 0, 0.7)",
+                  color: "white",
+                  "&:hover": { backgroundColor: "red" },
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            )}
+
+          </Box>
 
           {/* Story User Info */}
           {storyUser && (
