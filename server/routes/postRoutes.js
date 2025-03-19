@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPost, getPosts, likePost, addComment, deletePost } = require('../controllers/postController');
+const { createPost, getPosts, likePost, addComment, deletePost, togglearchive, toggletempdelete } = require('../controllers/postController');
 
 const router = express.Router();
 
@@ -16,6 +16,8 @@ router.put('/like/:postId', likePost);
 
 router.post('/addComment', addComment);
 router.post('/delete/:postId', deletePost);
+router.post('/archive', togglearchive);
+router.post('/tempdelete/:postId', toggletempdelete);
 
 
 module.exports = router;

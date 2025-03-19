@@ -142,6 +142,30 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
+// New API: Update the blockedBy property of a user
+const updateBlockedBy = async (req, res) => {
+    try {
+        const { blockedBy } = req.body; // The ID of the user blocking
+
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Ensure `blockedBy` is updated
+        if (blockedBy) {
+            user.blockedBy = blockedBy;
+            console.log("Blocked by updated:", blockedBy);
+        }
+
+        await user.save();
+        res.status(200).json({ message: "Blocked by updated successfully", user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 //  Get all users (for search)
 const getAllUsers = async (req, res) => {
     try {
@@ -155,74 +179,6 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// const followUser = async (req, res) => {
-//     try {
-//         const { userId, targetUserId } = req.params;
-
-//         if (userId === targetUserId) {
-//             return res.status(400).json({ message: "You cannot follow yourself" });
-//         }
-
-//         const user = await User.findById(userId);
-//         const targetUser = await User.findById(targetUserId);
-
-//         if (!user || !targetUser) {
-//             return res.status(404).json({ message: "User not found" });
-//         }
-
-//         if (user.followings.includes(targetUserId)) {
-//             return res.status(400).json({ message: "Already following this user" });
-//         }
-
-//         user.followings.push(targetUserId);
-//         targetUser.followers.push(userId);
-
-//         user.followingsNumber = user.followings.length;
-//         targetUser.followersNumber = targetUser.followers.length;
-
-//         await user.save();
-//         await targetUser.save();
-
-//         res.status(200).json({ message: "User followed successfully", user, targetUser });
-//     } catch (error) {
-//         res.status(500).json({ message: "Server error", error });
-//     }
-// };
-
-// // Unfollow a user
-// const unfollowUser = async (req, res) => {
-//     try {
-//         const { userId, targetUserId } = req.params;
-
-//         if (userId === targetUserId) {
-//             return res.status(400).json({ message: "You cannot unfollow yourself" });
-//         }
-
-//         const user = await User.findById(userId);
-//         const targetUser = await User.findById(targetUserId);
-
-//         if (!user || !targetUser) {
-//             return res.status(404).json({ message: "User not found" });
-//         }
-
-//         if (!user.followings.includes(targetUserId)) {
-//             return res.status(400).json({ message: "You are not following this user" });
-//         }
-
-//         user.followings = user.followings.filter(id => id.toString() !== targetUserId);
-//         targetUser.followers = targetUser.followers.filter(id => id.toString() !== userId);
-
-//         user.followingsNumber = user.followings.length;
-//         targetUser.followersNumber = targetUser.followers.length;
-
-//         await user.save();
-//         await targetUser.save();
-
-//         res.status(200).json({ message: "User unfollowed successfully", user, targetUser });
-//     } catch (error) {
-//         res.status(500).json({ message: "Server error", error });
-//     }
-// };
 
 const toggleFollow = async (req, res) => {
     try {
@@ -303,4 +259,13 @@ const searchbyname = async (req, res) => {
 //          .then(({ data }) => alert(data.message))
 //          .catch(error => console.error("Error:", error));
 
-module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers, toggleFollow, searchbyname };
+module.exports = {
+    registerUser,
+    loginUser,
+    getUserProfile,
+    updateUserProfile,
+    getAllUsers,
+    toggleFollow,
+    searchbyname,
+    updateBlockedBy // ✅ New API for updating blockedBy
+};

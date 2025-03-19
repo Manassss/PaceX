@@ -609,7 +609,7 @@ const UserHome = () => {
       }}
     >
       {/* Navbar */}
-      <Box
+      {/* <Box
         sx={{
           position: "fixed",
           top: 0,
@@ -622,7 +622,7 @@ const UserHome = () => {
         }}
       >
         <Navbar toggleMessenger={toggleMessenger} />
-      </Box>
+      </Box> */}
 
       {/* Story Section  */}
       <Box
@@ -858,7 +858,7 @@ const UserHome = () => {
           sx={{
             position: "fixed",
             right: "20px",
-            top: "40%",
+            bottom: "2%",
             transform: "translateY(-50%)",
             backgroundColor: "#073574",
             color: "#fff",
@@ -879,9 +879,10 @@ const UserHome = () => {
           gap: 3,
           position: "fixed",
           right: open ? "0%" : "-80%",
-          top: "180px",
+          top: "12%",
           overflowY: "auto",
-          transition: "all 0.3s ease-in-out",
+          transition: "all 0.2s ease-in-out",
+
         }}
       >
         {/* Close Button */}

@@ -52,6 +52,9 @@ function AppContent({ userId }) {
 
   return (
     <>
+      {/* ✅ Show Navbar except on login and register pages */}
+      {!["/register", "/login", "/"].includes(location.pathname) && <Navbar />}
+
       {/* ✅ Notification Toast Container */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} pauseOnHover draggable />
 
