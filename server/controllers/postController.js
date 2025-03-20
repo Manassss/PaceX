@@ -42,6 +42,19 @@ const getPosts = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+const getuserPosts = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const posts = await Post.find({ userId: userId })
+
+    res.status(200).json(posts);
+
+
+  } catch (err) {
+    console.error("Error fetching user posts:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+}
 
 //  Like a specific post
 const likePost = async (req, res) => {
@@ -174,4 +187,24 @@ const toggletempdelete = async (req, res) => {
   }
 };
 
-module.exports = { createPost, getPosts, likePost, addComment, deletePost, togglearchive, toggletempdelete };
+const getuserfeed = async (req, res) => {
+
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) return res.status(400).json({ message: "user not found" });
+    const followings = user.followings;
+    const posts = await Post.find({ userId: { $in: [userId, ...followings] } }).sort({ createdAt: -1 });
+
+    res.status(200).json(posts);
+
+
+  } catch (error) {
+    console.error("Error fetching feed:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+
+
+}
+
+module.exports = { createPost, getPosts, likePost, addComment, deletePost, togglearchive, toggletempdelete, getuserfeed, getuserPosts };

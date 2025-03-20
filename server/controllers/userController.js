@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/Userdetails");  // ✅ Importing the User model
 const admin = require("../config/firebaseConfig"); // Import Firebase Admin
 const Notification = require("../models/Notification"); // Import Notification model
-
+const Comment = require('../models/Comment');
 
 const registerUser = async (req, res) => {
     try {
@@ -84,7 +84,10 @@ const loginUser = async (req, res) => {
                 major: user.major,
                 graduationYear: user.graduationYear,
                 birthdate: user.birthdate,
-                bio: user.bio
+                bio: user.bio,
+                blockeduser: user.blockeduser,
+                blockedby: user.blockedby,
+
             }
         });
 
@@ -142,29 +145,83 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
-// New API: Update the blockedBy property of a user
-const updateBlockedBy = async (req, res) => {
+const deleteCommentsBetweenUsers = async (userId, blockedUserId) => {
     try {
-        const { blockedBy } = req.body; // The ID of the user blocking
+        await Comment.deleteMany({
+            $or: [
+                { userId: userId, post_userid: blockedUserId },
+                { userId: blockedUserId, post_userid: userId }
+            ]
+        });
+        console.log(`Comments between ${userId} and ${blockedUserId} deleted successfully`);
+    } catch (error) {
+        console.error("Error deleting comments between users:", error);
+    }
+};
 
-        const user = await User.findById(req.params.id);
-        if (!user) {
+// New API: Update the blockedBy property of a user
+const updateBlock = async (req, res) => {
+    try {
+        console.log("block started")
+        const { userId, blocked_userId } = req.body; // The ID of the user blocking
+
+        const blockeduser = await User.findById(blocked_userId);
+        const user = await User.findById(userId)
+        if (!user || !blocked_userId) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Ensure `blockedBy` is updated
-        if (blockedBy) {
-            user.blockedBy = blockedBy;
-            console.log("Blocked by updated:", blockedBy);
-        }
+        user.blockeduser.push(blocked_userId);
+        blockeduser.blockedby.push(userId);
 
+        const isFollowing = user.followings.includes(blocked_userId);
+        const isFollower = user.followers.includes(blocked_userId);
+        if (isFollowing) {
+            user.followings.pull(blocked_userId);
+            blockeduser.followers.pull(userId);
+        }
+        if (isFollower) {
+            blockeduser.followings.pull(userId);
+            user.followers.pull(blocked_userId);
+        }
+        user.followersNumber = user.followers.length
+        user.followingsNumber = user.followings.length
+        blockeduser.followingsNumber = blockeduser.followings.length
+        blockeduser.followersNumber = blockeduser.followers.length
         await user.save();
-        res.status(200).json({ message: "Blocked by updated successfully", user });
+        await blockeduser.save();
+        await deleteCommentsBetweenUsers(userId, blocked_userId);
+
+        res.status(200).json({ message: `Blocked ${blockeduser.name} successfully`, user });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
+const unblock = async (req, res) => {
+    try {
+        console.log("unblock started")
+        const { userId, blocked_userId } = req.body; // The ID of the user blocking
+
+        const blockeduser = await User.findById(blocked_userId);
+        const user = await User.findById(userId)
+        if (!user || !blocked_userId) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const isblocked = user.blockeduser.includes(blocked_userId)
+        if (isblocked) {
+            user.blockeduser.pull(blocked_userId);
+            blockeduser.blockedby.pull(userId);
+        }
+        await user.save();
+        await blockeduser.save();
+
+        res.status(200).json({ message: `unBlocked ${blockeduser.name} successfully`, user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+}
 
 //  Get all users (for search)
 const getAllUsers = async (req, res) => {
@@ -254,10 +311,7 @@ const searchbyname = async (req, res) => {
     }
 };
 
-// const handleFollowToggle = async (targetUserId) => 
-//     axios.post('/api/toggleFollow', { userId: currentUser.id, targetUserId })
-//          .then(({ data }) => alert(data.message))
-//          .catch(error => console.error("Error:", error));
+
 
 module.exports = {
     registerUser,
@@ -267,5 +321,6 @@ module.exports = {
     getAllUsers,
     toggleFollow,
     searchbyname,
-    updateBlockedBy // ✅ New API for updating blockedBy
+    updateBlock, // ✅ New API for updating blockedBy
+    unblock
 };

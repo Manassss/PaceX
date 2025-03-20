@@ -47,6 +47,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 
 const ProfilePage = () => {
   const [userDetails, setUserDetails] = useState({});
+  const [blockedUsers, setblockedUsers] = useState({});
   const [posts, setPosts] = useState([]); // Posts uploaded by this user
   const [stories, setStories] = useState([]); // All stories fetched
   const [userStories, setUserStories] = useState([]); // Stories belonging to this user
@@ -63,7 +64,7 @@ const ProfilePage = () => {
   const handleMenuClose = () => { setAnchorEl(null); };
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const vistinguser = id === user?._id ? false : true;
@@ -79,39 +80,9 @@ const ProfilePage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedTab, setSelectedTab] = useState("all"); // "all" | "archived"
   const [deletetype, setDeletetype] = useState("")
+  const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
 
-  const handleArchivePost = async () => {
-    console.log("Archive Post Clicked:", selectedPost?.postId);
-    try {
-      const payload = {
-        postId: selectedPost?.postId,
-        userId: userDetails.id, // Ensure correct user ID is sent
-      };
 
-      const res = await axios.post(`http://localhost:5001/api/posts/archive`, payload);
-
-      console.log("Archive Response:", res.data);
-
-      // Update the post state to reflect the change
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.postId === selectedPost?.postId ? { ...post, archived: !post.archived } : post
-        )
-      );
-
-      handleMenuClose();
-      setOpenPostModal(false)
-    } catch (error) {
-      console.error("Error archiving post:", error);
-    }
-  };
-  const handletempDeletePost = () => {
-    console.log("Delete Post Clicked:", selectedPost?.postId);
-    setDeletetype("temp");
-    setPostToDelete(selectedPost?.postId);
-    setDeleteConfirmation(true);
-    handleMenuClose();
-  };
 
   // Fetch comments for a specific post
   const fetchComments = async (postId) => {
@@ -270,6 +241,7 @@ const ProfilePage = () => {
     if (!userId) return;
 
     fetchUserProfile();
+    fetchblockedusers();
 
   }, [userId]);
 
@@ -278,13 +250,12 @@ const ProfilePage = () => {
     if (!userId) return;
     const fetchPosts = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/posts/all');
+        const res = await axios.get(`http://localhost:5001/api/posts/${id}`);
         console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
 
         // Filter posts by the current user
         const transformedPosts = res.data
-          .filter(post => post.userId.toString() === userId.toString())
           .map(post => ({
             content: post.content,
             createdAt: new Date(post.createdAt).toLocaleString(),
@@ -393,7 +364,6 @@ const ProfilePage = () => {
       setCurrentIndexStory(prev => prev - 1);
     }
   };
-
   // Open story modal when profile image is clicked (if there are stories)
   const handleStoriesClick = () => {
     if (userStories.length > 0) {
@@ -403,21 +373,17 @@ const ProfilePage = () => {
       alert("You have no stories to show.");
     }
   };
-
   // Navigate to profile page (for bottom nav)
   const handleProfile = (profileUserId) => {
     navigate(`/profile/${profileUserId}`);
   };
-
   // Navigate to add post page (for bottom nav)
   const handleAddpost = () => {
     navigate('/add-post');
   };
-
   const handleHomeClick = () => {
     navigate('/userhome');
   };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -426,7 +392,6 @@ const ProfilePage = () => {
       console.error("Error signing out:", err.message);
     }
   };
-
   // When a post is clicked, open a modal to show its details
   const handlePostClick = async (post) => {
     console.log("🔍 Post Clicked:", post); // ✅ Debugging log
@@ -439,7 +404,6 @@ const ProfilePage = () => {
     setCurrentPostIndex(postIndex);
     setOpenPostModal(true);
   };
-
   const handleFollowToggle = async (targetUserId) => {
     try {
       console.log(`user id ${user?._id} and targetid ${targetUserId}`);
@@ -458,7 +422,6 @@ const ProfilePage = () => {
       console.error("Error:", error);
     }
   };
-
   const openPostGallery = (index) => {
     setCurrentPostIndex(index);
     setSelectedPost(posts[index]);
@@ -466,7 +429,6 @@ const ProfilePage = () => {
     setShowCommentBox({ [posts[index].postId]: true });
     setOpenPostModal(true);
   };
-
   const handleNextPost = () => {
     if (currentPostIndex < posts.length - 1) {
       const nextIndex = currentPostIndex + 1;
@@ -476,7 +438,6 @@ const ProfilePage = () => {
       setShowCommentBox({ [posts[nextIndex].postId]: true });
     }
   };
-
   const handlePrevPost = () => {
     if (currentPostIndex > 0) {
       const prevIndex = currentPostIndex - 1;
@@ -486,6 +447,95 @@ const ProfilePage = () => {
       setShowCommentBox({ [posts[prevIndex].postId]: true });
     }
   };
+  const fetchblockedusers = async () => {
+    try {
+
+      const blockedUserIds = user?.blockeduser || [];
+
+      const blockedUsersDetails = await Promise.all(
+        blockedUserIds.map(async (blockedUserId) => {
+          const userRes = await axios.get(`http://localhost:5001/api/users/profile/${blockedUserId}`);
+          return {
+            id: userRes.data._id,
+            name: userRes.data.name,
+            username: userRes.data.username,
+            profileImage: userRes.data.profileImage,
+          };
+        })
+      );
+      console.log("blockeds", blockedUsersDetails)
+      setblockedUsers(blockedUsersDetails)
+    } catch (err) {
+      console.error("Error fetching blocked users:", err);
+    }
+  }
+  const handleUnblock = async (blockedUserId) => {
+    try {
+      const payload = {
+        userId: user?._id,
+        blocked_userId: blockedUserId
+      }
+      const res = await axios.post(`http://localhost:5001/api/users/unblock`, payload);
+      console.log("Response:", res.data.message);
+      setblockedUsers((prevBlockedUsers) =>
+        prevBlockedUsers.filter(user => user.id !== blockedUserId)
+      );
+      setOpenBlockedContacts(false);
+      fetchUserProfile();
+      console.log(`User ${blockedUserId} unblocked successfully`);
+    } catch (err) {
+      console.error("Error unblocking user:", err);
+    }
+  };
+  const handleBlock = async () => {
+    try {
+      const payload = {
+        userId: user?._id,
+        blocked_userId: userDetails.id
+      }
+      const res = await axios.post(`http://localhost:5001/api/users/block`, payload);
+      console.log("Response:", res.message);
+      fetchUserProfile();
+      navigate('/userhome')
+
+    } catch (error) {
+      console.error("Error archiving post:", error);
+    }
+
+  }
+  const handleArchivePost = async () => {
+    console.log("Archive Post Clicked:", selectedPost?.postId);
+    try {
+      const payload = {
+        postId: selectedPost?.postId,
+        userId: userDetails.id, // Ensure correct user ID is sent
+      };
+
+      const res = await axios.post(`http://localhost:5001/api/posts/archive`, payload);
+
+      console.log("Archive Response:", res.data);
+
+      // Update the post state to reflect the change
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.postId === selectedPost?.postId ? { ...post, archived: !post.archived } : post
+        )
+      );
+
+      handleMenuClose();
+      setOpenPostModal(false)
+    } catch (error) {
+      console.error("Error archiving post:", error);
+    }
+  };
+  const handletempDeletePost = () => {
+    console.log("Delete Post Clicked:", selectedPost?.postId);
+    setDeletetype("temp");
+    setPostToDelete(selectedPost?.postId);
+    setDeleteConfirmation(true);
+    handleMenuClose();
+  };
+
 
   const filteredPosts =
     selectedTab === "recentlyDeleted"
@@ -493,10 +543,7 @@ const ProfilePage = () => {
       : selectedTab === "archived"
         ? posts.filter(post => post.archived && !post.tempdelete) // Show archived but not deleted
         : posts.filter(post => !post.archived && !post.tempdelete); // Show normal posts;
-  // const filteredPosts =
-  //   selectedTab === "recentlyDeleted"
-  //     ? posts.filter(post => post.tempdelete) // Show only deleted posts
-  //     : posts.filter(post => !post.tempdelete); // Show normal posts;
+
 
 
 
@@ -534,24 +581,62 @@ const ProfilePage = () => {
 
           }}
         >
-          {/* Profile Image */}
-          <Avatar
-            src={userDetails.profileImage}
-            sx={{
-              width: "250px", // Fixed size for consistency
-              height: "250px",
-              mb: 2,
-              border: "3px solid rgba(255, 255, 255, 0.5)",
-              mt: 5
-            }}
-          />
-          <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "center" }}>
-            {userDetails.name || "Your Name"}
-          </Typography>
+          {/* Profile Section */}
+          <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+            <Box sx={{ position: "relative", width: "250px", height: "250px", mb: 3 }}>
+              {/* Profile Image */}
+              <Avatar
+                src={userDetails.profileImage}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  border: "3px solid rgba(255, 255, 255, 0.5)",
+                  mt: 5
+                }}
+              />
+              {/* Three-Dot Menu (More Options) */}
+              <IconButton
+                onClick={handleMenuOpen}
+                sx={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  color: "white",
+                  backgroundColor: "rgba(0, 0, 0, 0.4)",
+                  width: 35,
+                  height: 35,
+                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
+                }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                sx={{ mt: 1 }}
+              >
+                {userDetails.id === user?._id ? <MenuItem onClick={() => { setOpenBlockedContacts(true); handleMenuClose() }}>
+                  Blocked Contacts
+                </MenuItem> :
+                  <MenuItem onClick={handleBlock}>
+                    Block
+                  </MenuItem>}
 
-          <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center" }}>
-            {userDetails.bio || "No bio available"}
-          </Typography>
+
+              </Menu>
+            </Box>
+
+            {/* User Details Below Image */}
+            <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
+              {userDetails.name || "Your Name"}
+            </Typography>
+
+            <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
+              {userDetails.bio || "No bio available"}
+            </Typography>
+          </Box>
+
 
           {/* User Stats */}
           <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
@@ -1144,6 +1229,49 @@ const ProfilePage = () => {
               <ArrowForwardIosIcon />
             </IconButton>
           )}
+        </Box>
+      </Modal>
+
+      {/*blocked conatcts modal */}
+      <Modal open={openBlockedContacts} onClose={() => setOpenBlockedContacts(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "white",
+            p: 3,
+            borderRadius: 2,
+            textAlign: "center",
+            width: "400px",
+            maxHeight: "500px",
+            overflowY: "auto",
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
+          <List>
+            {blockedUsers?.length > 0 ? (
+              blockedUsers.map((blockedUser, index) => (
+                <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Avatar src={blockedUser.profileImage} />
+                    <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={() => handleUnblock(blockedUser.id)}
+                  >
+                    Unblock
+                  </Button>
+                </ListItem>
+              ))
+            ) : (
+              <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
+            )}
+          </List>
         </Box>
       </Modal>
     </>

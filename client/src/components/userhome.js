@@ -165,23 +165,29 @@ const UserHome = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/posts/all');
+        const res = await axios.get(`http://localhost:5001/api/posts/feed/${user?._id}`);
         const postsData = res.data;
 
-        // For each post, fetch its comments and attach them immediately.
+        // Get the list of blocked users
+        const blockedUsers = user?.blockeduser || [];
+
+        // Fetch comments and filter out blocked users
         const postsWithComments = await Promise.all(
           postsData.map(async (post) => {
             const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post._id}`);
+
+
+
             return {
               content: post.content,
               createdAt: new Date(post.createdAt).toLocaleString(),
-              dislikes: post.dislikes || [], // ✅ Ensure dislikes is an array
-              likes: Array.isArray(post.likes) ? post.likes : [], // ✅ Ensure likes is always an array  
+              dislikes: post.dislikes || [],
+              likes: Array.isArray(post.likes) ? post.likes : [],
               postimg: post.postimg,
               userId: post.userId,
               userName: post.userName,
               postId: post._id,
-              comments: commentsRes.data,  // attach fetched comments
+              comments: commentsRes.data,  // ✅ Attach only unblocked comments
               images: post.images
             };
           })
@@ -193,6 +199,7 @@ const UserHome = () => {
         console.error('Error fetching posts:', err);
       }
     };
+
     const fetchUsers = async () => {
       try {
         const res = await axios.get('http://localhost:5001/api/users/all');

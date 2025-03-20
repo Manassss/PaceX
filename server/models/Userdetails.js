@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
     followersNumber: { type: Number, default: 0 },
     posts: { type: Number, default: 0 },
     private: { type: Boolean, default: false },
-    blockedby: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    blockedby: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    blockeduser: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
     // URL for profile ima
 });
 
