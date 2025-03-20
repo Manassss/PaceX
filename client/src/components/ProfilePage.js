@@ -42,6 +42,7 @@ import axios from 'axios';
 import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
+import ShareModal from './ShareModal';
 
 
 
@@ -81,7 +82,7 @@ const ProfilePage = () => {
   const [selectedTab, setSelectedTab] = useState("all"); // "all" | "archived"
   const [deletetype, setDeletetype] = useState("")
   const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
-
+  const [openShareModal, setOpenShareModal] = useState(false);
 
 
   // Fetch comments for a specific post
@@ -139,7 +140,6 @@ const ProfilePage = () => {
       console.error("Error deleting post:", error);
     }
   };
-
   // Add a new comment
   const handleAddComment = async (postId) => {
     if (!newComment[postId]) return;  // Ensure input is not empty
@@ -164,12 +164,10 @@ const ProfilePage = () => {
       console.error("🔥 Error adding comment:", err.response?.data || err.message);
     }
   };
-
   // Toggle comment box visibility
   const toggleCommentBox = (postId) => {
     setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
-
   // Handle post like (optional)
   const handleLike = async (postId) => {
     try {
@@ -182,9 +180,9 @@ const ProfilePage = () => {
     } catch (err) {
       console.error("Error liking post:", err);
     }
+
   };
-
-
+  // Handle follow/unfollow (optional)
   const handleConnectToggle = async () => {
     setLoading(true);
     try {
@@ -199,7 +197,6 @@ const ProfilePage = () => {
     }
     setLoading(false);
   };
-
   const fetchUserProfile = async () => {
     try {
 
@@ -234,8 +231,6 @@ const ProfilePage = () => {
       console.error("Error fetching profile:", err.message);
     }
   };
-
-
   useEffect(() => {
     console.log("id", id);
     if (!userId) return;
@@ -699,6 +694,9 @@ const ProfilePage = () => {
                   borderRadius: 2,
                   padding: "6px 12px",
                   fontSize: "14px",
+                  backgroundColor: "#007bff",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#0056b3" },
                 }}
                 onClick={() => setEditMode(!editMode)}
               >
@@ -707,6 +705,23 @@ const ProfilePage = () => {
               : <></>}
 
           </Box>
+          <Button
+            variant="contained"
+            startIcon={<ShareIcon />}  // ✅ Adding Share Icon from MUI
+            sx={{
+              borderRadius: 2,
+              padding: "6px 12px",
+              fontSize: "14px",
+              backgroundColor: "#007bff",
+              color: "#fff",
+              "&:hover": { backgroundColor: "#0056b3" },
+              mt: 2
+            }}
+            onClick={() => setOpenShareModal(true)}
+          >
+            Share Profile
+          </Button>
+
         </Box>
 
         {/* Right Side - Main Content */}
@@ -1274,6 +1289,20 @@ const ProfilePage = () => {
           </List>
         </Box>
       </Modal>
+
+      {/* sharemodal*/}
+      <ShareModal
+        open={openShareModal}
+        onClose={() => setOpenShareModal(false)}
+        contentToShare={{
+          senderId: user?._id,
+          id: userDetails.id,
+          name: userDetails.name,
+          username: userDetails.username,
+          profileImage: userDetails.profileImage,
+        }}
+        type="profile"
+      />
     </>
   );
 };

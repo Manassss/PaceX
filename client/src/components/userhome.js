@@ -22,6 +22,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
 import { ChatBubbleOutline as CommentIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 
 
@@ -55,6 +56,9 @@ const UserHome = () => {
   const [following, setFollowing] = useState([]);
   const [visibleCount, setVisibleCount] = useState(3); // Show 3 users initially
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [viewers, setViewers] = useState([]);
+  const [showViewers, setShowViewers] = useState(false);
+
 
   // ✅ Function to mark a story as "viewed"
   const markStoryAsViewed = async (storyId, userId) => {
@@ -102,7 +106,7 @@ const UserHome = () => {
     console.log("storyUser", storyUser);
     setstoryUser(storyUser);
     setCurrentStories(stories);
-    console.log("currentstory", currentStories);
+    console.log("currentstory", stories);
     setCurrentIndex(0);
     setOpenStory(true);
   };
@@ -152,6 +156,7 @@ const UserHome = () => {
         mediaUrl: story.mediaUrl,
         mediaType: story.mediaType,
         views: story.views,
+        viewsNumber: story.viewsNumber
       }));
       console.log("story", todaystories);
       console.log("userid", user?._id)
@@ -548,7 +553,15 @@ const UserHome = () => {
       console.error("❌ Error deleting story:", err.response?.data || err.message);
     }
   };
-
+  const fetchViewers = async (storyId) => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/story/views/${storyId}`);
+      setViewers(res.data);
+      setShowViewers(true);
+    } catch (err) {
+      console.error("Error fetching story viewers:", err);
+    }
+  };
 
 
 
@@ -1177,6 +1190,13 @@ const UserHome = () => {
             )}
 
           </Box>
+          {/* view Count */}
+          <Box sx={{ position: "absolute", bottom: '5%', left: '45%', display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton onClick={() => fetchViewers(currentStories[currentIndexStory].storyId)}>
+              <VisibilityIcon sx={{ color: "white" }} />
+            </IconButton>
+            <Typography sx={{ color: "white" }}>{currentStories[currentIndexStory]?.viewsNumber ?? 0} </Typography>
+          </Box>
 
           {/* Story User Info */}
           {storyUser && (
@@ -1234,6 +1254,20 @@ const UserHome = () => {
               <ArrowForwardIosIcon />
             </IconButton>
           )}
+        </Box>
+      </Modal>
+      {/* Modal for Viewed Story View */}
+      <Modal open={showViewers} onClose={() => setShowViewers(false)}>
+        <Box sx={{ position: "absolute", left: "50%", transform: "translateX(-50%)", width: 400, bgcolor: "white", boxShadow: 24, borderRadius: 2, p: 2, bottom: "10%" }}>
+          <Typography variant="h6">Viewers</Typography>
+          <List>
+            {viewers.map((viewer) => (
+              <ListItem key={viewer.id}>
+                <Avatar src={viewer.profileImage} sx={{ mr: 2 }} />
+                <ListItemText primary={viewer.name} />
+              </ListItem>
+            ))}
+          </List>
         </Box>
       </Modal>
     </Container>

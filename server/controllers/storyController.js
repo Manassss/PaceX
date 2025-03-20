@@ -1,4 +1,5 @@
 const Story = require('../models/Story');
+const User = require('../models/Userdetails');
 
 //  Create a new story
 const createStory = async (req, res) => {
@@ -105,7 +106,30 @@ const deleteExpiredStories = async () => {
     }
 };
 
+const getStoryViews = async (req, res) => {
+    try {
+        const { storyId } = req.params;
+
+        const story = await Story.findById(storyId)
+
+        if (!story) {
+            return res.status(404).json({ message: "Story not found" });
+        }
+        // Fetch user details for each user in views array
+        const viewers = await User.find(
+            { _id: { $in: story.views } },  // Fetch only users present in the views array
+            "name profileImage" // Select only required fields
+        );
+
+        res.status(200).json(viewers); // Send list of viewers with their name & profile image
+    } catch (err) {
+        console.error("Error fetching story views:", err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+
 // (Optional) Run cleanup job every hour
 //setInterval(deleteExpiredStories, 60 * 60 * 1000); // Runs every 1 hour
 
-module.exports = { createStory, getStories, viewStory, deleteStory };
+module.exports = { createStory, getStories, viewStory, deleteStory, getStoryViews };
