@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Container, TextField, Button, Typography, Paper, Box } from '@mui/material';
+import { Container, TextField, Button, Typography, Paper, Box, FormControl, InputLabel, Select, MenuItem} from '@mui/material';
 import { storage } from '../firebase'; // ✅ Firebase storage import
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api';
@@ -15,8 +15,8 @@ const MarketplaceUpload = ({ }) => {
         description: '',
         price: '',
         address: '',
-
-
+        category: '',
+        subcategory: ''
     });
     const [selectedFile, setSelectedFile] = useState(null);
     const { user } = useAuth()
@@ -73,6 +73,16 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
         }
     };
 
+    const categories = {
+        "Electronics": ["Laptops", "Phones & Accessories", "Tablets", "Headphones"],
+        "Furniture": ["Chairs", "Desks", "Beds & Mattresses", "Sofas"],
+        "Clothing": ["Men’s Clothing", "Women’s Clothing", "Shoes", "Accessories"],
+        "Books & Stationery": ["Textbooks", "Notebooks & Supplies", "Art & Craft"],
+        "Sports & Outdoors": ["Bikes", "Gym Equipment", "Camping Gear"],
+        "Miscellaneous": ["Kitchen Appliances", "Musical Instruments", "Other"]
+    };
+    
+
     // Handle text input changes
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -114,6 +124,8 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
                     imageUrl,
 
                     address: formData.address,
+                    category: formData.category, 
+                    subcategory: formData.subcategory,
 
 
                 };
@@ -162,6 +174,35 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
                     )}
 
                     {/* Show Map */}
+                    <FormControl fullWidth required>
+    <InputLabel>Category</InputLabel>
+    <Select
+        name="category"
+        value={formData.category}
+        onChange={(e) => setFormData({ ...formData, category: e.target.value, subcategory: '' })} 
+    >
+        {Object.keys(categories).map((cat) => (
+            <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+        ))}
+    </Select>
+</FormControl>
+
+{/* Subcategory Dropdown */}
+{formData.category && (
+    <FormControl fullWidth required>
+        <InputLabel>Subcategory</InputLabel>
+        <Select
+            name="subcategory"
+            value={formData.subcategory}
+            onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })} 
+        >
+            {categories[formData.category].map((subcat) => (
+                <MenuItem key={subcat} value={subcat}>{subcat}</MenuItem>
+            ))}
+        </Select>
+    </FormControl>
+)}
+
 
 
                     <input type="file" onChange={handleFileChange} required />

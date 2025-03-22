@@ -9,7 +9,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import ProfilePage from "./components/ProfilePage";
 import UserHome from "./components/userhome";
 import Marketplace from "./components/Marketplace";
-import MarketplaceUpload from "./components/MarketplaceUplaod";
+import MarketplaceUpload from "./components/MarketplaceUpload";
 import Chatbox from "./components/Chatbox";
 import Messenger from "./components/messenger";
 import Navbar from "./components/navbar";
@@ -67,6 +67,7 @@ function AppContent({ userId }) {
         <Route path="/profile/:id" element={<ProfilePage />} />
         <Route path="/userhome/" element={<UserHome />} />
         <Route path="/chatbox" element={<Chatbox />} />
+        <Route path="/marketplace/:userId" element={<Marketplace />} />
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/navbar" element={<Navbar />} />
         <Route path="/community" element={<CommunityHome />} />

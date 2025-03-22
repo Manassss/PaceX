@@ -19,6 +19,7 @@ const Messenger = ({ resetChatbox = false }) => { // Ensure default value
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+
     useEffect(() => {
         if (!userId) return;
 
@@ -61,6 +62,7 @@ const Messenger = ({ resetChatbox = false }) => { // Ensure default value
     const handleBack = () => {
         setSelectedUser(null); // Go back to user list
     };
+
 
     return (
 <Container
@@ -139,6 +141,7 @@ const Messenger = ({ resetChatbox = false }) => { // Ensure default value
                     }}
                 />
             </Box>
+
 
                     {/* Messages List */}
                     <List sx={styles.messageList}>

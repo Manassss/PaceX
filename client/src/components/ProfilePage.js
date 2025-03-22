@@ -15,7 +15,9 @@ import {
   ListItem,
   ListItemText,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Card, CardMedia, CardContent 
+
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -39,6 +41,8 @@ import axios from 'axios';
 import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
+import StorefrontIcon from '@mui/icons-material/Storefront';
+
 
 
 
@@ -71,6 +75,18 @@ const ProfilePage = () => {
   const [expandedPosts, setExpandedPosts] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [userMarketplace, setUserMarketplace] = useState([]);
+
+
+
+  const handleUserMp = async () => {
+    try {
+        const res = await axios.get(`http://localhost:5001/api/marketplace/${userId}`);
+        setUserMarketplace(res.data); // ✅ Store the fetched marketplace listings
+    } catch (error) {
+        console.error("Error fetching user marketplace:", error);
+    }
+};
 
 
   // Fetch comments for a specific post
@@ -426,6 +442,9 @@ const ProfilePage = () => {
   };
 
 
+
+
+
   return (
     <>
       <Container
@@ -438,7 +457,6 @@ const ProfilePage = () => {
           backgroundColor: "#f8f2ec",
         }}
       >
-        {/* Left Sidebar - User Info */}
         {/* Left Sidebar - User Info */}
         <Box
           sx={{
@@ -546,6 +564,33 @@ const ProfilePage = () => {
                 {editMode ? "Cancel" : "Edit Profile"}
               </Button>
               : <></>}
+
+                    {/* Marketplace Listings Section */}
+<Box sx={{ mt: 6 }}>
+  <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
+    My Marketplace Listings
+  </Typography>
+
+  {userMarketplace.length > 0 ? (
+    <Grid container spacing={2}>
+      {userMarketplace.map((item) => (
+        <Grid item xs={12} sm={6} md={4} key={item._id}>
+          <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
+            <CardMedia component="img" height="200" image={item.imageUrl} alt={item.itemName} />
+            <CardContent>
+              <Typography variant="h6" fontWeight="bold">{item.itemName}</Typography>
+              <Typography color="textSecondary">${item.price}</Typography>
+              <Typography color="textSecondary">📍 {item.address}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  ) : (
+    <Typography>No marketplace listings available.</Typography>
+  )}
+</Box>
+
 
           </Box>
         </Box>
