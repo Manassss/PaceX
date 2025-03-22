@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/Userdetails');
 const Notification = require('../models/Notification')
+const Saved = require('../models/Saved');
 
 const createPost = async (req, res) => {
   try {
@@ -206,5 +207,56 @@ const getuserfeed = async (req, res) => {
 
 
 }
+const toggleSavedPost = async (req, res) => {
+  try {
+    const { userId, postId } = req.body;
 
-module.exports = { createPost, getPosts, likePost, addComment, deletePost, togglearchive, toggletempdelete, getuserfeed, getuserPosts };
+    if (!userId || !postId) {
+      return res.status(400).json({ message: "User ID and Post ID are required" });
+    }
+
+    let savedEntry = await Saved.findOne({ userId });
+
+    if (savedEntry) {
+      // Check if post is already saved
+      if (savedEntry.postId.includes(postId)) {
+        // Remove postId (unsave)
+        savedEntry.postId.pull(postId);
+      } else {
+        // Add postId (save)
+        savedEntry.postId.push(postId);
+      }
+      await savedEntry.save();
+    } else {
+      // Create new entry if user does not have saved posts
+      savedEntry = new Saved({
+        userId,
+        postId: [postId]
+      });
+      await savedEntry.save();
+    }
+
+    res.status(200).json({ message: "Post save status toggled successfully!", savedPost: savedEntry });
+  } catch (error) {
+    console.error("Error toggling saved post:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+const getsavedPost = async (req, res) => {
+  // try {
+  //   const {userId} = req.params;
+
+  //   const saved= await 
+
+  // } catch (error) {
+  //   console.error("Error toggling saved post:", error);
+  //   res.status(500).json({ message: "Server Error" });
+  // }
+}
+
+
+module.exports = {
+  createPost, getPosts, likePost, addComment,
+  deletePost, togglearchive, toggletempdelete, getuserfeed, getuserPosts, toggleSavedPost
+};

@@ -152,6 +152,7 @@ const Chatbox = ({ userId, username }) => {
                                     boxShadow: 1,
                                     textAlign: "left",
                                     cursor: "pointer",
+
                                 }}
 
                             >
