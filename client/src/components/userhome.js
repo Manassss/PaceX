@@ -23,8 +23,10 @@ import { ChatBubbleOutline as CommentIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-
-
+import ShareModal from './ShareModal';
+import ShareIcon from '@mui/icons-material/Share';
+import TurnedInNotIcon from '@mui/icons-material/TurnedInNot';
+import TurnedInIcon from '@mui/icons-material/TurnedIn';
 
 
 const UserHome = () => {
@@ -58,6 +60,8 @@ const UserHome = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [viewers, setViewers] = useState([]);
   const [showViewers, setShowViewers] = useState(false);
+  const [openPostShareModal, setOpenPostShareModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
 
 
   // ✅ Function to mark a story as "viewed"
@@ -1017,26 +1021,44 @@ const UserHome = () => {
               {post.content && <Typography sx={{ mt: 2 }}>{post.content}</Typography>}
 
               {/* Like & Comment Icons */}
-              <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                <IconButton
-                  onClick={() => handleLikePost(post.postId)}
-                  sx={{
-                    color: post.likes?.includes(user?._id) ? "#073574" : "#fff",
-                  }}
-                >
-                  <FavoriteIcon />
-                </IconButton>
-                <Typography>{post.likes ? post.likes.length : 0} Likes</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <IconButton
+                    onClick={() => handleLikePost(post.postId)}
+                    sx={{ color: post.likes?.includes(user?._id) ? "#073574" : "#fff", }}
+                  >
+                    <FavoriteIcon />
+                  </IconButton>
+                  <Typography>{post.likes ? post.likes.length : 0} Likes</Typography>
+                </Box>
 
 
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <IconButton onClick={() => toggleCommentBox(post.postId)}>
+                    <CommentIcon />
+                  </IconButton>
+                  <Typography>{post.comments.comments.length} Comments</Typography>
+
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <IconButton onClick={() => {
+                    setSelectedPost(post);
+                    setOpenPostShareModal(true);
+                  }}>
+                    <ShareIcon />
+                  </IconButton>
+                  <Typography>Shares</Typography>
+                </Box>
 
 
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <IconButton>
+                    <TurnedInNotIcon />
+                  </IconButton>
+                </Box>
 
 
-                <IconButton onClick={() => toggleCommentBox(post.postId)}>
-                  <CommentIcon />
-                </IconButton>
-                <Typography>{post.comments.comments.length} Comments</Typography>
               </Box>
 
               {/* Comment Bar - Visible when clicking comment icon */}
@@ -1270,6 +1292,19 @@ const UserHome = () => {
           </List>
         </Box>
       </Modal>
+
+      {/*ShareModal */}
+      <ShareModal
+        open={openPostShareModal}
+        onClose={() => setOpenPostShareModal(false)}
+        contentToShare={{
+          senderId: user?._id,
+          postId: selectedPost?.postId,
+          content: selectedPost?.content,
+          postimg: selectedPost?.postimg,
+        }}
+        type="post"
+      />
     </Container>
 
 

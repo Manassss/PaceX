@@ -8,7 +8,7 @@ const ShareModal = ({ open, onClose, contentToShare, type }) => {
     const [users, setUsers] = useState([]);
     const { user } = useAuth();
     useEffect(() => {
-        // Fetch Messenger contacts
+        console.log("contenttoshare", contentToShare);
         const fetchUsers = async () => {
             try {
                 const res = await axios.get(`http://localhost:5001/api/chat/getusers/${user?._id}`);

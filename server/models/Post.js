@@ -11,7 +11,8 @@ const postSchema = new mongoose.Schema({
   images: { type: Array },
   archived: { type: Boolean, default: false },
   tempdelete: { type: Boolean, default: false },
-  deletetimestamp: { type: Date }
+  deletetimestamp: { type: Date },
+  shares: { type: Number, default: 0 }
 });
 
 // ✅ Fix OverwriteModelError
