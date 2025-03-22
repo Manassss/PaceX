@@ -27,6 +27,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import LockIcon from '@mui/icons-material/Lock';
@@ -41,13 +44,13 @@ import axios from 'axios';
 import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
-import StorefrontIcon from '@mui/icons-material/Storefront';
-
+import ShareModal from './ShareModal';
 
 
 
 const ProfilePage = () => {
   const [userDetails, setUserDetails] = useState({});
+  const [blockedUsers, setblockedUsers] = useState({});
   const [posts, setPosts] = useState([]); // Posts uploaded by this user
   const [stories, setStories] = useState([]); // All stories fetched
   const [userStories, setUserStories] = useState([]); // Stories belonging to this user
@@ -59,9 +62,12 @@ const ProfilePage = () => {
   const [currentIndexStory, setCurrentIndexStory] = useState(0);
   const [openPostModal, setOpenPostModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const handleMenuOpen = (event) => { setAnchorEl(event.currentTarget); };
+  const handleMenuClose = () => { setAnchorEl(null); };
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const vistinguser = id === user?._id ? false : true;
@@ -75,18 +81,10 @@ const ProfilePage = () => {
   const [expandedPosts, setExpandedPosts] = useState({});
   const [currentPostIndex, setCurrentPostIndex] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [userMarketplace, setUserMarketplace] = useState([]);
-
-
-
-  const handleUserMp = async () => {
-    try {
-        const res = await axios.get(`http://localhost:5001/api/marketplace/${userId}`);
-        setUserMarketplace(res.data); // ✅ Store the fetched marketplace listings
-    } catch (error) {
-        console.error("Error fetching user marketplace:", error);
-    }
-};
+  const [selectedTab, setSelectedTab] = useState("all"); // "all" | "archived"
+  const [deletetype, setDeletetype] = useState("")
+  const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
+  const [openShareModal, setOpenShareModal] = useState(false);
 
 
   // Fetch comments for a specific post
@@ -108,9 +106,11 @@ const ProfilePage = () => {
   };
 
   // Function to handle delete button click
-  const handleDeleteClick = (postId) => {
-    setPostToDelete(postId);
+  const handleDeleteclick = () => {
+    setDeletetype("permanent");
+    setPostToDelete(selectedPost?.postId);
     setDeleteConfirmation(true);
+    handleMenuClose();
   };
 
   // Function to delete the post
@@ -123,24 +123,41 @@ const ProfilePage = () => {
       setPosts((prevPosts) => prevPosts.filter(post => post.postId !== postToDelete));
       setDeleteConfirmation(false);
       setOpenPostModal(false);
+      setDeletetype("");
     } catch (error) {
       console.error("Error deleting post:", error);
     }
   };
+  const handleDeletePosttemp = async () => {
+    if (!postToDelete) return;
 
+    try {
+      console.log("temp-postid", postToDelete)
+      await axios.post(`http://localhost:5001/api/posts/tempdelete/${postToDelete}`);
+      setPosts((prevPosts) => prevPosts.filter(post => post.postId !== postToDelete));
+      setDeleteConfirmation(false);
+      setOpenPostModal(false);
+      setDeletetype("");
+    } catch (error) {
+      console.error("Error deleting post:", error);
+    }
+  };
   // Add a new comment
   const handleAddComment = async (postId) => {
     if (!newComment[postId]) return;  // Ensure input is not empty
 
     try {
-      console.log(user);
-      const res = await axios.post("http://localhost:5001/api/comment/add", {
+      const payload = {
         userId: user._id,
         postId: postId,
         text: newComment[postId],
         username: user?.name,
-        userimg: user?.profileImage
-      });
+        userimg: user?.profileImage,
+        post_userid: userDetails.id
+      }
+      console.log(user);
+      console.log("payload", payload);
+      const res = await axios.post("http://localhost:5001/api/comment/add", payload);
 
       console.log("✅ Comment Added:", res.data);
       setNewComment({ ...newComment, [postId]: "" }); // Clear input field
@@ -149,12 +166,10 @@ const ProfilePage = () => {
       console.error("🔥 Error adding comment:", err.response?.data || err.message);
     }
   };
-
   // Toggle comment box visibility
   const toggleCommentBox = (postId) => {
     setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
-
   // Handle post like (optional)
   const handleLike = async (postId) => {
     try {
@@ -167,9 +182,9 @@ const ProfilePage = () => {
     } catch (err) {
       console.error("Error liking post:", err);
     }
+
   };
-
-
+  // Handle follow/unfollow (optional)
   const handleConnectToggle = async () => {
     setLoading(true);
     try {
@@ -184,7 +199,6 @@ const ProfilePage = () => {
     }
     setLoading(false);
   };
-
   const fetchUserProfile = async () => {
     try {
 
@@ -219,13 +233,12 @@ const ProfilePage = () => {
       console.error("Error fetching profile:", err.message);
     }
   };
-
-
   useEffect(() => {
     console.log("id", id);
     if (!userId) return;
 
     fetchUserProfile();
+    fetchblockedusers();
 
   }, [userId]);
 
@@ -234,13 +247,12 @@ const ProfilePage = () => {
     if (!userId) return;
     const fetchPosts = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/posts/all');
+        const res = await axios.get(`http://localhost:5001/api/posts/${id}`);
         console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
 
         // Filter posts by the current user
         const transformedPosts = res.data
-          .filter(post => post.userId.toString() === userId.toString())
           .map(post => ({
             content: post.content,
             createdAt: new Date(post.createdAt).toLocaleString(),
@@ -250,7 +262,9 @@ const ProfilePage = () => {
             userId: post.userId,
             userName: post.userName,
             postId: post._id,
-            images: post.images
+            images: post.images,
+            archived: post.archived,
+            tempdelete: post.tempdelete
           }));
 
         // Fetch comments for each post and attach them
@@ -347,7 +361,6 @@ const ProfilePage = () => {
       setCurrentIndexStory(prev => prev - 1);
     }
   };
-
   // Open story modal when profile image is clicked (if there are stories)
   const handleStoriesClick = () => {
     if (userStories.length > 0) {
@@ -357,21 +370,17 @@ const ProfilePage = () => {
       alert("You have no stories to show.");
     }
   };
-
   // Navigate to profile page (for bottom nav)
   const handleProfile = (profileUserId) => {
     navigate(`/profile/${profileUserId}`);
   };
-
   // Navigate to add post page (for bottom nav)
   const handleAddpost = () => {
     navigate('/add-post');
   };
-
   const handleHomeClick = () => {
     navigate('/userhome');
   };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -380,7 +389,6 @@ const ProfilePage = () => {
       console.error("Error signing out:", err.message);
     }
   };
-
   // When a post is clicked, open a modal to show its details
   const handlePostClick = async (post) => {
     console.log("🔍 Post Clicked:", post); // ✅ Debugging log
@@ -393,7 +401,6 @@ const ProfilePage = () => {
     setCurrentPostIndex(postIndex);
     setOpenPostModal(true);
   };
-
   const handleFollowToggle = async (targetUserId) => {
     try {
       console.log(`user id ${user?._id} and targetid ${targetUserId}`);
@@ -412,7 +419,6 @@ const ProfilePage = () => {
       console.error("Error:", error);
     }
   };
-
   const openPostGallery = (index) => {
     setCurrentPostIndex(index);
     setSelectedPost(posts[index]);
@@ -420,7 +426,6 @@ const ProfilePage = () => {
     setShowCommentBox({ [posts[index].postId]: true });
     setOpenPostModal(true);
   };
-
   const handleNextPost = () => {
     if (currentPostIndex < posts.length - 1) {
       const nextIndex = currentPostIndex + 1;
@@ -430,7 +435,6 @@ const ProfilePage = () => {
       setShowCommentBox({ [posts[nextIndex].postId]: true });
     }
   };
-
   const handlePrevPost = () => {
     if (currentPostIndex > 0) {
       const prevIndex = currentPostIndex - 1;
@@ -440,6 +444,104 @@ const ProfilePage = () => {
       setShowCommentBox({ [posts[prevIndex].postId]: true });
     }
   };
+  const fetchblockedusers = async () => {
+    try {
+
+      const blockedUserIds = user?.blockeduser || [];
+
+      const blockedUsersDetails = await Promise.all(
+        blockedUserIds.map(async (blockedUserId) => {
+          const userRes = await axios.get(`http://localhost:5001/api/users/profile/${blockedUserId}`);
+          return {
+            id: userRes.data._id,
+            name: userRes.data.name,
+            username: userRes.data.username,
+            profileImage: userRes.data.profileImage,
+          };
+        })
+      );
+      console.log("blockeds", blockedUsersDetails)
+      setblockedUsers(blockedUsersDetails)
+    } catch (err) {
+      console.error("Error fetching blocked users:", err);
+    }
+  }
+  const handleUnblock = async (blockedUserId) => {
+    try {
+      const payload = {
+        userId: user?._id,
+        blocked_userId: blockedUserId
+      }
+      const res = await axios.post(`http://localhost:5001/api/users/unblock`, payload);
+      console.log("Response:", res.data.message);
+      setblockedUsers((prevBlockedUsers) =>
+        prevBlockedUsers.filter(user => user.id !== blockedUserId)
+      );
+      setOpenBlockedContacts(false);
+      fetchUserProfile();
+      console.log(`User ${blockedUserId} unblocked successfully`);
+    } catch (err) {
+      console.error("Error unblocking user:", err);
+    }
+  };
+  const handleBlock = async () => {
+    try {
+      const payload = {
+        userId: user?._id,
+        blocked_userId: userDetails.id
+      }
+      const res = await axios.post(`http://localhost:5001/api/users/block`, payload);
+      console.log("Response:", res.message);
+      fetchUserProfile();
+      navigate('/userhome')
+
+    } catch (error) {
+      console.error("Error archiving post:", error);
+    }
+
+  }
+  const handleArchivePost = async () => {
+    console.log("Archive Post Clicked:", selectedPost?.postId);
+    try {
+      const payload = {
+        postId: selectedPost?.postId,
+        userId: userDetails.id, // Ensure correct user ID is sent
+      };
+
+      const res = await axios.post(`http://localhost:5001/api/posts/archive`, payload);
+
+      console.log("Archive Response:", res.data);
+
+      // Update the post state to reflect the change
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.postId === selectedPost?.postId ? { ...post, archived: !post.archived } : post
+        )
+      );
+
+      handleMenuClose();
+      setOpenPostModal(false)
+    } catch (error) {
+      console.error("Error archiving post:", error);
+    }
+  };
+  const handletempDeletePost = () => {
+    console.log("Delete Post Clicked:", selectedPost?.postId);
+    setDeletetype("temp");
+    setPostToDelete(selectedPost?.postId);
+    setDeleteConfirmation(true);
+    handleMenuClose();
+  };
+
+
+  const filteredPosts =
+    selectedTab === "recentlyDeleted"
+      ? posts.filter(post => post.tempdelete) // Show only deleted posts
+      : selectedTab === "archived"
+        ? posts.filter(post => post.archived && !post.tempdelete) // Show archived but not deleted
+        : posts.filter(post => !post.archived && !post.tempdelete); // Show normal posts;
+
+
 
 
 
@@ -478,24 +580,62 @@ const ProfilePage = () => {
 
           }}
         >
-          {/* Profile Image */}
-          <Avatar
-            src={userDetails.profileImage}
-            sx={{
-              width: "250px", // Fixed size for consistency
-              height: "250px",
-              mb: 2,
-              border: "3px solid rgba(255, 255, 255, 0.5)",
-              mt: 5
-            }}
-          />
-          <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "center" }}>
-            {userDetails.name || "Your Name"}
-          </Typography>
+          {/* Profile Section */}
+          <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+            <Box sx={{ position: "relative", width: "250px", height: "250px", mb: 3 }}>
+              {/* Profile Image */}
+              <Avatar
+                src={userDetails.profileImage}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  border: "3px solid rgba(255, 255, 255, 0.5)",
+                  mt: 5
+                }}
+              />
+              {/* Three-Dot Menu (More Options) */}
+              <IconButton
+                onClick={handleMenuOpen}
+                sx={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  color: "white",
+                  backgroundColor: "rgba(0, 0, 0, 0.4)",
+                  width: 35,
+                  height: 35,
+                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
+                }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                sx={{ mt: 1 }}
+              >
+                {userDetails.id === user?._id ? <MenuItem onClick={() => { setOpenBlockedContacts(true); handleMenuClose() }}>
+                  Blocked Contacts
+                </MenuItem> :
+                  <MenuItem onClick={handleBlock}>
+                    Block
+                  </MenuItem>}
 
-          <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center" }}>
-            {userDetails.bio || "No bio available"}
-          </Typography>
+
+              </Menu>
+            </Box>
+
+            {/* User Details Below Image */}
+            <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
+              {userDetails.name || "Your Name"}
+            </Typography>
+
+            <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
+              {userDetails.bio || "No bio available"}
+            </Typography>
+          </Box>
+
 
           {/* User Stats */}
           <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
@@ -558,6 +698,9 @@ const ProfilePage = () => {
                   borderRadius: 2,
                   padding: "6px 12px",
                   fontSize: "14px",
+                  backgroundColor: "#007bff",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#0056b3" },
                 }}
                 onClick={() => setEditMode(!editMode)}
               >
@@ -565,40 +708,32 @@ const ProfilePage = () => {
               </Button>
               : <></>}
 
-                    {/* Marketplace Listings Section */}
-<Box sx={{ mt: 6 }}>
-  <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-    My Marketplace Listings
-  </Typography>
-
-  {userMarketplace.length > 0 ? (
-    <Grid container spacing={2}>
-      {userMarketplace.map((item) => (
-        <Grid item xs={12} sm={6} md={4} key={item._id}>
-          <Card sx={{ borderRadius: 2, boxShadow: 3 }}>
-            <CardMedia component="img" height="200" image={item.imageUrl} alt={item.itemName} />
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold">{item.itemName}</Typography>
-              <Typography color="textSecondary">${item.price}</Typography>
-              <Typography color="textSecondary">📍 {item.address}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      ))}
-    </Grid>
-  ) : (
-    <Typography>No marketplace listings available.</Typography>
-  )}
-</Box>
 
 
           </Box>
+          <Button
+            variant="contained"
+            startIcon={<ShareIcon />}  // ✅ Adding Share Icon from MUI
+            sx={{
+              borderRadius: 2,
+              padding: "6px 12px",
+              fontSize: "14px",
+              backgroundColor: "#007bff",
+              color: "#fff",
+              "&:hover": { backgroundColor: "#0056b3" },
+              mt: 2
+            }}
+            onClick={() => setOpenShareModal(true)}
+          >
+            Share Profile
+          </Button>
+
         </Box>
 
         {/* Right Side - Main Content */}
         <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
           {/* Navbar at the Top */}
-          <Navbar />
+
           {/* Profile Edit Section */}
           {editMode && (
             <Paper
@@ -664,13 +799,33 @@ const ProfilePage = () => {
             </Paper>
           )}
 
-
           {/* Posts Section */}
-          <Box sx={{ mt: 12 }}>
+          <Box sx={{ mt: 5 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 1, mt: 10 }}>
+              <Button
+                variant={selectedTab === "all" ? "contained" : "outlined"}
+                onClick={() => setSelectedTab("all")}
+                sx={{ marginRight: 1 }}
+              >
+                All Posts
+              </Button>
+              <Button
+                variant={selectedTab === "archived" ? "contained" : "outlined"}
+                onClick={() => setSelectedTab("archived")}
+              >
+                Archived
+              </Button>
+              <Button
+                variant={selectedTab === "recentlyDeleted" ? "contained" : "outlined"}
+                onClick={() => setSelectedTab("recentlyDeleted")}
+              >
+                Recently Deleted
+              </Button>
+            </Box>
             {(userDetails.private === false || userDetails.followers?.includes(user?._id)) || userDetails.id === user?._id ? (
-              posts.length > 0 ? (
+              filteredPosts.length > 0 ? (
                 <Grid container spacing={1} sx={{ justifyContent: "center" }}>
-                  {posts.map((post, index) => (
+                  {filteredPosts.map((post, index) => (
                     <Grid item xs={6} sm={4} md={3} key={index}>
                       <Box
                         sx={{
@@ -769,11 +924,11 @@ const ProfilePage = () => {
       {selectedPost && (
         <Modal
           open={openPostModal}
-          onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0) }}
+          onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0); setCurrentImageIndex(0) }}
           BackdropProps={{
             sx: {
-              backdropFilter: "blur(10px)", // ✅ Blur background when modal is open
-              backgroundColor: "rgba(0, 0, 0, 0.4)", // ✅ Semi-transparent overlay
+              backdropFilter: "blur(10px)",
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
             },
           }}
         >
@@ -783,46 +938,68 @@ const ProfilePage = () => {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "90vw",
-              maxWidth: "600px",
-              bgcolor: "#f8f2ec",
-              p: 3,
+              width: "80vw",
+              maxWidth: "900px",
+              maxHeight: "90vh",
+              display: "flex",
+              bgcolor: "#fff",
               borderRadius: 2,
+
+              boxShadow: 3,
               position: "relative",
             }}
           >
-            {/* Left Arrow - Navigate to Previous Post */}
-
+            {/* Next Post Button */}
             {currentPostIndex > 0 && (
               <IconButton
                 onClick={handlePrevPost}
                 sx={{
-                  position: "absolute",
-                  left: 10,
+                  position: "fixed",
+                  left: "-50%", // Fixed positioning outside modal
                   top: "50%",
                   transform: "translateY(-50%)",
-                  backgroundColor: "rgba(0, 0, 0, 0.3)",
                   color: "white",
+                  backgroundColor: "rgba(0, 0, 0, 0.4)",
+                  zIndex: 1500, // Ensures it is above all elements
+                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
                 }}
               >
                 <ArrowBackIosNewIcon />
               </IconButton>
             )}
 
-            {/* Post Images - Show Multiple Images if Available */}
-            <Box sx={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {selectedPost.images?.length > 0 ? (
+            {/* Next Post Button */}
+            {currentPostIndex < posts.length - 1 && (
+              <IconButton
+                onClick={handleNextPost}
+                sx={{
+                  position: "fixed",
+                  right: "-50%", // Fixed positioning outside modal
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "white",
+                  backgroundColor: "rgba(0, 0, 0, 0.4)",
+                  zIndex: 1500, // Ensures it is above all elements
+                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
+                }}
+              >
+                <ArrowForwardIosIcon />
+              </IconButton>
+            )}
+            {/* Left Section - Image Carousel */}
+            <Box sx={{ width: "60%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", bgcolor: "#000" }}>
+              {selectedPost?.images?.length > 0 ? (
                 <>
                   {currentImageIndex > 0 && (
                     <IconButton
                       onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
                       sx={{
                         position: "absolute",
-                        left: 30,
+                        left: 10,
                         top: "50%",
                         transform: "translateY(-50%)",
-                        backgroundColor: "rgba(0, 0, 0, 0.3)",
                         color: "white",
+                        backgroundColor: "rgba(0, 0, 0, 0.3)",
                       }}
                     >
                       <ArrowBackIosNewIcon />
@@ -832,10 +1009,9 @@ const ProfilePage = () => {
                     src={selectedPost.images[currentImageIndex]}
                     alt={`Post Image ${currentImageIndex + 1}`}
                     style={{
-                      width: "90%",
-                      height: "auto",
-                      borderRadius: "10px",
-
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
                     }}
                   />
                   {currentImageIndex < selectedPost.images.length - 1 && (
@@ -843,11 +1019,11 @@ const ProfilePage = () => {
                       onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
                       sx={{
                         position: "absolute",
-                        right: 30,
+                        right: 10,
                         top: "50%",
                         transform: "translateY(-50%)",
-                        backgroundColor: "rgba(0, 0, 0, 0.3)",
                         color: "white",
+                        backgroundColor: "rgba(0, 0, 0, 0.3)",
                       }}
                     >
                       <ArrowForwardIosIcon />
@@ -857,132 +1033,108 @@ const ProfilePage = () => {
               ) : (
                 <img
                   src={selectedPost.postimg}
-                  alt="Post Detail"
+                  alt="Post"
                   style={{
-                    width: "90%",
-                    height: "auto",
-                    borderRadius: "10px",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
                   }}
                 />
               )}
             </Box>
 
-            {/* Caption */}
-            {selectedPost?.content && (
-              <Typography
-                sx={{
-                  mt: 2,
-                  textAlign: "center",
-                  fontStyle: "italic",
-                  color: "#333",
-                  wordBreak: "break-word",
-                }}
-              >
-                {selectedPost.content}
-              </Typography>
-            )}
-
-            {/* Like & Comment Icons */}
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 3, mt: 2 }}>
-              <IconButton>
-                <FavoriteIcon sx={{ color: "red", fontSize: "28px" }} />
-              </IconButton>
-              <IconButton onClick={() => toggleCommentBox(selectedPost.postId)}>
-                <ChatBubbleOutlineIcon sx={{ fontSize: "28px" }} />
-              </IconButton>
-              {selectedPost?.userId === user?._id && (
-                <IconButton
-                  onClick={() => handleDeleteClick(selectedPost.postId)}
-                  sx={{
-                    position: "absolute",
-
-                    right: 100, // Set a fixed right position
-                    backgroundColor: "rgba(255, 0, 0, 0.7)",
-                    color: "white",
-                    "&:hover": { backgroundColor: "red" },
-                    zIndex: 10 // Ensure it appears above other elements
-                  }}
-                >
-                  <DeleteIcon />
+            {/* Right Section - Comments */}
+            <Box sx={{ width: "40%", display: "flex", flexDirection: "column", bgcolor: "#fff", p: 2 }}>
+              {/* Post Owner with Three-Dot Menu */}
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Avatar src={userDetails.profileImage} sx={{ width: 32, height: 32, mr: 1 }} />
+                  <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>{selectedPost?.userName}</Typography>
+                </Box>
+                <IconButton onClick={handleMenuOpen}>
+                  <MoreVertIcon />
                 </IconButton>
-              )}
-            </Box>
-
-            {/* Comment Section */}
-            {showCommentBox[selectedPost.postId] && (
-              <Box sx={{ mt: 2 }}>
-                {/* Add Comment Input */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    placeholder="Write a comment..."
-                    value={newComment[selectedPost.postId] || ""}
-                    onChange={(e) =>
-                      setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
-                    }
-                    sx={{
-                      borderRadius: "20px",
-                      backgroundColor: "#f8f8f8",
-                      boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
-                      "& .MuiOutlinedInput-root": { borderRadius: "20px" },
-                    }}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleAddComment(selectedPost.postId)}
-                    sx={{
-                      borderRadius: "20px",
-                      boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
-                      padding: "6px 16px",
-                    }}
-                  >
-                    Post
-                  </Button>
-                </Box>
-
-                {/* Display Comments */}
-                <Box sx={{ maxHeight: "300px", overflowY: "auto", pr: 1 }}>
-                  <List>
-                    {comments[selectedPost.postId]?.map((comment, index) => (
-                      <ListItem key={index} sx={{ bgcolor: "#f8f2ec", mb: 1, borderRadius: 2 }}>
-                        <Avatar src={comment.userimg} sx={{ mr: 2, width: 30, height: 30 }} />
-                        <ListItemText
-                          primary={<Typography sx={{ fontWeight: "bold" }}>{comment.username}</Typography>}
-                          secondary={<Typography>{comment.text}</Typography>}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  sx={{ mt: 1 }}
+                >
+                  <MenuItem onClick={handleArchivePost}>
+                    {selectedPost?.archived ? "Unarchive" : "Archive"}
+                  </MenuItem>
+                  <MenuItem onClick={handletempDeletePost}>
+                    {selectedPost?.tempdelete ? "Recover" : "Delete"}
+                  </MenuItem>
+                  {selectedPost?.tempdelete ?
+                    <MenuItem onClick={handleDeleteclick}>
+                      Permanently Delete
+                    </MenuItem>
+                    : <></>}
+                </Menu>
               </Box>
-            )}
 
-            {/* Right Arrow - Navigate to Next Post */}
-            {currentPostIndex < posts.length - 1 && (
-              <IconButton
-                onClick={handleNextPost}
-                sx={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  backgroundColor: "rgba(0, 0, 0, 0.3)",
-                  color: "white",
-                }}
-              >
-                <ArrowForwardIosIcon />
-              </IconButton>
-            )}
+              {/* Post Caption */}
+              {selectedPost?.content && (
+                <Typography sx={{ color: "#555" }}>{selectedPost.content}</Typography>
+              )}
+
+              {/* Comments List */}
+              <Box sx={{ flexGrow: 1, overflowY: "auto", maxHeight: "90%", pr: 1 }}>
+                <List>
+                  {comments[selectedPost.postId]?.map((comment, index) => (
+                    <ListItem key={index} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Avatar src={comment.userimg} sx={{ width: 28, height: 28 }} />
+                      <Box>
+                        <Typography sx={{ fontWeight: "bold", fontSize: "14px" }}>
+                          {comment.username}
+                        </Typography>
+                        <Typography sx={{ fontSize: "14px", color: "#555" }}>
+                          {comment.text}
+                        </Typography>
+                      </Box>
+                      <IconButton sx={{ ml: "auto", color: "#FF3040" }}>
+                        <FavoriteIcon fontSize="small" />
+                      </IconButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+
+              {/* Add Comment Box */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  placeholder="Add a comment..."
+                  value={newComment[selectedPost.postId] || ""}
+                  onChange={(e) =>
+                    setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
+                  }
+                  sx={{
+                    borderRadius: "20px",
+                    backgroundColor: "#f8f8f8",
+                    "& .MuiOutlinedInput-root": { borderRadius: "20px" },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddComment(selectedPost.postId)}
+                  sx={{ borderRadius: "20px" }}
+                >
+                  Post
+                </Button>
+              </Box>
+            </Box>
           </Box>
         </Modal>
       )}
 
 
       {/* Delete Confirmation Modal */}
-      <Modal open={deleteConfirmation} onClose={() => setDeleteConfirmation(false)}>
+      <Modal open={deleteConfirmation} onClose={() => setDeleteConfirmation(false)} >
         <Box
           sx={{
             position: "absolute",
@@ -997,8 +1149,8 @@ const ProfilePage = () => {
         >
           <Typography variant="h6">Are you sure you want to delete this post?</Typography>
           <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
-            <Button variant="contained" color="error" onClick={handleDeletePost}>
-              Yes, Delete
+            <Button variant="contained" color="error" onClick={deletetype === "temp" ? handleDeletePosttemp : handleDeletePost}>
+              {deletetype === "temp" && selectedPost?.tempdelete ? "Recover" : "Yes, Delete"}
             </Button>
             <Button variant="outlined" onClick={() => setDeleteConfirmation(false)}>
               Cancel
@@ -1100,6 +1252,63 @@ const ProfilePage = () => {
           )}
         </Box>
       </Modal>
+
+      {/*blocked conatcts modal */}
+      <Modal open={openBlockedContacts} onClose={() => setOpenBlockedContacts(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "white",
+            p: 3,
+            borderRadius: 2,
+            textAlign: "center",
+            width: "400px",
+            maxHeight: "500px",
+            overflowY: "auto",
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
+          <List>
+            {blockedUsers?.length > 0 ? (
+              blockedUsers.map((blockedUser, index) => (
+                <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Avatar src={blockedUser.profileImage} />
+                    <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={() => handleUnblock(blockedUser.id)}
+                  >
+                    Unblock
+                  </Button>
+                </ListItem>
+              ))
+            ) : (
+              <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
+            )}
+          </List>
+        </Box>
+      </Modal>
+
+      {/* sharemodal*/}
+      <ShareModal
+        open={openShareModal}
+        onClose={() => setOpenShareModal(false)}
+        contentToShare={{
+          senderId: user?._id,
+          id: userDetails.id,
+          name: userDetails.name,
+          username: userDetails.username,
+          profileImage: userDetails.profileImage,
+        }}
+        type="profile"
+      />
     </>
   );
 };

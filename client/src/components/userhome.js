@@ -22,6 +22,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
 import { ChatBubbleOutline as CommentIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 
 
@@ -55,6 +56,9 @@ const UserHome = () => {
   const [following, setFollowing] = useState([]);
   const [visibleCount, setVisibleCount] = useState(3); // Show 3 users initially
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [viewers, setViewers] = useState([]);
+  const [showViewers, setShowViewers] = useState(false);
+
 
   // ✅ Function to mark a story as "viewed"
   const markStoryAsViewed = async (storyId, userId) => {
@@ -102,7 +106,7 @@ const UserHome = () => {
     console.log("storyUser", storyUser);
     setstoryUser(storyUser);
     setCurrentStories(stories);
-    console.log("currentstory", currentStories);
+    console.log("currentstory", stories);
     setCurrentIndex(0);
     setOpenStory(true);
   };
@@ -152,6 +156,7 @@ const UserHome = () => {
         mediaUrl: story.mediaUrl,
         mediaType: story.mediaType,
         views: story.views,
+        viewsNumber: story.viewsNumber
       }));
       console.log("story", todaystories);
       console.log("userid", user?._id)
@@ -165,23 +170,29 @@ const UserHome = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/posts/all');
+        const res = await axios.get(`http://localhost:5001/api/posts/feed/${user?._id}`);
         const postsData = res.data;
 
-        // For each post, fetch its comments and attach them immediately.
+        // Get the list of blocked users
+        const blockedUsers = user?.blockeduser || [];
+
+        // Fetch comments and filter out blocked users
         const postsWithComments = await Promise.all(
           postsData.map(async (post) => {
             const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post._id}`);
+
+
+
             return {
               content: post.content,
               createdAt: new Date(post.createdAt).toLocaleString(),
-              dislikes: post.dislikes || [], // ✅ Ensure dislikes is an array
-              likes: Array.isArray(post.likes) ? post.likes : [], // ✅ Ensure likes is always an array  
+              dislikes: post.dislikes || [],
+              likes: Array.isArray(post.likes) ? post.likes : [],
               postimg: post.postimg,
               userId: post.userId,
               userName: post.userName,
               postId: post._id,
-              comments: commentsRes.data,  // attach fetched comments
+              comments: commentsRes.data,  // ✅ Attach only unblocked comments
               images: post.images
             };
           })
@@ -193,6 +204,7 @@ const UserHome = () => {
         console.error('Error fetching posts:', err);
       }
     };
+
     const fetchUsers = async () => {
       try {
         const res = await axios.get('http://localhost:5001/api/users/all');
@@ -541,7 +553,15 @@ const UserHome = () => {
       console.error("❌ Error deleting story:", err.response?.data || err.message);
     }
   };
-
+  const fetchViewers = async (storyId) => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/story/views/${storyId}`);
+      setViewers(res.data);
+      setShowViewers(true);
+    } catch (err) {
+      console.error("Error fetching story viewers:", err);
+    }
+  };
 
 
 
@@ -609,7 +629,7 @@ const UserHome = () => {
       }}
     >
       {/* Navbar */}
-      <Box
+      {/* <Box
         sx={{
           position: "fixed",
           top: 0,
@@ -622,7 +642,7 @@ const UserHome = () => {
         }}
       >
         <Navbar toggleMessenger={toggleMessenger} />
-      </Box>
+      </Box> */}
 
       {/* Story Section  */}
       <Box
@@ -858,7 +878,7 @@ const UserHome = () => {
           sx={{
             position: "fixed",
             right: "20px",
-            top: "40%",
+            bottom: "2%",
             transform: "translateY(-50%)",
             backgroundColor: "#073574",
             color: "#fff",
@@ -879,9 +899,10 @@ const UserHome = () => {
           gap: 3,
           position: "fixed",
           right: open ? "0%" : "-80%",
-          top: "180px",
+          top: "12%",
           overflowY: "auto",
-          transition: "all 0.3s ease-in-out",
+          transition: "all 0.2s ease-in-out",
+
         }}
       >
         {/* Close Button */}
@@ -1169,6 +1190,13 @@ const UserHome = () => {
             )}
 
           </Box>
+          {/* view Count */}
+          <Box sx={{ position: "absolute", bottom: '5%', left: '45%', display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton onClick={() => fetchViewers(currentStories[currentIndexStory].storyId)}>
+              <VisibilityIcon sx={{ color: "white" }} />
+            </IconButton>
+            <Typography sx={{ color: "white" }}>{currentStories[currentIndexStory]?.viewsNumber ?? 0} </Typography>
+          </Box>
 
           {/* Story User Info */}
           {storyUser && (
@@ -1226,6 +1254,20 @@ const UserHome = () => {
               <ArrowForwardIosIcon />
             </IconButton>
           )}
+        </Box>
+      </Modal>
+      {/* Modal for Viewed Story View */}
+      <Modal open={showViewers} onClose={() => setShowViewers(false)}>
+        <Box sx={{ position: "absolute", left: "50%", transform: "translateX(-50%)", width: 400, bgcolor: "white", boxShadow: 24, borderRadius: 2, p: 2, bottom: "10%" }}>
+          <Typography variant="h6">Viewers</Typography>
+          <List>
+            {viewers.map((viewer) => (
+              <ListItem key={viewer.id}>
+                <Avatar src={viewer.profileImage} sx={{ mr: 2 }} />
+                <ListItemText primary={viewer.name} />
+              </ListItem>
+            ))}
+          </List>
         </Box>
       </Modal>
     </Container>

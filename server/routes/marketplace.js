@@ -4,6 +4,6 @@ const router = express.Router();
 
 router.post("/add", addListing);  // ✅ Route to add new marketplace listing
 router.get("/all", getListings);  // ✅ Route to fetch all listings
-router.get("/user/:userId", getUserListings);
+// router.get("/user/:userId", getUserListings);
 
 module.exports = router;

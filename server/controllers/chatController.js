@@ -5,13 +5,13 @@ const Notification = require('../models/Notification')
 // ✅ Send a message (POST)
 const sendMessage = async (req, res) => {
     try {
-        const { senderId, receiverId, text } = req.body;
-
-        if (!senderId || !receiverId || !text) {
+        const { senderId, receiverId, text, sharedContent } = req.body;
+        console.log("sending", req.body);
+        if (!senderId || !receiverId || (!text && !sharedContent)) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
-        const newMessage = new Chat({ senderId, receiverId, text });
+        const newMessage = new Chat({ senderId, receiverId, text, sharedContent: sharedContent || null, });
         await newMessage.save();
 
         // ✅ Send notification for the message

@@ -38,8 +38,8 @@ const Navbar = () => {
 
 
 
-   // ✅ Fetch Notifications
-   
+  // ✅ Fetch Notifications
+
   // ✅ Initialize socket connection
   const socket = io("http://localhost:5001", { transports: ["websocket"] });
 
@@ -105,16 +105,20 @@ const Navbar = () => {
     const fetchUsers = async () => {
       try {
         const res = await axios.get("http://localhost:5001/api/users/all");
-        const transformedUsers = res.data.map((user) => ({
-          id: user._id,
-          name: user.name,
-          bio: user.bio,
-          email: user.email,
-          role: user.role,
-          university: user.university,
-          profileImage: user.profileImage,
-          joinedAt: new Date(user.joinedAt).toLocaleDateString(),
-        }));
+        const blockedUsers = user?.blockeduser || [];
+        const transformedUsers = res.data
+          .filter(user => !blockedUsers.includes(user._id))
+          .map((user) => ({
+            id: user._id,
+            name: user.name,
+            bio: user.bio,
+            email: user.email,
+            role: user.role,
+            university: user.university,
+            profileImage: user.profileImage,
+            joinedAt: new Date(user.joinedAt).toLocaleDateString(),
+
+          }));
         setUsers(transformedUsers);
       } catch (err) {
         console.error("Error fetching users:", err);
@@ -151,6 +155,7 @@ const Navbar = () => {
   // Navigate to user profile
   const handleProfile = (userId) => {
     navigate(`/profile/${userId}`);
+    setSearchTerm("");
     handleClosePopover();
   };
 
@@ -260,37 +265,37 @@ const Navbar = () => {
 
           {/* Notification Dropdown */}
           <Menu
-  anchorEl={notifAnchorEl}
-  open={Boolean(notifAnchorEl)}
-  onClose={handleNotifClose}
-  sx={{
-    "& .MuiPaper-root": {
-      backgroundColor: "white",
-      borderRadius: "10px",
-      minWidth: "250px",
-      boxShadow: "0px 4px 10px rgba(0,0,0,0.3)",
-    }
-  }}
->
-  {notifications.length === 0 ? (
-    <MenuItem disabled>No new notifications</MenuItem>
-  ) : (
-    notifications.map((notif, index) => (
-      <MenuItem key={index} onClick={() => navigate(notif.postId ? `/post/${notif.postId}` : `/profile/${notif.sender}`)}>
-        <Avatar src={notif.senderProfile || "/default-avatar.png"} sx={{ width: 30, height: 30, marginRight: 1 }} />
-        <ListItemText
-          primary={
-            notif.type === "follow"
-              ? `${notif.senderName || "Unknown User"} started following you`
-              : notif.type === "like"
-              ? `${notif.senderName || "Unknown User"} liked your post`
-              : notif.type
-          }
-        />
-      </MenuItem>
-    ))
-  )}
-</Menu>
+            anchorEl={notifAnchorEl}
+            open={Boolean(notifAnchorEl)}
+            onClose={handleNotifClose}
+            sx={{
+              "& .MuiPaper-root": {
+                backgroundColor: "white",
+                borderRadius: "10px",
+                minWidth: "250px",
+                boxShadow: "0px 4px 10px rgba(0,0,0,0.3)",
+              }
+            }}
+          >
+            {notifications.length === 0 ? (
+              <MenuItem disabled>No new notifications</MenuItem>
+            ) : (
+              notifications.map((notif, index) => (
+                <MenuItem key={index} onClick={() => navigate(notif.postId ? `/post/${notif.postId}` : `/profile/${notif.sender}`)}>
+                  <Avatar src={notif.senderProfile || "/default-avatar.png"} sx={{ width: 30, height: 30, marginRight: 1 }} />
+                  <ListItemText
+                    primary={
+                      notif.type === "follow"
+                        ? `${notif.senderName || "Unknown User"} started following you`
+                        : notif.type === "like"
+                          ? `${notif.senderName || "Unknown User"} liked your post`
+                          : notif.type
+                    }
+                  />
+                </MenuItem>
+              ))
+            )}
+          </Menu>
 
 
 
@@ -334,43 +339,43 @@ const Navbar = () => {
           </Box>
 
           <Menu
-  anchorEl={anchorEl}
-  open={Boolean(anchorEl)}
-  onClose={handleClose}
-  sx={{
-    "& .MuiPaper-root": {
-      backgroundColor: " #f8f2ec", // Background color of menu
-      borderRadius: "10px",
-      color: "#073574", // Text color
-      boxShadow: "0px 4px 10px rgba(0,0,0,0.3)", // Shadow effect
-      minWidth: "200px",
-    },
-  }}
->
-  {[
-    { label: "Profile", path: `/profile/${user?._id}` },
-    { label: "Saved Posts", path: "/saved" },
-    { label: "Settings", path: "/settings" },
-    { label: "Logout", path: "/home" },
-  ].map((item, index) => (
-    <MenuItem
-      key={index}
-      onClick={() => navigate(item.path)}
-      sx={{
-        fontSize: "16px",
-        fontWeight: "500",
-        padding: "12px 20px",
-        transition: "0.3s",
-        "&:hover": {
-          backgroundColor: "#0a4a8c", // Hover color
-          color: "#fff",
-        },
-      }}
-    >
-      {item.label}
-    </MenuItem>
-  ))}
-</Menu>
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+            sx={{
+              "& .MuiPaper-root": {
+                backgroundColor: " #f8f2ec", // Background color of menu
+                borderRadius: "10px",
+                color: "#073574", // Text color
+                boxShadow: "0px 4px 10px rgba(0,0,0,0.3)", // Shadow effect
+                minWidth: "200px",
+              },
+            }}
+          >
+            {[
+              { label: "Profile", path: `/profile/${user?._id}` },
+              { label: "Saved Posts", path: "/saved" },
+              { label: "Settings", path: "/settings" },
+              { label: "Logout", path: "/home" },
+            ].map((item, index) => (
+              <MenuItem
+                key={index}
+                onClick={() => navigate(item.path)}
+                sx={{
+                  fontSize: "16px",
+                  fontWeight: "500",
+                  padding: "12px 20px",
+                  transition: "0.3s",
+                  "&:hover": {
+                    backgroundColor: "#0a4a8c", // Hover color
+                    color: "#fff",
+                  },
+                }}
+              >
+                {item.label}
+              </MenuItem>
+            ))}
+          </Menu>
 
         </Box>
       </Toolbar>

@@ -20,7 +20,7 @@ import Notifications from "./components/Notification";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CommunityHome from "./components/CommunityHome";
-import CommunityDetail from "./components/  CommunityDetail";
+import CommunityDetail from "./components/CommunityDetail";
 
 // ✅ Initialize socket connection
 const socket = io("http://localhost:5001", { transports: ["websocket"] });
@@ -52,6 +52,9 @@ function AppContent({ userId }) {
 
   return (
     <>
+      {/* ✅ Show Navbar except on login and register pages */}
+      {!["/register", "/login", "/"].includes(location.pathname) && <Navbar />}
+
       {/* ✅ Notification Toast Container */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} pauseOnHover draggable />
 
@@ -75,7 +78,7 @@ function AppContent({ userId }) {
         <Route
           path="/marketplaceupload"
           element={
-            <LoadScript googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY" libraries={["places"]}>
+            <LoadScript googleMapsApiKey={process.env.GOOGLE_MAPS_API} libraries={["places"]}>
               <MarketplaceUpload />
             </LoadScript>
           }

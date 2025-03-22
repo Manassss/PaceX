@@ -8,7 +8,10 @@ const postSchema = new mongoose.Schema({
   dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],  // Store dislikes as an array of user IDs
   createdAt: { type: Date, default: Date.now },  // Timestamp
   postimg: { type: String },
-  images: { type: Array }
+  images: { type: Array },
+  archived: { type: Boolean, default: false },
+  tempdelete: { type: Boolean, default: false },
+  deletetimestamp: { type: Date }
 });
 
 // ✅ Fix OverwriteModelError

@@ -5,6 +5,7 @@ const chatSchema = new mongoose.Schema({
     receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },  // Reference to the User
     text: { type: String, required: true },  // Post content
     createdAt: { type: Date, default: Date.now },  // Timestamp
+    sharedContent: { type: mongoose.Schema.Types.Mixed, default: null },
 
 });
 

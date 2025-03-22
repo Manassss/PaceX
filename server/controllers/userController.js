@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/Userdetails");  // ✅ Importing the User model
 const admin = require("../config/firebaseConfig"); // Import Firebase Admin
 const Notification = require("../models/Notification"); // Import Notification model
-
+const Comment = require('../models/Comment');
 
 const registerUser = async (req, res) => {
     try {
@@ -84,7 +84,10 @@ const loginUser = async (req, res) => {
                 major: user.major,
                 graduationYear: user.graduationYear,
                 birthdate: user.birthdate,
-                bio: user.bio
+                bio: user.bio,
+                blockeduser: user.blockeduser,
+                blockedby: user.blockedby,
+
             }
         });
 
@@ -142,6 +145,84 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
+const deleteCommentsBetweenUsers = async (userId, blockedUserId) => {
+    try {
+        await Comment.deleteMany({
+            $or: [
+                { userId: userId, post_userid: blockedUserId },
+                { userId: blockedUserId, post_userid: userId }
+            ]
+        });
+        console.log(`Comments between ${userId} and ${blockedUserId} deleted successfully`);
+    } catch (error) {
+        console.error("Error deleting comments between users:", error);
+    }
+};
+
+// New API: Update the blockedBy property of a user
+const updateBlock = async (req, res) => {
+    try {
+        console.log("block started")
+        const { userId, blocked_userId } = req.body; // The ID of the user blocking
+
+        const blockeduser = await User.findById(blocked_userId);
+        const user = await User.findById(userId)
+        if (!user || !blocked_userId) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.blockeduser.push(blocked_userId);
+        blockeduser.blockedby.push(userId);
+
+        const isFollowing = user.followings.includes(blocked_userId);
+        const isFollower = user.followers.includes(blocked_userId);
+        if (isFollowing) {
+            user.followings.pull(blocked_userId);
+            blockeduser.followers.pull(userId);
+        }
+        if (isFollower) {
+            blockeduser.followings.pull(userId);
+            user.followers.pull(blocked_userId);
+        }
+        user.followersNumber = user.followers.length
+        user.followingsNumber = user.followings.length
+        blockeduser.followingsNumber = blockeduser.followings.length
+        blockeduser.followersNumber = blockeduser.followers.length
+        await user.save();
+        await blockeduser.save();
+        await deleteCommentsBetweenUsers(userId, blocked_userId);
+
+        res.status(200).json({ message: `Blocked ${blockeduser.name} successfully`, user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+const unblock = async (req, res) => {
+    try {
+        console.log("unblock started")
+        const { userId, blocked_userId } = req.body; // The ID of the user blocking
+
+        const blockeduser = await User.findById(blocked_userId);
+        const user = await User.findById(userId)
+        if (!user || !blocked_userId) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const isblocked = user.blockeduser.includes(blocked_userId)
+        if (isblocked) {
+            user.blockeduser.pull(blocked_userId);
+            blockeduser.blockedby.pull(userId);
+        }
+        await user.save();
+        await blockeduser.save();
+
+        res.status(200).json({ message: `unBlocked ${blockeduser.name} successfully`, user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+}
+
 //  Get all users (for search)
 const getAllUsers = async (req, res) => {
     try {
@@ -155,74 +236,6 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// const followUser = async (req, res) => {
-//     try {
-//         const { userId, targetUserId } = req.params;
-
-//         if (userId === targetUserId) {
-//             return res.status(400).json({ message: "You cannot follow yourself" });
-//         }
-
-//         const user = await User.findById(userId);
-//         const targetUser = await User.findById(targetUserId);
-
-//         if (!user || !targetUser) {
-//             return res.status(404).json({ message: "User not found" });
-//         }
-
-//         if (user.followings.includes(targetUserId)) {
-//             return res.status(400).json({ message: "Already following this user" });
-//         }
-
-//         user.followings.push(targetUserId);
-//         targetUser.followers.push(userId);
-
-//         user.followingsNumber = user.followings.length;
-//         targetUser.followersNumber = targetUser.followers.length;
-
-//         await user.save();
-//         await targetUser.save();
-
-//         res.status(200).json({ message: "User followed successfully", user, targetUser });
-//     } catch (error) {
-//         res.status(500).json({ message: "Server error", error });
-//     }
-// };
-
-// // Unfollow a user
-// const unfollowUser = async (req, res) => {
-//     try {
-//         const { userId, targetUserId } = req.params;
-
-//         if (userId === targetUserId) {
-//             return res.status(400).json({ message: "You cannot unfollow yourself" });
-//         }
-
-//         const user = await User.findById(userId);
-//         const targetUser = await User.findById(targetUserId);
-
-//         if (!user || !targetUser) {
-//             return res.status(404).json({ message: "User not found" });
-//         }
-
-//         if (!user.followings.includes(targetUserId)) {
-//             return res.status(400).json({ message: "You are not following this user" });
-//         }
-
-//         user.followings = user.followings.filter(id => id.toString() !== targetUserId);
-//         targetUser.followers = targetUser.followers.filter(id => id.toString() !== userId);
-
-//         user.followingsNumber = user.followings.length;
-//         targetUser.followersNumber = targetUser.followers.length;
-
-//         await user.save();
-//         await targetUser.save();
-
-//         res.status(200).json({ message: "User unfollowed successfully", user, targetUser });
-//     } catch (error) {
-//         res.status(500).json({ message: "Server error", error });
-//     }
-// };
 
 const toggleFollow = async (req, res) => {
     try {
@@ -298,9 +311,16 @@ const searchbyname = async (req, res) => {
     }
 };
 
-// const handleFollowToggle = async (targetUserId) => 
-//     axios.post('/api/toggleFollow', { userId: currentUser.id, targetUserId })
-//          .then(({ data }) => alert(data.message))
-//          .catch(error => console.error("Error:", error));
 
-module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers, toggleFollow, searchbyname };
+
+module.exports = {
+    registerUser,
+    loginUser,
+    getUserProfile,
+    updateUserProfile,
+    getAllUsers,
+    toggleFollow,
+    searchbyname,
+    updateBlock, // ✅ New API for updating blockedBy
+    unblock
+};
