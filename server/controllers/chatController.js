@@ -5,34 +5,45 @@ const Notification = require('../models/Notification')
 // ✅ Send a message (POST)
 const sendMessage = async (req, res) => {
     try {
-        const { senderId, receiverId, text, sharedContent } = req.body;
-        console.log("sending", req.body);
-        if (!senderId || !receiverId || (!text && !sharedContent)) {
-            return res.status(400).json({ error: "All fields are required" });
-        }
-
-        const newMessage = new Chat({ senderId, receiverId, text, sharedContent: sharedContent || null, });
-        await newMessage.save();
-
-        // ✅ Send notification for the message
-        await Notification.create({
-            userId: receiverId, // The recipient of the message
-            senderId: senderId, // The sender of the message
-            type: "message",
-            messageId: newMessage._id,
-        });
-
-        console.log("sender", senderId);
-        const notification = new Notification({
-            recipient: receiverId, sender: senderId, type: "message", messageId: newMessage._id
-        });
-        await notification.save();
-
-        res.status(201).json({ message: "Message sent successfully", chat: newMessage });
+      const { senderId, receiverId, text, sharedContent } = req.body;
+  
+      console.log("👉 Received data:", req.body);
+  
+      if (!senderId || !receiverId || (!text && !sharedContent)) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+  
+      const newMessage = new Chat({
+        senderId,
+        receiverId,
+        text,
+        sharedContent: sharedContent || null,
+      });
+  
+      await newMessage.save();
+  
+      await Notification.create({
+        userId: receiverId,
+        senderId: senderId,
+        type: "message",
+        messageId: newMessage._id,
+      });
+  
+      console.log("✅ Message and Notification saved.");
+  
+      res.status(201).json({ message: "Message sent successfully", chat: newMessage });
     } catch (error) {
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
+      console.error("🔥 Internal Error:", error);
+      res.status(500).json({
+        error: "Internal Server Error",
+        details: error.message,
+        full: error,
+      });
     }
-};
+  };
+  
+  
+
 
 // ✅ Get chat history between two users (GET)
 const getChatHistory = async (req, res) => {

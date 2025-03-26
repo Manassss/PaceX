@@ -15,9 +15,7 @@ import {
   ListItem,
   ListItemText,
   Switch,
-  FormControlLabel,
-  Card, CardMedia, CardContent 
-
+  FormControlLabel
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -45,6 +43,8 @@ import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
 import ShareModal from './ShareModal';
+import { CiMenuBurger } from "react-icons/ci";
+
 
 
 
@@ -85,6 +85,8 @@ const ProfilePage = () => {
   const [deletetype, setDeletetype] = useState("")
   const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
   const [openShareModal, setOpenShareModal] = useState(false);
+  const [postMenuAnchorEl, setPostMenuAnchorEl] = useState(null);
+
 
 
   // Fetch comments for a specific post
@@ -542,89 +544,130 @@ const ProfilePage = () => {
         : posts.filter(post => !post.archived && !post.tempdelete); // Show normal posts;
 
 
-
-
+        const handlePostMenuOpen = (event) => {
+          setPostMenuAnchorEl(event.currentTarget);
+        };
+        
+        const handlePostMenuClose = () => {
+          setPostMenuAnchorEl(null);
+        };
+        
 
 
 
   return (
     <>
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{
-          display: "flex",
-          height: "100vh",
-          overflow: "hidden",
-          backgroundColor: "#f8f2ec",
+    {/* ============================
+  Main Layout Container
+============================ */}
+  <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f2ec' }}>
+
+          <Container maxWidth="md">
+          <Box mt={0} >
+          {/* Profile Section */}
+          <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3}}>
+          <Box sx={{ position: "relative", width: "100%", mb: 2 }}>
+  <Box sx={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    px: 2 // padding for spacing
+  }}>
+    <Typography variant="h5" fontWeight={600}>
+      {userDetails.username}
+    </Typography>
+
+    <IconButton
+  onClick={handleMenuOpen}
+  sx={{
+    color: "black",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    width: 35,
+    height: 35,
+    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.1)" },
+  }}
+>
+  <CiMenuBurger />
+</IconButton>
+
+<Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={handleMenuClose}
+  anchorOrigin={{
+    vertical: 'bottom',
+    horizontal: 'right',
+  }}
+  transformOrigin={{
+    vertical: 'top',
+    horizontal: 'right',
+  }}
+  sx={{ mt: 1 }}
+>
+  {userDetails.id === user?._id ? (
+    <>
+      <MenuItem
+        onClick={() => {
+          setOpenBlockedContacts(true);
+          handleMenuClose();
         }}
       >
-        {/* Left Sidebar - User Info */}
-        <Box
-          sx={{
-            width: { xs: "100%", sm: "30%", md: "25%" }, // Full width on very small screens
-            minWidth: "250px", // Prevents sidebar from becoming too narrow
-            height: "100vh",
-            backgroundColor: "#073574",
-            color: "#fff",
-            padding: { xs: 2, sm: 3 }, // Adjust padding for small screens
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            boxShadow: "3px 0px 10px rgba(0, 0, 0, 0.2)",
-            //  position: "fixed", // Keeps sidebar fixed while scrolling
-            top: 0,
-            left: 0,
-            overflowY: "auto", // Prevents content from overflowing,
-            marginTop: '70px'
+        Blocked Contacts
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          setEditMode((prev) => !prev);
+          handleMenuClose();
+        }}
+      >
+        {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+      </MenuItem>
+    </>
+  ) : (
+    <MenuItem
+      onClick={() => {
+        handleBlock();
+        handleMenuClose();
+      }}
+    >
+      Block
+    </MenuItem>
+  )}
 
-          }}
-        >
-          {/* Profile Section */}
-          <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
-            <Box sx={{ position: "relative", width: "250px", height: "250px", mb: 3 }}>
-              {/* Profile Image */}
-              <Avatar
-                src={userDetails.profileImage}
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  border: "3px solid rgba(255, 255, 255, 0.5)",
-                  mt: 5
-                }}
-              />
-              {/* Three-Dot Menu (More Options) */}
-              <IconButton
-                onClick={handleMenuOpen}
-                sx={{
-                  position: "absolute",
-                  top: 10,
-                  right: 10,
-                  color: "white",
-                  backgroundColor: "rgba(0, 0, 0, 0.4)",
-                  width: 35,
-                  height: 35,
-                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
-                }}
-              >
-                <MoreVertIcon />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                sx={{ mt: 1 }}
-              >
-                {userDetails.id === user?._id ? <MenuItem onClick={() => { setOpenBlockedContacts(true); handleMenuClose() }}>
-                  Blocked Contacts
-                </MenuItem> :
-                  <MenuItem onClick={handleBlock}>
-                    Block
-                  </MenuItem>}
+  <MenuItem
+    onClick={() => {
+      setOpenShareModal(true);
+      handleMenuClose();
+    }}
+  >
+    <ShareIcon sx={{ mr: 1 }} />
+    Share Profile
+  </MenuItem>
+</Menu>
 
+  </Box>
 
-              </Menu>
-            </Box>
+  <Box
+    sx={{
+      width: "250px",
+      height: "250px",
+      margin: "auto",
+      mt: 2,
+      position: "relative"
+    }}
+  >
+    <Avatar
+      src={userDetails.profileImage}
+      sx={{
+        width: "100%",
+        height: "100%",
+        border: "3px solid rgba(255, 255, 255, 0.5)",
+      }}
+    />
+  </Box>
+</Box>
+
 
             {/* User Details Below Image */}
             <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
@@ -690,44 +733,7 @@ const ProfilePage = () => {
                 "Connect"
               )}
             </Button> : <></>}
-
-            {!vistinguser ?
-              <Button
-                variant="contained"
-                sx={{
-                  borderRadius: 2,
-                  padding: "6px 12px",
-                  fontSize: "14px",
-                  backgroundColor: "#007bff",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#0056b3" },
-                }}
-                onClick={() => setEditMode(!editMode)}
-              >
-                {editMode ? "Cancel" : "Edit Profile"}
-              </Button>
-              : <></>}
-
-
-
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<ShareIcon />}  // ✅ Adding Share Icon from MUI
-            sx={{
-              borderRadius: 2,
-              padding: "6px 12px",
-              fontSize: "14px",
-              backgroundColor: "#007bff",
-              color: "#fff",
-              "&:hover": { backgroundColor: "#0056b3" },
-              mt: 2
-            }}
-            onClick={() => setOpenShareModal(true)}
-          >
-            Share Profile
-          </Button>
-
         </Box>
 
         {/* Right Side - Main Content */}
@@ -800,82 +806,97 @@ const ProfilePage = () => {
           )}
 
           {/* Posts Section */}
-          <Box sx={{ mt: 5 }}>
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 1, mt: 10 }}>
-              <Button
-                variant={selectedTab === "all" ? "contained" : "outlined"}
-                onClick={() => setSelectedTab("all")}
-                sx={{ marginRight: 1 }}
-              >
-                All Posts
-              </Button>
-              <Button
-                variant={selectedTab === "archived" ? "contained" : "outlined"}
-                onClick={() => setSelectedTab("archived")}
-              >
-                Archived
-              </Button>
-              <Button
-                variant={selectedTab === "recentlyDeleted" ? "contained" : "outlined"}
-                onClick={() => setSelectedTab("recentlyDeleted")}
-              >
-                Recently Deleted
-              </Button>
-            </Box>
+          <Box sx={{ mt: 1}}>
+          <Box mt={4} display="flex" justifyContent="center" gap={6}>
+  <Typography
+    variant="body1"
+    onClick={() => setSelectedTab("all")}
+    sx={{
+      cursor: "pointer",
+      fontWeight: selectedTab === "all" ? "bold" : "normal",
+      pb: 1,
+      fontSize: "16px",
+      color: "#000",
+      borderBottom: selectedTab === "all" ? "2px solid black" : "2px solid transparent",
+      transition: "all 0.2s ease-in-out",
+      "&:hover": {
+        borderBottom: "2px solid #aaa",
+        opacity: 0.8,
+      },
+    }}
+  >
+    All Posts
+  </Typography>
+
+  <Typography
+    variant="body1"
+    onClick={() => setSelectedTab("archived")}
+    sx={{
+      cursor: "pointer",
+      fontWeight: selectedTab === "archived" ? "bold" : "normal",
+      pb: 1,
+      fontSize: "16px",
+      color: "#000",
+      borderBottom: selectedTab === "archived" ? "2px solid black" : "2px solid transparent",
+      transition: "all 0.2s ease-in-out",
+      "&:hover": {
+        borderBottom: "2px solid #aaa",
+        opacity: 0.8,
+      },
+    }}
+  >
+    Archived
+  </Typography>
+
+  <Typography
+    variant="body1"
+    onClick={() => setSelectedTab("recentlyDeleted")}
+    sx={{
+      cursor: "pointer",
+      fontWeight: selectedTab === "recentlyDeleted" ? "bold" : "normal",
+      pb: 1,
+      fontSize: "16px",
+      color: "#000",
+      borderBottom: selectedTab === "recentlyDeleted" ? "2px solid black" : "2px solid transparent",
+      transition: "all 0.2s ease-in-out",
+      "&:hover": {
+        borderBottom: "2px solid #aaa",
+        opacity: 0.8,
+      },
+    }}
+  >
+    Recently Deleted
+  </Typography>
+</Box>
+
             {(userDetails.private === false || userDetails.followers?.includes(user?._id)) || userDetails.id === user?._id ? (
               filteredPosts.length > 0 ? (
-                <Grid container spacing={1} sx={{ justifyContent: "center" }}>
-                  {filteredPosts.map((post, index) => (
-                    <Grid item xs={6} sm={4} md={3} key={index}>
-                      <Box
-                        sx={{
-                          width: "100%",
-                          aspectRatio: "1",
-                          overflow: "hidden",
-                          borderRadius: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => handlePostClick(post)}
-                      >
-                        <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
-                          <img
-                            src={post.postimg || (post.images?.length > 0 ? post.images[0] : "default_image_url")}
-                            alt="Post"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              borderRadius: "4px",
-                            }}
-                          />
-                          {post.images?.length > 1 && (
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                top: 8,
-                                right: 8,
-                                backgroundColor: "rgba(0, 0, 0, 0.6)",
-                                color: "white",
-                                fontSize: "12px",
-                                padding: "2px 6px",
-                                borderRadius: "10px",
-                              }}
-                            >
-                              {post.images.length}+
-                            </Box>
-                          )}
-                        </Box>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
+                <Grid container spacing={1} mt={2}>
+                {filteredPosts.map((post, idx) => (
+                  <Grid item xs={4} key={idx}>
+                    <Box
+                      onClick={() => handlePostClick(post)}
+                      sx={{
+                        width: "100%",
+                        aspectRatio: "1/1",
+                        cursor: "pointer",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <img
+                        src={post.images?.[0] || post.postimg}
+                        alt="post"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+          
               ) : (
                 <Typography
                   variant="body2"
-                  sx={{ textAlign: "center", color: "gray", fontStyle: "italic" }}
+                  sx={{ textAlign: "center", color: "gray", fontStyle: "italic", marginTop: '20%' }}
                 >
                   No Posts Available
                 </Typography>
@@ -917,7 +938,7 @@ const ProfilePage = () => {
               </Box>
             )}
           </Box>
-        </Box>
+          </Box>
       </Container>
 
       {/* Post Modal */}
@@ -1045,33 +1066,35 @@ const ProfilePage = () => {
 
             {/* Right Section - Comments */}
             <Box sx={{ width: "40%", display: "flex", flexDirection: "column", bgcolor: "#fff", p: 2 }}>
+              
               {/* Post Owner with Three-Dot Menu */}
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Avatar src={userDetails.profileImage} sx={{ width: 32, height: 32, mr: 1 }} />
                   <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>{selectedPost?.userName}</Typography>
                 </Box>
-                <IconButton onClick={handleMenuOpen}>
-                  <MoreVertIcon />
-                </IconButton>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleMenuClose}
-                  sx={{ mt: 1 }}
-                >
-                  <MenuItem onClick={handleArchivePost}>
-                    {selectedPost?.archived ? "Unarchive" : "Archive"}
-                  </MenuItem>
-                  <MenuItem onClick={handletempDeletePost}>
-                    {selectedPost?.tempdelete ? "Recover" : "Delete"}
-                  </MenuItem>
-                  {selectedPost?.tempdelete ?
-                    <MenuItem onClick={handleDeleteclick}>
-                      Permanently Delete
-                    </MenuItem>
-                    : <></>}
-                </Menu>
+                <IconButton onClick={handlePostMenuOpen}>
+  <MoreVertIcon />
+</IconButton>
+<Menu
+  anchorEl={postMenuAnchorEl}
+  open={Boolean(postMenuAnchorEl)}
+  onClose={handlePostMenuClose}
+  sx={{ mt: 1 }}
+>
+  <MenuItem onClick={() => { handleArchivePost(); handlePostMenuClose(); }}>
+    {selectedPost?.archived ? "Unarchive" : "Archive"}
+  </MenuItem>
+  <MenuItem onClick={() => { handletempDeletePost(); handlePostMenuClose(); }}>
+    {selectedPost?.tempdelete ? "Recover" : "Delete"}
+  </MenuItem>
+  {selectedPost?.tempdelete && (
+    <MenuItem onClick={() => { handleDeleteclick(); handlePostMenuClose(); }}>
+      Permanently Delete
+    </MenuItem>
+  )}
+</Menu>
+
               </Box>
 
               {/* Post Caption */}
@@ -1100,6 +1123,32 @@ const ProfilePage = () => {
                   ))}
                 </List>
               </Box>
+              {/* Post Interaction Stats: Likes, Comments, Share */}
+<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1 }}>
+  <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+    <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ color: "#FF3040" }}>
+      <FavoriteIcon />
+    </IconButton>
+    <Typography variant="body2">{selectedPost.likes?.length || 0} Likes</Typography>
+
+    <IconButton disabled>
+      <ChatBubbleOutlineIcon />
+    </IconButton>
+    <Typography variant="body2">
+      {comments[selectedPost.postId]?.length || 0} Comments
+    </Typography>
+  </Box>
+
+  <IconButton
+    onClick={() => {
+      setOpenShareModal(true);
+    }}
+    sx={{ color: "#333" }}
+  >
+    <ShareIcon />
+  </IconButton>
+</Box>
+
 
               {/* Add Comment Box */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
@@ -1309,6 +1358,7 @@ const ProfilePage = () => {
         }}
         type="profile"
       />
+      </Box>
     </>
   );
 };

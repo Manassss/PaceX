@@ -19,7 +19,7 @@ import { storage } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Cropper from 'react-easy-crop';
 
-const AddPost = () => {
+const AddPost = ({ open: isOpen, onClose }) => {
   const [content, setContent] = useState('');
   const [postImages, setPostImages] = useState([]); // Store multiple images
   const [selectedFiles, setSelectedFiles] = useState([]); // Store selected files before upload
@@ -31,6 +31,7 @@ const AddPost = () => {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+
 
   // Handle multiple file selection
   const handleFileChange = (event) => {
@@ -151,81 +152,114 @@ const AddPost = () => {
   };
 
   return (
-    <Box sx={{ width: { xs: "90%", sm: "80%", md: 600 }, maxWidth: 650, padding: 2, borderRadius: 3, background: "#eddecf", margin: "auto", mt: 3 }}>
-      <Typography variant="h6" align="center" sx={{ fontWeight: 'bold', color: 'black' }}>
-        Create a New Post
-      </Typography>
+<Modal
+  open={isOpen}
+  onClose={onClose}
+  closeAfterTransition
+  BackdropProps={{
+    sx: {
+      backdropFilter: 'blur(8px)',
+      backgroundColor: 'rgba(0,0,0,0.4)',
+    },
+  }}
+>
+<Box
+  sx={{
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: { xs: '95%', sm: '80%', md: '70%', lg: '60%' }, // wider across screens
+    height: { xs: '90vh', sm: '85vh', md: '50vh' }, // taller form
+    bgcolor: '#f8f2ec',
+    borderRadius: 3,
+    boxShadow: 24,
+    p: 3,
+    overflowY: 'auto', // scroll inside the form if content grows
+  }}
+>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, background: 'white', borderRadius: 1, padding: '8px' }}>
-          <TextField
-            label="What's on your mind?"
-            variant="outlined"
-            multiline
-            rows={1}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            fullWidth
-          />
+    <Typography variant="h6" align="center" sx={{ fontWeight: 'bold', color: 'black', mb: 2 }}>
+      Create a New Post
+    </Typography>
 
-          <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} id="upload-file" accept="image/*" />
-          <label htmlFor="upload-file">
-            <Tooltip title="Choose Images">
-              <IconButton component="span" color="primary">
-                <ImageIcon />
-              </IconButton>
-            </Tooltip>
-          </label>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          borderRadius: 1,
+          padding: '8px',
+        }}
+      >
+        <TextField
+          placeholder="What's on your mind?"
+          multiline
+          rows={1}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          fullWidth
+          variant="outlined"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                border: '1px solid #e0e0e0',
+                borderRadius: '12px',
+              },
+              backgroundColor: '#fff',
+              padding: '4px 8px',
+            },
+          }}
+        />
 
-          <Tooltip title="Post">
-            <IconButton color="primary" onClick={handleSubmit}>
-              <SendIcon />
+        <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} id="upload-file" accept="image/*" />
+        <label htmlFor="upload-file">
+          <Tooltip title="Choose Images">
+            <IconButton component="span" color="primary">
+              <ImageIcon />
             </IconButton>
           </Tooltip>
-        </Box>
+        </label>
 
-        {postImages.length > 0 && (
-          <Box mt={2} sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            {postImages.map((img, index) => (
-              <Box key={index} sx={{ position: "relative", width: 100, height: 100 }}>
-                <img src={img} alt="Uploaded" style={{ width: "100%", height: "100%", borderRadius: 8, objectFit: "cover" }} />
-                <IconButton sx={{ position: "absolute", top: 5, right: 5, backgroundColor: "rgba(255,255,255,0.8)", color: "red" }} onClick={() => {
-                  setPostImages(postImages.filter((_, i) => i !== index));
-                }}>
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            ))}
-          </Box>
-        )}
+        <Tooltip title="Post">
+          <IconButton color="primary" onClick={handleSubmit}>
+            <SendIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
-      <Modal open={openCropModal} onClose={() => setOpenCropModal(false)}>
-        <Box sx={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)', bgcolor: 'white', p: 2, borderRadius: 2,
-          width: 350, height: 500, display: "flex", flexDirection: "column", alignItems: "center",
-        }}>
-          <Typography variant="h6">Crop Image ({currentImageIndex + 1}/{selectedFiles.length})</Typography>
-
-          <Box sx={{ width: 300, height: 400, overflow: "hidden" }}>
-            <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={4 / 5} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} restrictPosition={true} showGrid={false} />
-          </Box>
-          <Slider
-            value={zoom}
-            min={0.5}
-            max={2}  // Restrict zoom level to prevent overscaling
-            step={0.05}
-            onChange={(e, zoom) => setZoom(zoom)}
-          />
-
-          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-            <Button variant="contained" color="error" onClick={() => setOpenCropModal(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleCropConfirm}>Next Image</Button>
-          </Box>
+      {postImages.length > 0 && (
+        <Box mt={2} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          {postImages.map((img, index) => (
+            <Box key={index} sx={{ position: 'relative', width: 100, height: 100 }}>
+              <img
+                src={img}
+                alt="Uploaded"
+                style={{ width: '100%', height: '100%', borderRadius: 8, objectFit: 'cover' }}
+              />
+              <IconButton
+                sx={{
+                  position: 'absolute',
+                  top: 5,
+                  right: 5,
+                  backgroundColor: 'rgba(255,255,255,0.8)',
+                  color: 'red',
+                }}
+                onClick={() => {
+                  setPostImages(postImages.filter((_, i) => i !== index));
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
         </Box>
-      </Modal>
+      )}
     </Box>
+  </Box>
+</Modal>
+
   );
 };
 

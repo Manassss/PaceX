@@ -88,15 +88,16 @@ const Chatbox = ({ userId, username }) => {
         <Container
             maxWidth="lg"
             sx={{
-                height: "80vh",
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 2,
-                boxShadow: 2,
-                p: 1,
-                width: '100%',
-                background: "#f8f2ec",
-                overflow: 'hidden',
+                width: 1450,
+                    height: "97vh",
+                    background: "#f8f2ec",
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: "20px",
+                    borderLeft: "1px solid #ccc",
+                    overflow: 'hidden',
+                    marginleft: "500",
+
             }}
         >
             {/* Chat History List */}

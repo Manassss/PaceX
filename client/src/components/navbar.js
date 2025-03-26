@@ -1,385 +1,332 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { io } from "socket.io-client"; // ✅ Import socket.io-client
+import React, { useState } from "react";
 import {
-  AppBar,
-  Toolbar,
-  Typography,
   Box,
-  IconButton,
   Avatar,
+  Typography,
   Menu,
   MenuItem,
-  TextField,
-  Popover,
   List,
   ListItem,
+  ListItemIcon,
   ListItemText,
-  Paper,
-  Badge
+  Tooltip,
+  Modal
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
-import { useAuth } from "../auth/AuthContext";
+import {
+  Home as HomeIcon,
+  Search as SearchIcon,
+  Notifications as NotificationsIcon,
+  Chat as ChatIcon,
+  Event as EventIcon,
+  Groups as CommunityIcon,
+  Store as MarketplaceIcon,
+  AddBox as CreateIcon,
+  Info as InfoIcon,
+  MoreHoriz as MoreIcon
+} from "@mui/icons-material";
+
 import { useNavigate } from "react-router-dom";
-import Logo from "../assets/PACE.png"; // Import Logo
+import { useAuth } from "../auth/AuthContext";
+import Logo from "../assets/PACE.png";
+import axios from "axios";
+import SearchPanel from "./Search";
+import AddPost from './AddPost'; // adjust the path if needed
+
+
 
 const Navbar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [users, setUsers] = useState([]); // Store all users
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [searchAnchorEl, setSearchAnchorEl] = useState(null);
-  const [notifAnchorEl, setNotifAnchorEl] = useState(null); // Notification Menu
-  const [notifications, setNotifications] = useState([]); // Store notifications
-  const [unreadCount, setUnreadCount] = useState(0); // Count unread notifications
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
 
 
 
-  // ✅ Fetch Notifications
-
-  // ✅ Initialize socket connection
-  const socket = io("http://localhost:5001", { transports: ["websocket"] });
-
-  // ✅ Fetch Notifications from API
-  useEffect(() => {
-    if (!user?._id) return;
-
-    const fetchNotifications = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5001/api/notifications/${user._id}`);
-        console.log("🔍 Notifications Response:", res.data);  // ✅ Log the response
-
-        setNotifications(res.data);
-        setUnreadCount(res.data.filter(n => !n.read).length);
-      } catch (error) {
-        console.error("🔥 Error fetching notifications:", error);
-      }
-    };
-
-    fetchNotifications();
-  }, [user]);
-
-
-  // ✅ Listen for Real-Time Notifications
-  useEffect(() => {
-    if (!user?._id) return;
-
-    const eventName = `notification-${user._id}`;
-    console.log(`📡 Listening for notifications on "${eventName}"`);
-
-    const handleNotification = (notification) => {
-      console.log("📩 New notification:", notification);
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    };
-
-    socket.on(eventName, handleNotification);
-
-    return () => {
-      socket.off(eventName, handleNotification);
-    };
-  }, [user]);
-
-  // ✅ Open & Close Notification Dropdown
-  const handleNotifClick = (event) => {
-    setNotifAnchorEl(event.currentTarget);
-    setUnreadCount(0); // Mark all as read when opened
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    else if (hour < 18) return "Good afternoon";
+    else return "Good evening";
   };
 
-  const handleNotifClose = async () => {
-    setNotifAnchorEl(null);
-
-    // ✅ Mark notifications as read
-    try {
-      await axios.put(`http://localhost:5001/api/notifications/mark-read/${user._id}`);
-    } catch (error) {
-      console.error("🔥 Error marking notifications as read:", error);
+  
+  const navItems = [
+    { icon: <HomeIcon />, label: "Home", path: "/userhome" },
+    {
+      icon: <SearchIcon />,
+      label: "Search",
+      onClick: () => {
+        setIsCollapsed(true);
+        setShowSearchPanel(true); // show the panel
+      },
+    }, 
+    { icon: <NotificationsIcon />, label: "Notifications", path: "/notifications" },
+    { icon: <ChatIcon />, label: "Messenger", path: "/messenger" },
+    { icon: <EventIcon />, label: "Events", path: "/events" },
+    { icon: <CommunityIcon />, label: "Community", path: "/community" },
+    { icon: <MarketplaceIcon />, label: "Marketplace", path: "/marketplace" },
+    {
+      icon: <CreateIcon />,
+      label: "Create",
+      onClick: () => {
+        setOpenCreateModal(true);
+      },
     }
-  };
-
-  // Fetch users from API
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await axios.get("http://localhost:5001/api/users/all");
-        const blockedUsers = user?.blockeduser || [];
-        const transformedUsers = res.data
-          .filter(user => !blockedUsers.includes(user._id))
-          .map((user) => ({
-            id: user._id,
-            name: user.name,
-            bio: user.bio,
-            email: user.email,
-            role: user.role,
-            university: user.university,
-            profileImage: user.profileImage,
-            joinedAt: new Date(user.joinedAt).toLocaleDateString(),
-
-          }));
-        setUsers(transformedUsers);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
-  // Handle search input changes
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (value.length > 0) {
-      setFilteredUsers(
-        users.filter(
-          (u) =>
-            u.name.toLowerCase().includes(value.toLowerCase()) ||
-            u.email.toLowerCase().includes(value.toLowerCase())
-        )
-      );
-      setSearchAnchorEl(e.currentTarget); // Keeps dropdown open while typing
-    } else {
-      setFilteredUsers([]);
-      setSearchAnchorEl(null);
-    }
-  };
-
-  // Close search dropdown
-  const handleClosePopover = () => {
-    setSearchAnchorEl(null);
-  };
-
-  // Navigate to user profile
-  const handleProfile = (userId) => {
-    navigate(`/profile/${userId}`);
-    setSearchTerm("");
-    handleClosePopover();
-  };
-
-  // Handle Profile Dropdown
-  const handleProfileClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+      ];
 
   return (
-    <AppBar
-      position="fixed"
-      sx={{
-        background: "#073574",
-        paddingX: { xs: 1, sm: 2 },
-        height: { xs: "70px", sm: "100px" },
-      }}
-    >
-      <Toolbar
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        {/* Logo on the Left */}
+<Box
+  sx={{
+    width: isCollapsed ? "120px" : "380px",
+    transition: "width 0.3s ease",
+    height: "100vh",
+    bgcolor: "#073574",
+    color: "white",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    paddingLeft: isCollapsed ? "8px" : "16px",
+    paddingRight: isCollapsed ? "8px" : "16px",
+    py: 2,
+    position: "fixed",
+    top: 0,
+    left: 0,
+    zIndex: 1000,
+    overflow: "hidden"
+  }}
+>
+      {/* Top Section */}
+      <Box>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 3 }}>
         <Box
-          component="img"
-          src={Logo}
-          alt="PaceX Logo"
-          sx={{
-            height: { xs: 60, sm: 100 },
-            cursor: "pointer",
-          }}
-          onClick={() => navigate("/userhome")}
-        />
+  component="img"
+  src={Logo}
+  alt="PaceX Logo"
+  sx={{
+    height: isCollapsed ? 100 : 150, // ✅ reduce size when collapsed
+    maxWidth: "100%",              // ✅ avoid overflow
+    objectFit: "contain",
+    transition: "all 0.3s ease",
+    marginLeft: "auto",
+    marginRight: "auto",
+    display: "block"
+  }}
+  onClick={() => navigate("/userhome")}
+/>
 
-        {/* Search Bar */}
-        <Box sx={{ width: { xs: "50%", sm: "60%", md: "40%" }, position: "relative" }}>
-          <TextField
-            color="white"
-            fullWidth
-            variant="outlined"
-            placeholder="Search account..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            sx={{
-              color: "white",
-              backgroundColor: "white",
-              borderRadius: "20px", // Curved corners
-              border: "1px solid black", // Thin black border
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "20px",
-                "& fieldset": { borderColor: "white" },
-                "&:hover fieldset": { borderColor: "white" },
-                "&.Mui-focused fieldset": { borderColor: "white" },
-              },
-            }}
-          />
-
-          {/* Search Results */}
-          {searchTerm && (
-            <Paper
-              sx={{
-                position: "absolute",
-                width: "100%",
-                zIndex: 10,
-                mt: 1,
-                maxHeight: "150px",
-                overflowY: "auto",
-                borderRadius: "15px", // Curved dropdown
-                backgroundColor: "white", // Slight transparency
-                backdropFilter: "blur(5px)", // Adds subtle blur effect
-                boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Soft shadow
-              }}
-            >
-              <List>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.slice(0, 3).map((user) => ( // Show only 3 results at a time
-                    <ListItem button key={user._id} onClick={() => handleProfile(user.id)}>
-
-                      <Avatar src={user.profileImage} sx={{ width: 30, height: 30, mr: 1 }} />
-                      <ListItemText primary={user.name} />
-                    </ListItem>
-                  ))
-                ) : (
-                  <ListItem>
-                    <ListItemText primary="No users found" />
-                  </ListItem>
-                )}
-              </List>
-            </Paper>
-          )}
         </Box>
 
-        {/* Icons and User Profile */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 2, sm: 5 } }}>
-          {/* Notification Bell with Badge */}
-          <IconButton sx={{ color: "white" }} onClick={handleNotifClick}>
-            <Badge badgeContent={unreadCount} color="error">
-              <NotificationsIcon fontSize="medium" />
-            </Badge>
-          </IconButton>
-
-          {/* Notification Dropdown */}
-          <Menu
-            anchorEl={notifAnchorEl}
-            open={Boolean(notifAnchorEl)}
-            onClose={handleNotifClose}
+        {!isCollapsed && (
+          <Typography
+            variant="body1"
             sx={{
-              "& .MuiPaper-root": {
-                backgroundColor: "white",
-                borderRadius: "10px",
-                minWidth: "250px",
-                boxShadow: "0px 4px 10px rgba(0,0,0,0.3)",
-              }
+              textAlign: "center",
+              fontWeight: 900,
+              fontSize: "1.7rem",
+              textTransform: "capitalize",
+              letterSpacing: "0.5px",
+              mb: 3,
+              background: "linear-gradient(to right,rgb(236, 50, 152), #fad0c4)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)"
             }}
           >
-            {notifications.length === 0 ? (
-              <MenuItem disabled>No new notifications</MenuItem>
-            ) : (
-              notifications.map((notif, index) => (
-                <MenuItem key={index} onClick={() => navigate(notif.postId ? `/post/${notif.postId}` : `/profile/${notif.sender}`)}>
-                  <Avatar src={notif.senderProfile || "/default-avatar.png"} sx={{ width: 30, height: 30, marginRight: 1 }} />
-                  <ListItemText
-                    primary={
-                      notif.type === "follow"
-                        ? `${notif.senderName || "Unknown User"} started following you`
-                        : notif.type === "like"
-                          ? `${notif.senderName || "Unknown User"} liked your post`
-                          : notif.type
+            {getGreeting()},<br /> {user?.name?.split(" ")[0]}
+          </Typography>
+        )}
+
+        {/* Profile Section */}
+        <Box
+  sx={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    mt: 3,
+    gap: 1,
+    cursor: "pointer",
+    transition: "all 0.3s ease"
+  }}
+  onClick={() => {
+    setIsCollapsed(true);
+    setShowSearchPanel(false);
+    navigate(`/profile/${user?._id}`);
+  }}
+>
+  <Avatar
+    src={user?.profileImage}
+    sx={{
+      width: isCollapsed ? 80 : 95,
+      height: isCollapsed ? 80 : 95,
+      transition: "all 0.3s ease"
+    }}
+  />
+  {!isCollapsed && (
+    <Typography variant="subtitle1" sx={{ fontWeight: "bold", fontSize: "1.5rem" }}>
+      {user?.name}
+    </Typography>
+  )}
+</Box>
+
+
+        {/* Navigation Items */}
+        <List sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: isCollapsed ? 2 : 1, // spacing between icons
+    mt: isCollapsed ? 3 : 2, }}>
+          {navItems.map((item, i) => (
+            <Tooltip title={isCollapsed ? item.label : ""} placement="right" key={i}>
+              <ListItem
+                button
+                onClick={() => {
+                  if (item.label === "Search") {
+                    setIsCollapsed(true);
+                    setShowSearchPanel(true); // Open the search panel
+                  } else {
+                    setShowSearchPanel(false); // ✅ Close search panel on all other clicks
+                    if (item.label === "Home") {
+                      setIsCollapsed(false);
+                      navigate(item.path);
+                    } else if (item.onClick) {
+                      setIsCollapsed(true);
+                      item.onClick();
+                    } else {
+                      setIsCollapsed(true);
+                      navigate(item.path);
                     }
-                  />
-                </MenuItem>
-              ))
-            )}
-          </Menu>
-
-
-
-
-
-
-          <IconButton sx={{ color: "white" }}>
-            <BookmarkIcon fontSize={"medium"} />
-          </IconButton>
-
-          <IconButton sx={{ color: "white" }}>
-            <BookmarkIcon fontSize={"medium"} />
-          </IconButton>
-
-          {/* User Profile Dropdown */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              cursor: "pointer",
-            }}
-            onClick={handleProfileClick}
-          >
-            <Typography
-              sx={{
-                color: "white",
-                fontWeight: "bold",
-                mr: { xs: 0.5, sm: 1 },
-                fontSize: { xs: "0.8rem", sm: "1rem" },
-              }}
-            >
-              {user?.name}
-            </Typography>
-            <Avatar
-              src={user?.profileImage}
-              sx={{
-                width: { xs: 40, sm: 50 },
-                height: { xs: 40, sm: 50 },
-              }}
-            />
-          </Box>
-
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-            sx={{
-              "& .MuiPaper-root": {
-                backgroundColor: " #f8f2ec", // Background color of menu
-                borderRadius: "10px",
-                color: "#073574", // Text color
-                boxShadow: "0px 4px 10px rgba(0,0,0,0.3)", // Shadow effect
-                minWidth: "200px",
-              },
-            }}
-          >
-            {[
-              { label: "Profile", path: `/profile/${user?._id}` },
-              { label: "Saved Posts", path: "/saved" },
-              { label: "Settings", path: "/settings" },
-              { label: "Logout", path: "/home" },
-            ].map((item, index) => (
-              <MenuItem
-                key={index}
-                onClick={() => navigate(item.path)}
+                  }
+                }}
                 sx={{
-                  fontSize: "16px",
-                  fontWeight: "500",
-                  padding: "12px 20px",
-                  transition: "0.3s",
-                  "&:hover": {
-                    backgroundColor: "#0a4a8c", // Hover color
-                    color: "#fff",
-                  },
+                  cursor: "pointer",
+                  bgcolor: "#f8f2ec",
+                  my: 1,
+                  borderRadius: 2,
+                  width: "80%",
+                  justifyContent: isCollapsed ? "center" : "flex-start",
+                  "&:hover": { bgcolor: "#e3dad3" }
                 }}
               >
-                {item.label}
-              </MenuItem>
-            ))}
-          </Menu>
+                <ListItemIcon sx={{ color: "#073574", minWidth: 30 }}>{item.icon}</ListItemIcon>
+                {!isCollapsed && (
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontSize: "0.9rem",
+                      fontWeight: 500,
+                      color: "#073574"
+                    }}
+                    sx={{ textAlign: "center" }}
+                  />
+                )}
+              </ListItem>
+            </Tooltip>
+          ))}
+        </List>
 
-        </Box>
-      </Toolbar>
-    </AppBar>
+
+        {/* Profile Menu */}
+        <Menu anchorEl={profileMenuAnchor} open={Boolean(profileMenuAnchor)} onClose={() => setProfileMenuAnchor(null)}>
+          <MenuItem onClick={() => navigate(`/profile/${user?._id}`)}>View Profile</MenuItem>
+          <MenuItem onClick={() => navigate("/saved")}>Saved</MenuItem>
+          <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
+          <MenuItem onClick={() => navigate("/home")}>Logout</MenuItem>
+        </Menu>
+      </Box>
+
+      {/* Bottom Section */}
+      <Box>
+        {/* More Dropdown */}
+        <Tooltip title={isCollapsed ? "More" : ""} placement="right">
+          <ListItem
+            button
+            onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
+            sx={{
+              cursor: "pointer",
+              bgcolor: "#f8f2ec",
+              borderRadius: 2,
+              my: 1,
+              width: "80%",
+              mx: "auto",
+              justifyContent: isCollapsed ? "center" : "flex-start",
+              "&:hover": { bgcolor: "#e3dad3" },
+              mb: 4
+            }}
+          >
+            <ListItemIcon sx={{ color: "#073574" }}>
+              <MoreIcon />
+            </ListItemIcon>
+            {!isCollapsed && (
+              <ListItemText
+                primary="More"
+                primaryTypographyProps={{ fontSize: "0.9rem", color: "#073574" }}
+                sx={{ textAlign: "center" }}
+              />
+            )}
+          </ListItem>
+        </Tooltip>
+
+        <Menu anchorEl={moreMenuAnchor} open={Boolean(moreMenuAnchor)} onClose={() => setMoreMenuAnchor(null)}>
+          <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
+          <MenuItem onClick={() => navigate("/saved")}>Saved Posts</MenuItem>
+          <MenuItem onClick={() => navigate("/home")}>Logout</MenuItem>
+        </Menu>
+      </Box>
+      
+      {showSearchPanel && (
+            <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: isCollapsed ? "120px" : "380px",
+              height: "100vh",
+              width: 300,
+              bgcolor: "#f8f2ec",
+              zIndex: 1200,
+              boxShadow: "4px 0 12px rgba(0,0,0,0.1)",
+              transform: showSearchPanel ? "translateX(0)" : "translateX(-100%)",
+              opacity: showSearchPanel ? 1 : 0,
+              pointerEvents: showSearchPanel ? 'auto' : 'none', // Prevent interaction when hidden
+              transition: "transform 0.4s ease, opacity 0.4s ease"
+            }}
+          >
+            <SearchPanel onClose={() => setShowSearchPanel(false)} />
+          </Box>
+          
+)}
+
+<Modal
+  open={openCreateModal}
+  onClose={() => setOpenCreateModal(false)}
+  closeAfterTransition
+  BackdropProps={{
+    sx: {
+      backdropFilter: 'blur(8px)',
+      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+  }}
+>
+  <Box
+    sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: { xs: '90%', sm: 500 },
+      bgcolor: '#f8f2ec',
+      borderRadius: 3,
+      boxShadow: 24,
+      p: 3,
+      maxHeight: '90vh',
+      overflowY: 'auto',
+    }}
+  >
+<AddPost open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
+</Box>
+</Modal>
+
+    </Box>
+    
   );
 };
 

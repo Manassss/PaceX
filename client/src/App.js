@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Box } from "@mui/material";
 import Register from "./components/Register";
@@ -21,15 +21,17 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CommunityHome from "./components/CommunityHome";
 import CommunityDetail from "./components/CommunityDetail";
+import SearchPanel from "./components/Search";
 
 // ✅ Initialize socket connection
 const socket = io("http://localhost:5001", { transports: ["websocket"] });
 
 function AppContent({ userId }) {
-  const location = useLocation(); // ✅ Inside <Router>
-
-  // ✅ Define routes where BottomNav should be hidden
+  const location = useLocation();
   const hiddenRoutes = ["/", "/register", "/login", "/home", "/chatbox"];
+  const showNavbar = !hiddenRoutes.includes(location.pathname);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
 
   // ✅ Listen for real-time notifications
   useEffect(() => {
@@ -52,18 +54,40 @@ function AppContent({ userId }) {
 
   return (
     <>
-      {/* ✅ Show Navbar except on login and register pages */}
-      {!["/register", "/login", "/"].includes(location.pathname) && <Navbar />}
+           <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      {/* Navbar Section */}
+      {showNavbar && (
+        <Navbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      )}
 
-      {/* ✅ Notification Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} pauseOnHover draggable />
+    {/* Main Content */}
+    <Box
+      sx={{
+        flexGrow: 1,
+        width: "100%",
+        overflowY: "auto",
+        ml: showNavbar ? { xs: "80px", sm: "139px" } : 0,
+        height: "100vh",
+        transition: "margin-left 0.3s ease",
+      }}
+    >
+      {/* Toast Notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        pauseOnHover
+        draggable
+      />
 
-      {/* ✅ Notifications Component (Real-time listening) */}
+      {/* Real-time Notification Component */}
       {userId && <Notifications userId={userId} />}
 
+      {/* Routes */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/Search" element={<SearchPanel />} />
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/add-post" element={<AddPost />} />
@@ -83,10 +107,24 @@ function AppContent({ userId }) {
             </LoadScript>
           }
         />
-        <Route path="/messenger" element={<Messenger />} />
+        <Route path="/messenger" element={ <Box
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: isCollapsed ? "120px" : "139px", // Match collapsed navbar
+        height: "100vh",
+        display: "flex",
+        zIndex: 1100,
+        transition: "left 0.4s ease",
+      }}
+    >
+      <Messenger isCollapsed={isCollapsed} />
+    </Box>} />
       </Routes>
-    </>
-  );
+    </Box>
+  </Box>
+  </>
+);
 }
 
 function App() {
