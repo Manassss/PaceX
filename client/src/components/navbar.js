@@ -182,9 +182,9 @@ const Navbar = () => {
                 onClick={() => {
                   if (item.label === "Search") {
                     setIsCollapsed(true);
-                    setShowSearchPanel(true); // Open the search panel
+                    setShowSearchPanel(true);
                   } else {
-                    setShowSearchPanel(false); // ✅ Close search panel on all other clicks
+                    setShowSearchPanel(false);
                     if (item.label === "Home") {
                       setIsCollapsed(false);
                       navigate(item.path);
@@ -196,6 +196,7 @@ const Navbar = () => {
                       navigate(item.path);
                     }
                   }
+                  
                 }}
                 sx={{
                   cursor: "pointer",

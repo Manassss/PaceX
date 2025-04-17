@@ -86,6 +86,13 @@ const ProfilePage = () => {
   const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
   const [openShareModal, setOpenShareModal] = useState(false);
   const [postMenuAnchorEl, setPostMenuAnchorEl] = useState(null);
+  const [openFollowersModal, setOpenFollowersModal] = useState(false);
+  const [openFollowingModal, setOpenFollowingModal] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
+
+  // For the Three Dot menu
+
 
 
 
@@ -114,6 +121,19 @@ const ProfilePage = () => {
     setDeleteConfirmation(true);
     handleMenuClose();
   };
+
+  const openFollowers = () => {
+    // If userDetails.followers are full user objects, you can set them directly.
+    setFollowersList(userDetails.followers || []);
+    setOpenFollowersModal(true);
+  };
+  
+  const openFollowing = () => {
+    // Similar logic for followings.
+    setFollowingList(userDetails.followings || []);
+    setOpenFollowingModal(true);
+  };
+  
 
   // Function to delete the post
   const handleDeletePost = async () => {
@@ -681,22 +701,29 @@ const ProfilePage = () => {
 
 
           {/* User Stats */}
-          <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
-            {[
-              { label: "Posts", value: userDetails.postsCount || 0 },
-              { label: "Followers", value: userDetails.followersCount || 0 },
-              { label: "Following", value: userDetails.followingCount || 0 },
-            ].map((item, index) => (
-              <Box key={index} textAlign="center">
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  {item.value}
-                </Typography>
-                <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
-                  {item.label}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
+          {/* User Stats */}
+        <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
+  {[
+    { label: "Posts", value: userDetails.postsCount || 0 },
+    { label: "Followers", value: userDetails.followersCount || 0 },
+    { label: "Following", value: userDetails.followingCount || 0 },
+  ].map((item, index) => (
+    <Box key={index} textAlign="center">
+      <Typography variant="h6" sx={{ fontWeight: "bold", cursor: item.label !== "Posts" ? "pointer" : "default" }}
+        onClick={() => {
+          if (item.label === "Followers") openFollowers();
+          else if (item.label === "Following") openFollowing();
+        }}
+      >
+        {item.value}
+      </Typography>
+      <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
+        {item.label}
+      </Typography>
+    </Box>
+  ))}
+</Box>
+
 
 
           {/* follow and edit Buttons */}
@@ -1077,23 +1104,34 @@ const ProfilePage = () => {
   <MoreVertIcon />
 </IconButton>
 <Menu
-  anchorEl={postMenuAnchorEl}
-  open={Boolean(postMenuAnchorEl)}
-  onClose={handlePostMenuClose}
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={handleMenuClose}
+  anchorOrigin={{
+    vertical: 'bottom',
+    horizontal: 'right',
+  }}
+  transformOrigin={{
+    vertical: 'top',
+    horizontal: 'right',
+  }}
   sx={{ mt: 1 }}
 >
-  <MenuItem onClick={() => { handleArchivePost(); handlePostMenuClose(); }}>
-    {selectedPost?.archived ? "Unarchive" : "Archive"}
-  </MenuItem>
-  <MenuItem onClick={() => { handletempDeletePost(); handlePostMenuClose(); }}>
-    {selectedPost?.tempdelete ? "Recover" : "Delete"}
-  </MenuItem>
-  {selectedPost?.tempdelete && (
-    <MenuItem onClick={() => { handleDeleteclick(); handlePostMenuClose(); }}>
-      Permanently Delete
-    </MenuItem>
+  {userDetails.id === user?._id && (
+    <>
+      <MenuItem onClick={() => { handleArchivePost(); handleMenuClose(); }}>
+        Archive
+      </MenuItem>
+      <MenuItem onClick={() => { handleDeleteclick(); handleMenuClose(); }}>
+        Delete
+      </MenuItem>
+    </>
   )}
+  <MenuItem onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
+    <ShareIcon sx={{ mr: 1 }} /> Share Profile
+  </MenuItem>
 </Menu>
+
 
               </Box>
 
@@ -1180,6 +1218,105 @@ const ProfilePage = () => {
           </Box>
         </Modal>
       )}
+
+      {/* Followers Modal */}
+<Modal
+  open={openFollowersModal}
+  onClose={() => setOpenFollowersModal(false)}
+  BackdropProps={{
+    sx: {
+      backdropFilter: "blur(5px)"
+    }
+  }}
+>
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 400,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      p: 4,
+    }}
+  >
+    <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
+      Followers
+    </Typography>
+    <List>
+      {followersList.length > 0 ? (
+        followersList.map((follower) => (
+          <ListItem
+            key={follower._id}
+            button
+            onClick={() => {
+              setOpenFollowersModal(false);
+              handleProfile(follower._id);
+            }}
+          >
+            <Avatar src={follower.profileImage} sx={{ mr: 2 }} />
+            <ListItemText primary={follower.name} />
+          </ListItem>
+        ))
+      ) : (
+        <Typography variant="body2" sx={{ textAlign: "center" }}>
+          No followers yet.
+        </Typography>
+      )}
+    </List>
+  </Box>
+</Modal>
+
+{/* Following Modal */}
+<Modal
+  open={openFollowingModal}
+  onClose={() => setOpenFollowingModal(false)}
+  BackdropProps={{
+    sx: {
+      backdropFilter: "blur(5px)"
+    }
+  }}
+>
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 400,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      p: 4,
+    }}
+  >
+    <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
+      Following
+    </Typography>
+    <List>
+      {followingList.length > 0 ? (
+        followingList.map((followingUser) => (
+          <ListItem
+            key={followingUser._id}
+            button
+            onClick={() => {
+              setOpenFollowingModal(false);
+              handleProfile(followingUser._id);
+            }}
+          >
+            <Avatar src={followingUser.profileImage} sx={{ mr: 2 }} />
+            <ListItemText primary={followingUser.name} />
+          </ListItem>
+        ))
+      ) : (
+        <Typography variant="body2" sx={{ textAlign: "center" }}>
+          Not following anyone.
+        </Typography>
+      )}
+    </List>
+  </Box>
+</Modal>
+
 
 
       {/* Delete Confirmation Modal */}

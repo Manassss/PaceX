@@ -1,39 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// 🔹 React & Hooks
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+
+// 🔹 Context
 import { useAuth } from '../auth/AuthContext';
+
+// 🔹 External Libraries
 import axios from 'axios';
+
+// 🔹 Material UI Components & Icons
+import {
+  Typography, Button, Container, Paper, TextField, Avatar, Box, IconButton,
+  List, ListItem, ListItemText, Modal, useMediaQuery
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import ChatIcon from '@mui/icons-material/Chat'; // **NEW:** Chat icon imported for bottom nav
-import CameraCapture from './CameraComponent';
-import CloseIcon from "@mui/icons-material/Close";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import { Typography, Button, Container, Paper, Popover, Drawer, Dialog, DialogTitle, DialogContent, useMediaQuery, InputAdornment, TextField, Avatar, Box, IconButton, List, ListItem, ListItemText, Modal, MenuItem, Menu } from '@mui/material';
-import Messenger from './messenger';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import PeopleIcon from '@mui/icons-material/People';
-import Navbar from "../components/navbar"; // Import Navbar
-import FeedIcon from "@mui/icons-material/DynamicFeed";
 import EventIcon from "@mui/icons-material/Event";
 import GroupsIcon from "@mui/icons-material/Groups";
 import StorefrontIcon from "@mui/icons-material/Storefront";
-import AddPost from './AddPost';
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward"; // Close button
-import { Link } from 'react-router-dom';
-import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import ShareModal from './ShareModal';
-import TurnedInIcon from '@mui/icons-material/TurnedIn';
-import { AiFillLike } from "react-icons/ai";
-import { FaRegComment } from "react-icons/fa6";
-import { FaShare } from "react-icons/fa";
-import { BsFillSaveFill } from "react-icons/bs";
-import { SiGooglemessages } from "react-icons/si";
+import CircularProgress from '@mui/material/CircularProgress';
 
+// 🔹 Custom Components
+import CameraCapture from './CameraComponent';
+import ShareModal from './ShareModal';
+
+// 🔹 Icons from react-icons
+import { AiFillLike } from "react-icons/ai";
+import { FaRegComment, FaShare } from "react-icons/fa6";
+import { BsFillSaveFill } from "react-icons/bs";
 
 
 
 
 const UserHome = () => {
+    // ===================== STATE VARIABLES =====================
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -66,10 +71,16 @@ const UserHome = () => {
   const [showViewers, setShowViewers] = useState(false);
   const [openPostShareModal, setOpenPostShareModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const storyScrollRef = useRef(null);
+  const [openLikeModal, setOpenLikeModal] = useState(false);
+  const [likedUsers, setLikedUsers] = useState([]); // This will store the list returned from the API
+  const [progress, setProgress] = useState(0);
 
 
+  
+    
 
-  // ✅ Function to mark a story as "viewed"
+  //  Function to mark a story as "viewed"
   const markStoryAsViewed = async (storyId, userId) => {
     try {
       const postdata = { storyId, userId };
@@ -87,6 +98,8 @@ const UserHome = () => {
       markStoryAsViewed(currentStories[currentIndexStory].storyId, user?._id);
     }
   }, [currentIndexStory, openStory]);
+
+  
 
   const handleNext = () => {
     if (currentIndexStory < currentStories.length - 1) {
@@ -146,6 +159,7 @@ const UserHome = () => {
     }
   };
 
+  // Group your stories 
   const groupedStories = stories.reduce((acc, story) => {
     if (!acc[story.userId]) {
       acc[story.userId] = { userId: story.userId, stories: [] };
@@ -153,7 +167,97 @@ const UserHome = () => {
     acc[story.userId].stories.push(story);
     return acc;
   }, {});
+
+  // Convert grouped stories to an array
   const uniqueUserStories = Object.values(groupedStories);
+
+  // Now create a sorted array where fully viewed story groups are pushed to the end.
+  const sortedUniqueUserStories = [...uniqueUserStories].sort((a, b) => {
+    // Determine if every story in the group is viewed by the current user
+    const aViewed = a.stories.every(s => s.views?.includes(user?._id));
+    const bViewed = b.stories.every(s => s.views?.includes(user?._id));
+    
+    if (aViewed && !bViewed) return 1;
+    if (!aViewed && bViewed) return -1;
+    return 0;
+  });
+
+  // Scroll functions for horizontal scrolling
+  const scrollLeft = () => {
+    if (storyScrollRef.current) {
+      storyScrollRef.current.scrollBy({ left: -150, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (storyScrollRef.current) {
+      storyScrollRef.current.scrollBy({ left: 150, behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    if (!openStory) return; // Only run if the modal is open
+  
+    const autoAdvanceTimer = setTimeout(() => {
+      if (currentIndexStory < currentStories.length - 1) {
+        // More stories exist for the current user; advance within current group.
+        handleNext();
+      } else {
+        // At the end of the current user's stories:
+        // Find the index of the current user's story group in sortedUniqueUserStories.
+        const currentGroupIndex = sortedUniqueUserStories.findIndex(
+          (group) => group.userId === storyUser?.id
+        );
+  
+        // Check if there's another user story group.
+        if (
+          currentGroupIndex !== -1 &&
+          currentGroupIndex < sortedUniqueUserStories.length - 1
+        ) {
+          const nextGroup = sortedUniqueUserStories[currentGroupIndex + 1];
+          // Find the corresponding user from your users list.
+          const nextUser = users.find((u) => u.id === nextGroup.userId);
+          if (nextUser) {
+            // Load the next user's stories.
+            handleStoryClick(nextUser, nextGroup.stories);
+          } else {
+            // If no user found, close the modal.
+            handleClose();
+          }
+        } else {
+          // No more story groups available; close the modal.
+          handleClose();
+        }
+      }
+    }, 5000); // 5 seconds
+  
+    // Clear the timer if dependencies change or modal closes.
+    return () => clearTimeout(autoAdvanceTimer);
+  }, [openStory, currentIndexStory, currentStories, sortedUniqueUserStories, storyUser, users]);
+  
+
+  useEffect(() => {
+    let timer;
+    if (openStory) {
+      setProgress(0); // Reset progress when a story opens
+      timer = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(timer);
+            return 100;
+          }
+          return prev + 1; // Increment progress; 50ms * 100 ≈ 5000ms total
+        });
+      }, 50);
+    } else {
+      setProgress(0);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [openStory, currentIndexStory]);
+  
+  
 
   const fetchStories = async () => {
     try {
@@ -191,19 +295,21 @@ const UserHome = () => {
             const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post._id}`);
 
 
-
             return {
               content: post.content,
-              createdAt: new Date(post.createdAt).toLocaleString(),
+              // Save a raw date for sorting as well as a formatted one.
+              createdAtFormatted: new Date(post.createdAt).toLocaleString(),
+              rawCreatedAt: post.createdAt,
               dislikes: post.dislikes || [],
               likes: Array.isArray(post.likes) ? post.likes : [],
               postimg: post.postimg,
               userId: post.userId,
               userName: post.userName,
               postId: post._id,
-              comments: commentsRes.data,  // ✅ Attach only unblocked comments
+              comments: commentsRes.data,  // Attach only unblocked comments
               images: post.images
             };
+            
           })
         );
 
@@ -291,9 +397,7 @@ const UserHome = () => {
       console.warn("🚨 User ID is undefined, skipping fetch.");
     }
 
-
   }, [user]);
-
 
   const handleProfile = (userId) => {
     navigate(`/profile/${userId}`);
@@ -312,14 +416,40 @@ const UserHome = () => {
     setMessengerOpen((prev) => !prev);
   };
 
+  const countMutualConnections = (currentUser, candidate) => {
+    if (!currentUser.followings || !candidate.followings) return 0;
+    const currentSet = new Set(currentUser.followings.map(String));
+    let count = 0;
+    candidate.followings.forEach((id) => {
+      if (currentSet.has(id.toString())) count++;
+    });
+    return count;
+  };
+  
+  // Dummy function to simulate search frequency boost.
+  // In a real app, you might have user search history stored somewhere. Here we just simulate with a random boost.
+  const getSearchBoost = (candidateId) => {
+    // For instance, return 5 if candidateId is in a dummy list, else 0.
+    // You could replace this with your own logic.
+    const dummyFrequentlySearched = ["dummyId1", "dummyId2"]; // Replace with real data if available.
+    return dummyFrequentlySearched.includes(candidateId) ? 5 : 0;
+  };
+
   useEffect(() => {
-    // Dummy data for recommended profiles
-    setRecommendedProfiles([
-      { id: 1, name: "John Doe", profileImage: "https://via.placeholder.com/50" },
-      { id: 2, name: "Jane Smith", profileImage: "https://via.placeholder.com/50" },
-      { id: 3, name: "Emily Johnson", profileImage: "https://via.placeholder.com/50" },
-    ]);
-  }, []);
+    if (user && users.length > 0) {
+      const rec = users
+        .filter((candidate) => candidate.id !== user._id && !following.includes(candidate.id))
+        .map((candidate) => {
+          const mutualConnections = countMutualConnections(user, candidate);
+          const searchBoost = getSearchBoost(candidate.id);
+          const recommendationScore = mutualConnections + searchBoost;
+          return { ...candidate, recommendationScore };
+        })
+        .sort((a, b) => b.recommendationScore - a.recommendationScore);
+      setRecommendedProfiles(rec);
+    }
+  }, [users, following, user]);
+  
 
   const buttons = [
     { label: "Friends", icon: <PeopleIcon />, url: "/userhome" },
@@ -356,7 +486,6 @@ const UserHome = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-
   // Fetch comments for a specific post
   const fetchComments = async (postId) => {
     try {
@@ -371,7 +500,6 @@ const UserHome = () => {
       console.error("Error fetching comments:", err.response?.data || err.message);
     }
   };
-
 
   // Handle adding a new comment
   const handleAddComment = async (postId, postuserId) => {
@@ -399,7 +527,6 @@ const UserHome = () => {
   const toggleCommentBox = (postId) => {
     setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
-
 
   // Toggle showing all comments
   const toggleShowMore = (postId) => {
@@ -489,15 +616,26 @@ const UserHome = () => {
     }
   };
 
-  const recommendedUsers = users.filter((userProfile) =>
-    userProfile.id !== user?._id && !following.includes(userProfile.id)
-  );
+// Compute recommended users with a recommendationScore based on mutual connections and a search boost.
+const recommendedUsers = users
+  .filter((candidate) => candidate.id !== user?._id && !following.includes(candidate.id))
+  .map((candidate) => {
+    // Calculate mutual connections between current user and candidate.
+    const mutualConnections = countMutualConnections(user, candidate);
+    // Calculate search boost from a dummy function (replace with your own logic if available)
+    const searchBoost = getSearchBoost(candidate.id);
+    // Sum up scores to get a final recommendation score.
+    const recommendationScore = mutualConnections + searchBoost;
+    return { ...candidate, recommendationScore };
+  })
+  // Sort candidates by descending recommendation score.
+  .sort((a, b) => b.recommendationScore - a.recommendationScore);
+
   
 
   const handleShowMore = () => {
     setVisibleCount(recommendedUsers.length);  // Set the visible count to display all profiles
   };
-
 
   // Like functionality
   const handleLikePost = async (postId) => {
@@ -574,7 +712,6 @@ const UserHome = () => {
   };
 
 
-
   useEffect(() => {
     const fetchUserStats = async () => {
       try {
@@ -622,7 +759,17 @@ const UserHome = () => {
     }
   }, [user]);
 
-
+  const handleOpenLikeModal = async (postId) => {
+    try {
+      // Assuming your endpoint returns { likes: [user details...] }
+      const res = await axios.get(`http://localhost:5001/api/likes/post/${postId}`);
+      setLikedUsers(res.data.likes); 
+      setOpenLikeModal(true);
+    } catch (error) {
+      console.error("Error fetching liked users:", error);
+    }
+  };
+  
 
 
   return (
@@ -641,51 +788,108 @@ const UserHome = () => {
                   }}
           >
            {/*Story */}
-           <Box
-              sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              width: "100%",
-              px: 2,
-              mt: 1,
-                  }}
-            >
-            {/* Story Scroll Section */}
-            <Box
-              sx={{
-              display: "flex",
-              overflowX: "auto",
-              gap: 2.5,
-              py: 2,
-              width: "100%",
-              maxWidth: "700px",
-              scrollbarWidth: "none",
-                            "&::-webkit-scrollbar": { display: "none" },
-                  }}
-             >
-            {/* Add Story Button */}
-            <Box sx={{ position: "relative", cursor: "pointer" }} onClick={() => setOpenStoryCamera(true)}>
-            <Avatar src={user?.profileImage} sx={{ width: 65, height: 65, border: "2px solid #ff4500" }} />
-            <AddIcon sx={{ position: "absolute", bottom: -2, right: -2, backgroundColor: "white", borderRadius: "50%", fontSize: 18, color: "#ff4500" }} />
-            </Box>
+      <Box
+        sx={{
+          position: "relative",  
+          width: "100%",
+          maxWidth: "1000px",
+          margin: "0 auto",
+          py: 2,
+          mt: 1, 
+          mr: 10,
+        }}
+      >
+        {/* Left Arrow Button */}
+        <IconButton 
+    onClick={scrollLeft}
+    sx={{
+      position: "absolute",
+      left: 0,
+      top: "0.23%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      color: "white",
+      zIndex: 2,
+    }}
+  >
+          <ArrowBackIosNewIcon />
+        </IconButton>
 
-            {/* Display User Stories */}
-            {uniqueUserStories.map(({ userId, stories }, index) => {
-            const storyUser = users.find((user) => user.id === userId);
-            if (!storyUser) return null;
-            const hasSeenAll = stories.every((s) => s.views?.includes(user?._id));
-              return (
-                      <Avatar
-                         key={index}
-                         src={storyUser.profileImage}
-                         sx={{ width: 65, height: 65, border: `3px solid ${hasSeenAll ? "gray" : "#ff4500"}`, cursor: "pointer" }}
-                         onClick={() => handleStoryClick(storyUser, stories)}
-                      />
-                      );
-                      })}
-                      </Box>
+        {/* Story Scroll Container */}
+        <Box
+          ref={storyScrollRef}
+          sx={{
+            display: "flex",
+            overflowX: "auto",
+            gap: 2.5,
+            py: 2,
+            px: 5, // Padding to avoid arrow overlap
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+          }}
+        >
+          {/* Add Story Button as the first element */}
+          <Box sx={{ position: "relative", cursor: "pointer" }} onClick={() => setOpenStoryCamera(true)}>
+            <Avatar src={user?.profileImage} sx={{ width: 65, height: 65, border: "2px solid #ff4500" }} />
+            <AddIcon
+              sx={{
+                position: "absolute",
+                bottom: 45,
+                right: 25,
+                backgroundColor: "white",
+                borderRadius: "50%",
+                fontSize: 18,
+                color: "#ff4500",
+              }}
+            />
+          </Box>
+          
+          {/* Render the story avatars */}
+          {sortedUniqueUserStories.map(({ userId, stories }, index) => {
+  const storyUser = users.find((u) => u.id === userId);
+  if (!storyUser) return null;
+  const hasSeenAll = stories.every((s) => s.views?.includes(user?._id));
+  return (
+    <Box
+      key={index}
+      textAlign="center"  // Centers the content
+      sx={{ cursor: "pointer" }}
+      onClick={() => handleStoryClick(storyUser, stories)}
+    >
+      <Avatar
+        src={storyUser.profileImage}
+        sx={{
+          width: 65,
+          height: 65,
+          border: `3px solid ${hasSeenAll ? "gray" : "#ff4500"}`,
+          margin: "0 auto",  // Centers the avatar in its container
+        }}
+      />
+      <Typography variant="caption" sx={{ mt: 0.5 }}>
+        {storyUser.name}
+      </Typography>
+    </Box>
+  );
+})}
+
+        </Box>
+
+        {/* Right Arrow Button */}
+        <IconButton 
+          onClick={scrollRight}
+          sx={{
+            position: 'absolute',
+            right: -45,
+            transform: 'translate(50%, -50%)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            color: 'white',
+            zIndex: 2,
+            top: "0.25%",
+
+          }}
+        >
+          <ArrowForwardIosIcon />
+        </IconButton>
 
  
             {/**FEED */}
@@ -696,8 +900,9 @@ const UserHome = () => {
                 display: "flex",
                 flexDirection: "column",
                 gap: 2,
-                overflowY: "hidden", // Remove feed scroll
+                overflowY: "hidden", 
                 marginTop:"5%",
+                marginLeft:"24%",
                     }}
             >        
                 {posts.map((post, index) => {
@@ -715,28 +920,17 @@ const UserHome = () => {
                         boxShadow: "none",
                       }}
                     >
-                      {postUser && (
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Avatar src={postUser.profileImage} sx={{ width: 65, height: 65, cursor: "pointer" }} />
-                          <Typography sx={{ fontSize: "22px", fontWeight: 600 }}>{postUser.name}</Typography>
-
-                      {/* Follow/Disconnect Button */}
-                          {postUser.id !== user?._id && (
-                            <Button
-                              variant={isFollowing ? "outlined" : "contained"}
-                              size="small"
-                              sx={{
-                                borderRadius: "20px",
-                                fontSize: "12px",
-                                marginLeft: "auto",
-                              }}
-                              onClick={() => handleFollowToggle(postUser.id)}
-                            >
-                              {isFollowing ? "Disconnect" : "Connect"}
-                            </Button>
-                          )}
-                        </Box>
-                      )}
+                     {postUser && (
+  <Box 
+    sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
+    onClick={() => handleProfile(postUser.id)}
+  >
+    <Avatar src={postUser.profileImage} sx={{ width: 65, height: 65 }} />
+    <Typography sx={{ fontSize: "22px", fontWeight: 600 }}>
+      {postUser.name}
+    </Typography>
+  </Box>
+)}
 
                       {(post.postimg || post.images?.length > 0) && (
                         <Box sx={{ mt: 2, borderRadius: "10px", overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -790,14 +984,27 @@ const UserHome = () => {
   <Typography
     sx={{
       mt: 2,
-      whiteSpace: "pre-wrap",     // Preserve line breaks and spaces
-      wordWrap: "break-word",     // Allow long words to break
-      overflowWrap: "break-word"  // Fallback for older browsers
+      whiteSpace: "pre-wrap",
+      wordWrap: "break-word",
+      overflowWrap: "break-word",
     }}
   >
-    {post.content}
+    {post.content.length > 20 && !expandedPosts[post.postId]
+      ? `${post.content.substring(0, 20)}...`
+      : post.content}
+    {post.content.length > 20 && (
+      <Button
+        variant="text"
+        size="small"
+        sx={{ textTransform: "none", ml: 1 }}
+        onClick={() => toggleShowMore(post.postId)}
+      >
+        {expandedPosts[post.postId] ? "Show Less" : "Show More"}
+      </Button>
+    )}
   </Typography>
 )}
+
                       {/* Like & Comment Icons */}
                       <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 10 }}>
                         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -807,9 +1014,13 @@ const UserHome = () => {
                           >
                             < AiFillLike  />
                           </IconButton>
-                          <Typography>{post.likes ? post.likes.length : 0} Likes</Typography>
+                          <Typography 
+  sx={{ cursor: "pointer" }}
+  onClick={() => handleOpenLikeModal(post.postId)}
+>
+  {post.likes ? post.likes.length : 0} Likes
+</Typography>
                         </Box>
-
 
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           <IconButton onClick={() => toggleCommentBox(post.postId)}>
@@ -829,13 +1040,11 @@ const UserHome = () => {
                           <Typography>Share</Typography>
                         </Box>
 
-
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           <IconButton>
                             <BsFillSaveFill   />
                           </IconButton>
                         </Box>
-
 
                       </Box>
 
@@ -888,18 +1097,23 @@ const UserHome = () => {
 
                       {showCommentBox[post.postId]
   ? post.comments.comments.map((comment) => (
-      <Box key={comment._id} sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Avatar src={comment.userimg} sx={{ width: 30, height: 30 }} />
-        <Box>
-          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-            {comment.username}
-          </Typography>
-          <Typography variant="body2">{comment.text}</Typography>
-          <Typography variant="caption" color="gray">
-            {new Date(comment.createdAt).toLocaleString()}
-          </Typography>
-        </Box>
-      </Box>
+    <Box 
+  key={comment._id} 
+  sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, cursor: "pointer" }}
+  onClick={() => handleProfile(comment.userId)}
+>
+  <Avatar src={comment.userimg} sx={{ width: 30, height: 30 }} />
+  <Box>
+    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+      {comment.username}
+    </Typography>
+    <Typography variant="body2">{comment.text}</Typography>
+    <Typography variant="caption" color="gray">
+      {new Date(comment.createdAt).toLocaleString()}
+    </Typography>
+  </Box>
+</Box>
+
     ))
   : post.comments.comments.length > 0 && (
       // Show only latest comment when collapsed
@@ -931,267 +1145,290 @@ const UserHome = () => {
               </Box>
               </Box>
 
-              <Box
-  sx={{
-    width: 400,
-    position: "sticky",
-    top: 250,
-    alignSelf: "flex-start",
-    display: { xs: "none", md: "block" }, // hide on mobile
-    mr: 4,
-  }}
->
-  <Paper
-    sx={{
-      padding: 2,
-      borderRadius: "15px",
-      background: "#073574",
-      backdropFilter: "blur(10px)",
-      color: "white",
-      boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
-    }}
-  >
-    <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
-      Recommended for You
-    </Typography>
-
-    <List sx={{ padding: 0 }}>
-      {recommendedUsers.slice(0, visibleCount).map((profile) => {
-        const isFollowing = following.includes(profile.id);
-
-        return (
-          <ListItem
-            key={profile.id}
-            sx={{
-              borderRadius: "10px",
-              padding: "8px 12px",
-              mb: 1,
-              backgroundColor: "rgba(255, 255, 255, 0.05)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <Link
-              to={`/profile/${profile.id}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                textDecoration: "none",
-                color: "inherit",
-                flex: 1,
-              }}
-            >
-              <Avatar src={profile.profileImage} sx={{ width: 40, height: 40 }} />
-              <ListItemText primary={profile.name} />
-            </Link>
-
-            <Button
-              variant={isFollowing ? "outlined" : "contained"}
-              color="secondary"
-              size="small"
-              sx={{
-                borderRadius: "20px",
-                textTransform: "none",
-                fontSize: "12px",
-                minWidth: "90px",
-              }}
-              onClick={() => handleFollowToggle(profile.id)}
-            >
-              {isFollowing ? "Disconnect" : "Connect"}
-            </Button>
-          </ListItem>
-        );
-      })}
-    </List>
-
-    {/* Toggle Show More / Show Less */}
-    {recommendedUsers.length > 5 && (
-      <Box sx={{ textAlign: "center", mt: 2 }}>
-        <Button
-          onClick={() =>
-            setVisibleCount((prev) =>
-              prev === 5 ? recommendedUsers.length : 5
-            )
-          }
-          variant="text"
-          color="inherit"
-          sx={{ textTransform: "none" }}
+  {/**Recommended for You */}
+  <Box
+        sx={{
+          width: 400,
+          position: "sticky",
+          top: 250,
+          alignSelf: "flex-start",
+          display: { xs: "none", md: "block" },
+          mr: 4,
+        }}
+      >
+        <Paper
+          sx={{
+            padding: 2,
+            borderRadius: "15px",
+            background: "#073574",
+            backdropFilter: "blur(10px)",
+            color: "white",
+            boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+          }}
         >
-          {visibleCount === 5 ? "Show More" : "Show Less"}
-        </Button>
-      </Box>
-    )}
-  </Paper>
-</Box>
+          <Typography variant="h6" sx={{ textAlign: "center", mb: 2 }}>
+            Recommended for You
+          </Typography>
 
+          <List sx={{ padding: 0 }}>
+            {recommendedUsers.slice(0, visibleCount).map((profile) => {
+              const isFollowing = following.includes(profile.id);
+
+              return (
+                <ListItem
+                  key={profile.id}
+                  sx={{
+                    borderRadius: "10px",
+                    padding: "8px 12px",
+                    mb: 1,
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Link
+                    to={`/profile/${profile.id}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      textDecoration: "none",
+                      color: "inherit",
+                      flex: 1,
+                    }}
+                  >
+                    <Avatar src={profile.profileImage} sx={{ width: 40, height: 40 }} />
+                    <ListItemText primary={profile.name} />
+                  </Link>
+
+                  <Button
+                    variant={isFollowing ? "outlined" : "contained"}
+                    color="secondary"
+                    size="small"
+                    sx={{
+                      borderRadius: "20px",
+                      textTransform: "none",
+                      fontSize: "12px",
+                      minWidth: "90px",
+                    }}
+                    onClick={() => handleFollowToggle(profile.id)}
+                  >
+                    {isFollowing ? "Disconnect" : "Connect"}
+                  </Button>
+                </ListItem>
+              );
+            })}
+          </List>
+
+          {recommendedUsers.length > 5 && (
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <Button
+               onClick={() =>
+                setVisibleCount((prev) => (prev === 5 ? Math.min(10, recommendedUsers.length) : 5))
+              }              
+                variant="text"
+                color="inherit"
+                sx={{ textTransform: "none" }}
+              >
+                {visibleCount === 5 ? "Show More" : "Show Less"}
+              </Button>
+            </Box>
+          )}
+        </Paper>
+      </Box>
 
 
       {/* Modal for Camera Capture */}
       <Modal open={openCamera} onClose={() => setOpenStoryCamera(false)}>
-        <Box
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",  // centers the modal vertically and horizontally
+      p: 2,                                  // some internal padding
+    }}
+  >
+    <CameraCapture onMediaUpload={handleImageUpload} />
+  </Box>
+</Modal>
+
+
+          
+          {/* Modal for Story View */}
+          <Modal open={openStory} onClose={handleClose}>
+  <Box
+    sx={{
+      position: "absolute",
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: 430,
+      height: 800,
+      bgcolor: "black",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 2,
+      overflow: "hidden",
+      mt: 30,
+      position: "relative",
+    }}
+  >
+    {currentStories.length > 0 && (
+      <>
+        {currentStories[currentIndexStory].mediaType === "video" ? (
+          <video
+            key={currentIndexStory}
+            src={currentStories[currentIndexStory].mediaUrl}
+            autoPlay
+            controls
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              borderRadius: 10,
+            }}
+          />
+        ) : (
+          <img
+            key={currentIndexStory}
+            src={currentStories[currentIndexStory].mediaUrl}
+            alt={`Story ${currentIndexStory + 1}`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              borderRadius: 10,
+            }}
+          />
+        )}
+      </>
+    )}
+
+    {/* User Info at Top Center */}
+    {storyUser && (
+      <Box
+        sx={{
+          position: "absolute",
+          top: 10,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          padding: "5px 10px",
+        }}
+      >
+        <Avatar
+          src={storyUser.profileImage}
+          sx={{ width: 40, height: 40, cursor: "pointer" }}
+          onClick={() => handleProfile(storyUser.userId)}
+        />
+        <Typography variant="h6" sx={{ color: "white" }}>
+          {storyUser.name}
+        </Typography>
+      </Box>
+    )}
+
+       {/* Conditional View Count (only if logged in user is owner) */}
+       {storyUser?.id === user?._id && (
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: "94%",
+          left: "5%",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+        }}
+      >
+        <IconButton onClick={() => fetchViewers(currentStories[currentIndexStory].storyId)}>
+          <VisibilityIcon sx={{ color: "white" }} />
+        </IconButton>
+        <Typography sx={{ color: "white" }}>
+          {currentStories[currentIndexStory]?.viewsNumber ?? 0} views
+        </Typography>
+      </Box>
+    )}
+
+    {/* Story Indicator: current story index of total stories */}
+    <Box
+      sx={{
+        position: "absolute",
+        bottom: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+      }}
+    >
+      <Typography variant="subtitle2" sx={{ color: "white" }}>
+        {`${currentIndexStory + 1} of ${currentStories.length}`}
+      </Typography>
+    </Box>
+
+    {/* Close and Delete Buttons */}
+    <Box sx={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 1 }}>
+      <IconButton
+        onClick={handleClose}
+        sx={{
+          backgroundColor: "rgba(254, 0, 0, 0.5)",
+          color: "black",
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+
+      {storyUser?.id === user?._id && (
+        <IconButton
+          onClick={() => handleDeleteStory(currentStories[currentIndexStory].storyId)}
           sx={{
-            position: "absolute",
-            marginTop: '50px',
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 430,
-            bgcolor: "white",
-            boxShadow: 24,
-            borderRadius: 2,
+            backgroundColor: "rgba(255, 0, 0, 0.7)",
+            color: "white",
+            "&:hover": { backgroundColor: "red" },
           }}
         >
-          <CameraCapture onMediaUpload={handleImageUpload} />
-        </Box>
-      </Modal>
+          <DeleteIcon />
+        </IconButton>
+      )}
+    </Box>
 
-      {/* Modal for Story View */}
-      <Modal open={openStory} onClose={handleClose}>
-        <Box
-          sx={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 430,
-            height: 800,
-            bgcolor: "black",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: 2,
-            overflow: "hidden",
-            mt: 6,
-            position: "relative",
-          }}
-        >
-          {currentStories.length > 0 && (
-            <>
-              {currentStories[currentIndexStory].mediaType === "video" ? (
-                <video
-                  key={currentIndexStory}
-                  src={currentStories[currentIndexStory].mediaUrl}
-                  autoPlay
-                  controls
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: 10,
-                  }}
-                />
-              ) : (
-                <img
-                  key={currentIndexStory}
-                  src={currentStories[currentIndexStory].mediaUrl}
-                  alt={`Story ${currentIndexStory + 1}`}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: 10,
-                  }}
-                />
-              )}
-            </>
-          )}
+    {/* Navigation Buttons */}
+    {currentIndexStory > 0 && (
+      <IconButton
+        onClick={handlePrev}
+        sx={{
+          position: "absolute",
+          left: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          backgroundColor: "rgba(255, 255, 255, 0.3)",
+          color: "white",
+        }}
+      >
+        <ArrowBackIosNewIcon />
+      </IconButton>
+    )}
+    {currentIndexStory < currentStories.length - 1 && (
+      <IconButton
+        onClick={handleNext}
+        sx={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          backgroundColor: "rgba(255, 255, 255, 0.3)",
+          color: "white",
+        }}
+      >
+        <ArrowForwardIosIcon />
+      </IconButton>
+    )}
+  </Box>
+</Modal>
 
-          {/* Close and Delete Buttons */}
-          <Box sx={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 1 }}>
-            {/* Close Button */}
-            <IconButton
-              onClick={handleClose}
-              sx={{
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
-                color: "white",
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
 
-            {/* Delete Button - Only show if the user owns the story */}
 
-            {storyUser?.id === user?._id && (
-              <IconButton
-                onClick={() => handleDeleteStory(currentStories[currentIndexStory].storyId)}
-                sx={{
-                  backgroundColor: "rgba(255, 0, 0, 0.7)",
-                  color: "white",
-                  "&:hover": { backgroundColor: "red" },
-                }}
-              >
-                <DeleteIcon />
-              </IconButton>
-            )}
-
-          </Box>
-          {/* view Count */}
-          <Box sx={{ position: "absolute", bottom: '5%', left: '45%', display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton onClick={() => fetchViewers(currentStories[currentIndexStory].storyId)}>
-              <VisibilityIcon sx={{ color: "white" }} />
-            </IconButton>
-            <Typography sx={{ color: "white" }}>{currentStories[currentIndexStory]?.viewsNumber ?? 0} </Typography>
-          </Box>
-
-          {/* Story User Info */}
-          {storyUser && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: 10,
-                left: 10,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                borderRadius: "20px",
-                padding: "5px 10px",
-              }}
-            >
-              <Avatar
-                src={storyUser.profileImage}
-                sx={{ width: 40, height: 40, cursor: "pointer" }}
-                onClick={() => handleProfile(storyUser.userId)}
-              />
-              <Typography variant="h6" sx={{ fontWeight: "bold", color: "white" }}>
-                {storyUser.name}
-              </Typography>
-            </Box>
-          )}
-
-          {/* Navigation Buttons */}
-          {currentIndexStory > 0 && (
-            <IconButton
-              onClick={handlePrev}
-              sx={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                backgroundColor: "rgba(255, 255, 255, 0.3)",
-                color: "white",
-              }}
-            >
-              <ArrowBackIosNewIcon />
-            </IconButton>
-          )}
-          {currentIndexStory < currentStories.length - 1 && (
-            <IconButton
-              onClick={handleNext}
-              sx={{
-                position: "absolute",
-                right: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                backgroundColor: "rgba(255, 255, 255, 0.3)",
-                color: "white",
-              }}
-            >
-              <ArrowForwardIosIcon />
-            </IconButton>
-          )}
-        </Box>
-      </Modal>
       {/* Modal for Viewed Story View */}
       <Modal open={showViewers} onClose={() => setShowViewers(false)}>
         <Box sx={{ position: "absolute", left: "50%", transform: "translateX(-50%)", width: 400, bgcolor: "white", boxShadow: 24, borderRadius: 2, p: 2, bottom: "10%" }}>
@@ -1206,6 +1443,38 @@ const UserHome = () => {
           </List>
         </Box>
       </Modal>
+      <Modal open={openLikeModal} onClose={() => setOpenLikeModal(false)}>
+  <Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 400,
+      bgcolor: "background.paper",
+      borderRadius: 2,
+      boxShadow: 24,
+      p: 4,
+    }}
+  >
+    <Typography variant="h6" sx={{ mb: 2 }}>Liked By</Typography>
+    <List>
+      {likedUsers.map((user) => (
+        <ListItem 
+          key={user._id}
+          sx={{ cursor: "pointer" }}
+          onClick={() => {
+            setOpenLikeModal(false);
+            handleProfile(user._id);
+          }}
+        >
+          <Avatar src={user.profileImage} sx={{ mr: 2 }} />
+          <ListItemText primary={user.name} />
+        </ListItem>
+      ))}
+    </List>
+  </Box>
+</Modal>
 
       {/*ShareModal */}
       <ShareModal
@@ -1227,4 +1496,3 @@ export default UserHome;
 
 
 
-      

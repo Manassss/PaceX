@@ -14,7 +14,9 @@ import {
     Button,
     Modal,
     CircularProgress,
-    CardMedia
+    CardMedia,
+    Paper,
+    Stack
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PeopleIcon from "@mui/icons-material/People";
@@ -26,6 +28,8 @@ import { storage } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import GroupsIcon from "@mui/icons-material/Groups";
 import ArticleIcon from "@mui/icons-material/Article";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+
 
 
 
@@ -33,6 +37,7 @@ const CommunityPage = () => {
     const { user } = useAuth();
     const [view, setView] = useState("home"); // home | detail
     const [selectedCommunity, setSelectedCommunity] = useState(null);
+    
 
     const [searchTerm, setSearchTerm] = useState("");
     const [openModal, setOpenModal] = useState(false);
@@ -50,6 +55,7 @@ const CommunityPage = () => {
     const [isMember, setIsMember] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [previewUrl, setPreviewUrl] = useState("");
+    
 
 
     // Fetch all communities
@@ -57,6 +63,8 @@ const CommunityPage = () => {
         const fetchCommunities = async () => {
             try {
                 const response = await axios.get("http://localhost:5001/api/community");
+                console.log("fetchCommunities response:", response);       // ← logs full response
+                console.log("fetchCommunities data:", response.data); 
                 setCommunities(response.data);
             } catch (error) {
                 console.error("Error fetching communities:", error);
@@ -76,7 +84,10 @@ const CommunityPage = () => {
                     axios.get(`http://localhost:5001/api/community/${selectedCommunity._id}`),
                     axios.get(`http://localhost:5001/api/community/post/${selectedCommunity._id}`)
                 ]);
-    
+                console.log("fetchDetails communityRes:", communityRes);
+                console.log("fetchDetails community data:", communityRes.data);
+                console.log("fetchDetails postsRes:", postsRes);
+                console.log("fetchDetails posts data:", postsRes.data);
                 // Update additional data, but avoid resetting selectedCommunity
                 const updatedCommunity = communityRes.data;
                 setIsMember(!!updatedCommunity.members.find(m => m.userId === user._id));
@@ -187,254 +198,382 @@ const CommunityPage = () => {
         >
             {/* -------------------------------- HOME VIEW -------------------------------- */}
             {view === "home" && (
-                <>
-                    {/* 🔍 Stylish Search Bar + ➕ Fancy Create Button */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: { xs: "column", sm: "row" },
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            mt: 4,
-                            mb: 3,
-                            gap: 2
-                        }}
-                    >
-                        <TextField
-                            variant="outlined"
-                            placeholder="Search for communities..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon />
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{
-                                backgroundColor: "#fff",
-                                borderRadius: "30px",
-                                width:"50%",
-                                boxShadow: 2,
-                                "& .MuiOutlinedInput-root": {
-                                    borderRadius: "30px",
-                                },
-                            }}
-                        />
-    
-                        <Button
-                            onClick={() => setOpenModal(true)}
-                            startIcon={<AddIcon />}
-                            sx={{
-                                background: "linear-gradient(to right, #073574, #4a90e2)",
-                                color: "white",
-                                px: 4,
-                                py: 1.5,
-                                borderRadius: "999px",
-                                fontWeight: 600,
-                                textTransform: "none",
-                                boxShadow: 3,
-                                transition: "all 0.3s ease",
-                                "&:hover": {
-                                    background: "linear-gradient(to right, #073574, #4a90e2)",
-                                    boxShadow: 5,
-                                    transform: "translateY(-2px)",
-                                },
-                            }}
-                        >
-                            Create
-                        </Button>
-                    </Box>
-    
-                    {/* Community Cards Grid */}
-                    <Grid container spacing={4}>
-  {filteredCommunities.map((community) => (
-    <Grid item xs={12} sm={6} key={community._id}>
-      
-      {/* Entire Card is Clickable and Stylish */}
-      <Card
-        onClick={() => { setSelectedCommunity(community); setView("detail"); }}
+  <>
+    {/* 🔍 Search Bar + ➕ Create Button */}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        alignItems: "center",
+        justifyContent: "space-between",
+        mt: 4,
+        mb: 3,
+        gap: 2,
+      }}
+    >
+      <TextField
+        variant="outlined"
+        placeholder="Search for communities..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
         sx={{
-          borderRadius: 4, // Rounded corners for a soft look
-          overflow: "hidden", // Ensures banner image and content don't overflow
-          cursor: "pointer", // Pointer cursor on hover
-          boxShadow: "0 8px 24px rgba(0,0,0,0.1)", // Subtle elevation
-          transition: "transform 0.3s ease, box-shadow 0.3s ease", // Smooth hover animation
-          backdropFilter: "blur(10px)", // Glassmorphism blur
-          background: "#073574", // Transparent white card background
+          backgroundColor: "#fff",
+          borderRadius: "30px",
+          width: { xs: "100%", sm: "70%", md: "50%" },
+          boxShadow: 2,
+          "& .MuiOutlinedInput-root": {
+            borderRadius: "30px",
+          },
+        }}
+      />
+
+      <Button
+        onClick={() => setOpenModal(true)}
+        startIcon={<AddIcon />}
+        sx={{
+          background: "linear-gradient(to right, #073574, #4a90e2)",
+          color: "white",
+          px: 4,
+          py: 1.5,
+          borderRadius: "999px",
+          fontWeight: 600,
+          textTransform: "none",
+          boxShadow: 3,
+          transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-5px)", // Lift up slightly on hover
-            boxShadow: "0 12px 32px rgba(0,0,0,0.2)", // Stronger shadow on hover
-          }
+            boxShadow: 5,
+            transform: "translateY(-2px)",
+          },
+          width: { xs: "100%", sm: "auto" },
         }}
       >
+        Create
+      </Button>
+    </Box>
 
-        {/* 📸 Community Banner */}
-        <Box
-          sx={{
-            height: 500, // Fixed height for banner image
-            backgroundImage: `url(${community.coverImage})`,
-            backgroundSize: "cover", // Ensure full cover of container
-            backgroundPosition: "center", // Center the image
-          }}
-        />
-
-
-        {/* 📝 Card Content (Text + Stats) */}
-        <CardContent>
-
-          {/* 🧷 Community Name */}
-          <Typography
-            variant="h6"
-            fontWeight="bold"
+    {/* Community Cards Grid */}
+    <Grid container spacing={4}>
+      {filteredCommunities.map((community) => (
+        <Grid item xs={12} sm={6} md={4} lg={3} key={community._id}>
+          <Card
+            onClick={() => {
+              setSelectedCommunity(community);
+              setView("detail");
+            }}
             sx={{
-              mb: 1,
-              color: "#f8f2ec", // Dark text color
-              fontSize: "1.2rem"
+              borderRadius: 4,
+              width: "100%",
+              overflow: "hidden",
+              cursor: "pointer",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+              transition: "transform 0.3s ease, box-shadow 0.3s ease",
+              backdropFilter: "blur(10px)",
+              background: "#2052a0",
+              "&:hover": {
+                transform: "translateY(-5px)",
+                boxShadow: "0 12px 32px rgba(0,0,0,0.2)",
+              },
             }}
           >
-            {community.name}
-          </Typography>
-
-          {/* 📃 Community Description */}
-          <Typography
-            variant="body2"
-            color="#f8f2ec"
-            sx={{ mb: 2, minHeight: 50 }}
-          >
-            {community.description.length > 100
-              ? community.description.substring(0, 100) + "..."
-              : community.description}
-          </Typography>
-
-          {/* 👥 Members and 📝 Posts */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              mt: 2,
-              px: 1,
-            }}
-          >
-            {/* 👥 Members Badge */}
+            {/* Banner */}
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                background: "#e3f2fd", // Light blue background
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 999, // Pill shape
+                height: 0,
+                pt: "56%", // 16:9 aspect ratio
+                backgroundImage: `url(${community.coverImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
-            >
-              <GroupsIcon fontSize="small" sx={{ mr: 1 }} color="primary" />
-              <Typography fontSize="0.9rem" fontWeight="500">
-                {community.members.length} Members
-              </Typography>
-            </Box>
+            />
 
-            {/* 📝 Posts Badge */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                background: "#f3e5f5", // Light purple background
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 999, // Pill shape
-              }}
-            >
-              <ArticleIcon fontSize="small" sx={{ mr: 1 }} color="secondary" />
-              <Typography fontSize="0.9rem" fontWeight="500">
-                {community.posts} Posts
+            {/* Content */}
+            <CardContent>
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                sx={{ mb: 1, color: "#f8f2ec", fontSize: "1.2rem" }}
+              >
+                {community.name}
               </Typography>
-            </Box>
-          </Box>
+              <Typography
+  variant="body2"
+  color="#f8f2ec"
+  sx={{ mb: 2, minHeight: 50 }}
+>
+  {community.description.length > 100
+    ? `${community.description.substring(0, 100)}…`
+    : community.description}
+</Typography>
 
-        </CardContent>
-      </Card>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mt: 2,
+                  px: 1,
+                }}
+              >
+                {/* Members */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: "#e3f2fd",
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 999,
+                  }}
+                >
+                  <GroupsIcon fontSize="small" sx={{ mr: 1 }} color="primary" />
+                  <Typography fontSize="0.9rem" fontWeight="500">
+                    {community.members.length} Members
+                  </Typography>
+                </Box>
+                {/* Posts */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: "#f3e5f5",
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 999,
+                  }}
+                >
+                  <ArticleIcon fontSize="small" sx={{ mr: 1 }} color="secondary" />
+                  <Typography fontSize="0.9rem" fontWeight="500">
+                    {community.posts} Posts
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
     </Grid>
-  ))}
-                    </Grid>
+  </>
+)}
 
-
-
-                </>
-            )}
     
             {/* -------------------------------- DETAIL VIEW -------------------------------- */}
             {view === "detail" && selectedCommunity && (
-                <>
-                    {loading ? <CircularProgress sx={{ mt: 5 }} /> : (
-                        <>
-                            <Box sx={{
-                                width: "100%",
-                                height: 250,
-                                backgroundImage: `url(${selectedCommunity.coverImage})`,
-                                backgroundSize: "cover",
-                                backgroundPosition: "center",
-                                borderRadius: 2
-                            }} />
-    
-                            <Box sx={{ mt: 2, textAlign: "center" }}>
-                                <Typography variant="h4">{selectedCommunity.name}</Typography>
-                                <Typography>{selectedCommunity.description}</Typography>
-                            </Box>
-    
-                            <Box sx={{ mt: 3, textAlign: "center" }}>
-                                {isAdmin ? (
-                                    <Button variant="contained" color="error" onClick={handleDelete}>Delete Community</Button>
-                                ) : (
-                                    <Button variant="contained" color={isMember ? "secondary" : "primary"} onClick={handleMembership}>
-                                        {isMember ? "Leave" : "Join"}
-                                    </Button>
-                                )}
-                            </Box>
-    
-                            {isMember && (
-                                <Box sx={{ mt: 4 }}>
-                                    <TextField
-                                        fullWidth multiline rows={3}
-                                        placeholder="Write a post..."
-                                        value={newPost}
-                                        onChange={(e) => setNewPost(e.target.value)}
-                                    />
-                                    <Button variant="contained" sx={{ mt: 2 }} onClick={handleCreatePost}>Post</Button>
-                                </Box>
-                            )}
-    
-                            <Box sx={{ mt: 5 }}>
-                                <Typography variant="h5">Community Posts</Typography>
-                                {posts.length > 0 ? posts.map(post => (
-                                    <Card key={post._id} sx={{ mt: 2 }}>
-                                        <CardContent sx={{ display: "flex", alignItems: "center" }}>
-                                            <Avatar src={post.userimg} sx={{ mr: 2 }} />
-                                            <Typography fontWeight="bold">{post.username}</Typography>
-                                        </CardContent>
-                                        {post.image && <CardMedia component="img" height="200" image={post.image} />}
-                                        <CardContent>
-                                            <Typography>{post.content}</Typography>
-                                            <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                                                <IconButton onClick={() => handleLikePost(post._id)}>
-                                                    <FavoriteIcon color={post.likes.includes(user._id) ? "error" : "inherit"} />
-                                                </IconButton>
-                                                <Typography>{post.likes.length} Likes</Typography>
-                                            </Box>
-                                        </CardContent>
-                                    </Card>
-                                )) : (
-                                    <Typography>No posts yet.</Typography>
-                                )}
-                            </Box>
-    
-                            <Button onClick={() => { setView("home"); setSelectedCommunity(null); }} sx={{ mt: 4 }}>
-                                Back to Communities
-                            </Button>
-                        </>
-                    )}
-                </>
+  <>
+    {loading ? (
+      <CircularProgress sx={{ mt: 5 }} />
+    ) : (
+      <Grid
+        container
+        spacing={4}
+        sx={{
+          px: { xs: 2, md: 6 },
+          py: 4,
+        }}
+      >
+        {/* ── LEFT COLUMN: Hero Image & Community Info ── */}
+        <Grid item xs={12} md={4}>
+          {/* Hero Banner */}
+          <Box
+            sx={{
+              width: "100%",
+              height: 0,
+              pt: "56%",           // 16:9
+              backgroundImage: `url(${selectedCommunity.coverImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              borderRadius: 2,
+              mb: 3,
+            }}
+          />
+
+          {/* Name & Description */}
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            <Typography variant="h3" gutterBottom>
+              {selectedCommunity.name}
+            </Typography>
+            <Typography variant="body3">
+              {selectedCommunity.description}
+            </Typography>
+          </Box>
+
+          {/* Join / Delete Button */}
+          <Box sx={{ textAlign: "center", mb: 4 }}>
+            {isAdmin ? (
+              <Button
+                variant="contained"
+                color="error"
+                fullWidth
+                onClick={handleDelete}
+              >
+                Delete Community
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                color={isMember ? "primary" : "primary"}
+                fullWidth
+                onClick={handleMembership}
+              >
+                {isMember ? "Leave" : "Join"}
+              </Button>
             )}
+          </Box>
+
+          {/* New Post Form */}
+          {isMember && (
+            <Box sx={{ mb: 4 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="Write a post..."
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+                sx={{ mb: 2 }}
+              />
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleCreatePost}
+              >
+                Post
+              </Button>
+            </Box>
+          )}
+
+          {/* Community Stats */}
+          <Paper
+  sx={{
+    p: 3,
+    borderRadius: 2,
+    boxShadow: 2,
+    maxWidth: 400,
+    mx: "auto",        // center on narrow screens
+  }}
+>
+  <Typography variant="h6" gutterBottom>
+    Community Stats
+  </Typography>
+
+  <Stack
+    direction="row"
+    justifyContent="space-around"
+    alignItems="center"
+    spacing={2}
+  >
+    {/* Members */}
+    <Box textAlign="center">
+      <Avatar
+        sx={{
+          bgcolor: "primary.main",
+          width: 56,
+          height: 56,
+          mb: 1,
+        }}
+      >
+        <GroupsIcon fontSize="large" />
+      </Avatar>
+      <Typography variant="h5">
+        {selectedCommunity.members.length}
+      </Typography>
+      <Typography color="text.secondary" variant="body2">
+        Members
+      </Typography>
+    </Box>
+
+    {/* Posts */}
+    <Box textAlign="center">
+      <Avatar
+        sx={{
+          bgcolor: "secondary.main",
+          width: 56,
+          height: 56,
+          mb: 1,
+        }}
+      >
+        <ArticleIcon fontSize="large" />
+      </Avatar>
+      <Typography variant="h5">
+        {posts.length}
+      </Typography>
+      <Typography color="text.secondary" variant="body2">
+        Posts
+      </Typography>
+    </Box>
+  </Stack>
+</Paper>
+
+        </Grid>
+
+        {/* ── RIGHT COLUMN: Posts Feed ── */}
+        <Grid item xs={12} md={8}>
+          <Typography variant="h5" gutterBottom>
+            Community Posts
+          </Typography>
+          {posts.length > 0 ? (
+            posts.map((post) => (
+              <Card key={post._id} sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
+                <CardContent sx={{ display: "flex", alignItems: "center" }}>
+                  <Avatar src={post.userimg} sx={{ mr: 2 }} />
+                  <Typography fontWeight="bold">
+                    {post.username}
+                  </Typography>
+                </CardContent>
+
+                {post.image && (
+                  <Box
+                    component="img"
+                    src={post.image}
+                    alt=""
+                    sx={{ width: "100%", borderRadius: 2, mb: 2 }}
+                  />
+                )}
+
+                <CardContent>
+                  <Typography sx={{ mb: 1 }}>
+                    {post.content}
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <IconButton onClick={() => handleLikePost(post._id)}>
+                      <FavoriteIcon
+                        color={
+                          post.likes.includes(user._id)
+                            ? "error"
+                            : "inherit"
+                        }
+                      />
+                    </IconButton>
+                    <Typography>{post.likes.length} Likes</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Typography>No posts yet.</Typography>
+          )}
+
+          <Box textAlign="center" mt={4}>
+            <Button
+              onClick={() => {
+                setView("home");
+                setSelectedCommunity(null);
+              }}
+            >
+              Back to Communities
+            </Button>
+          </Box>
+        </Grid>
+      </Grid>
+    )}
+  </>
+)}
+
     
            {/* 🧱 Modal for Community Creation */}
            <Modal

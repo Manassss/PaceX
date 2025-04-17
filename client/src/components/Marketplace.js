@@ -593,14 +593,15 @@ const Marketplace = () => {
 
 {/* ChatBox Model */}
     <Modal open={openChatbox} onClose={() => setOpenChatbox(false)}>
-    <Container maxWidth="sm">
+    <Container width="50%">
         <Paper 
             elevation={5} 
             sx={{ 
                 p: 4, 
                 borderRadius: 3, 
                 boxShadow: "0px 10px 30px rgba(0,0,0,0.2)" ,
-                backgroundColor: "transparent" // Removed white background
+                backgroundColor: "transparent", // Removed white background
+                height: "50%",
 
             }}
         >

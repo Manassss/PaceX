@@ -9,7 +9,8 @@ const marketplaceSchema = new mongoose.Schema({
     address: { type: String, required: true },
     category: { type: String, required: true },  // ✅ New Field
     subcategory: { type: String, required: true }, // ✅ New Field
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    views: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model("Marketplace", marketplaceSchema);

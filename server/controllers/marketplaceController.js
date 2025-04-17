@@ -70,4 +70,5 @@ const getUserListings = async (req, res) => {
 
 
 
+
 module.exports = { addListing, getListings, getUserListings  };
