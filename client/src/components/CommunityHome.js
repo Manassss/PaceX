@@ -19,8 +19,6 @@ import {
     Stack
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import PeopleIcon from "@mui/icons-material/People";
-import ForumIcon from "@mui/icons-material/Forum";
 import AddIcon from "@mui/icons-material/Add";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useAuth } from "../auth/AuthContext";
@@ -29,6 +27,13 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import GroupsIcon from "@mui/icons-material/Groups";
 import ArticleIcon from "@mui/icons-material/Article";
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import ListAltIcon from '@mui/icons-material/ListAlt';
 
 
 
@@ -55,6 +60,18 @@ const CommunityPage = () => {
     const [isMember, setIsMember] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [previewUrl, setPreviewUrl] = useState("");
+    const [rulesOpen, setRulesOpen] = useState(false);
+    const [selectedRules, setSelectedRules] = useState([]);
+    
+    const handleOpenRules = (rules) => {
+      setSelectedRules(rules);
+      setRulesOpen(true);
+    };
+    const handleCloseRules = () => {
+      setRulesOpen(false);
+      setSelectedRules([]);
+    };
+    
     
 
 
@@ -187,6 +204,8 @@ const CommunityPage = () => {
         }
     };
 
+    
+
     return (
         <Box
             sx={{
@@ -263,10 +282,6 @@ const CommunityPage = () => {
       {filteredCommunities.map((community) => (
         <Grid item xs={12} sm={6} md={4} lg={3} key={community._id}>
           <Card
-            onClick={() => {
-              setSelectedCommunity(community);
-              setView("detail");
-            }}
             sx={{
               borderRadius: 4,
               width: "100%",
@@ -312,47 +327,72 @@ const CommunityPage = () => {
     : community.description}
 </Typography>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mt: 2,
-                  px: 1,
-                }}
-              >
-                {/* Members */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    background: "#e3f2fd",
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 999,
-                  }}
-                >
-                  <GroupsIcon fontSize="small" sx={{ mr: 1 }} color="primary" />
-                  <Typography fontSize="0.9rem" fontWeight="500">
-                    {community.members.length} Members
-                  </Typography>
-                </Box>
-                {/* Posts */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    background: "#f3e5f5",
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 999,
-                  }}
-                >
-                  <ArticleIcon fontSize="small" sx={{ mr: 1 }} color="secondary" />
-                  <Typography fontSize="0.9rem" fontWeight="500">
-                    {community.posts} Posts
-                  </Typography>
-                </Box>
-              </Box>
+            {/* …inside your CardContent, after description… */}
+            <Stack
+  direction="row"
+  spacing={1}
+  sx={{ mt: 2, px: 1, flexWrap: 'wrap', gap: 1 }}
+>
+  {/** Helper pill props **/}
+  {['view','rules','members','posts'].map((key) => {
+    let icon, label, onClick, bg, hoverBg, color;
+    switch(key) {
+      case 'view':
+        icon = <VisibilityIcon fontSize="small" />;
+        label = 'View Community';
+        onClick = () => {
+          setSelectedCommunity(community);
+          setView('detail');
+        };
+        bg = '#e8eaf6'; hoverBg = '#d1d9ff'; color = 'primary';
+        break;
+      case 'rules':
+        icon = <ListAltIcon fontSize="small" />;
+        label = 'Rules';
+        onClick = () => handleOpenRules(community.rules);
+        bg = '#fce4ec'; hoverBg = '#f8bbd0'; color = 'secondary';
+        break;
+      case 'members':
+        icon = <GroupsIcon fontSize="small" />;
+        label = `${community.members.length} Members`;
+        onClick = undefined;
+        bg = '#e3f2fd'; hoverBg = bg; color = 'primary';
+        break;
+      case 'posts':
+        icon = <ArticleIcon fontSize="small" />;
+        label = `${community.posts} Posts`;
+        onClick = undefined;
+        bg = '#f3e5f5'; hoverBg = bg; color = 'secondary';
+        break;
+    }
+
+    return (
+      <Box
+        key={key}
+        onClick={onClick}
+        sx={{
+          flex: '1 1 0',               // all pills share row equally
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',    // center content
+          background: bg,
+          px: 1.5,
+          py: 0.75,
+          borderRadius: 999,
+          cursor: onClick ? 'pointer' : 'default',
+          transition: 'background 0.2s',
+          '&:hover': onClick ? { background: hoverBg } : {},
+        }}
+      >
+        {React.cloneElement(icon, { sx: { mr: 1 }, color })}
+        <Typography fontSize="0.9rem" fontWeight="500" color={color}>
+          {label}
+        </Typography>
+      </Box>
+    );
+  })}
+</Stack>
+
             </CardContent>
           </Card>
         </Grid>
@@ -365,67 +405,82 @@ const CommunityPage = () => {
             {/* -------------------------------- DETAIL VIEW -------------------------------- */}
             {view === "detail" && selectedCommunity && (
   <>
+    {/* Show spinner while loading */}
     {loading ? (
       <CircularProgress sx={{ mt: 5 }} />
     ) : (
+      // Main two‑column layout
       <Grid
         container
         spacing={4}
         sx={{
-          px: { xs: 2, md: 6 },
-          py: 4,
+          px: { xs: 2, md: 6 }, // horizontal padding on small vs. medium+
+          py: 4,               // vertical padding
         }}
       >
         {/* ── LEFT COLUMN: Hero Image & Community Info ── */}
         <Grid item xs={12} md={4}>
-          {/* Hero Banner */}
+          {/* Hero Banner: 16:9 aspect ratio box with coverImage */}
           <Box
             sx={{
               width: "100%",
               height: 0,
-              pt: "56%",           // 16:9
+              pt: "56%",           // padding‑top for 16:9
               backgroundImage: `url(${selectedCommunity.coverImage})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               borderRadius: 2,
-              mb: 3,
+              mb: 3,               // margin bottom
             }}
           />
 
-          {/* Name & Description */}
+          {/* Community Name & Description */}
           <Box sx={{ textAlign: "center", mb: 3 }}>
             <Typography variant="h3" gutterBottom>
-              {selectedCommunity.name}
+              {selectedCommunity.name}    {/* display community name */}
             </Typography>
-            <Typography variant="body3">
-              {selectedCommunity.description}
+            <Typography variant="body2">
+              {selectedCommunity.description}  {/* display description */}
             </Typography>
           </Box>
 
-          {/* Join / Delete Button */}
+          {/* Action Button: Join/Leave or Delete */}
           <Box sx={{ textAlign: "center", mb: 4 }}>
-            {isAdmin ? (
-              <Button
-                variant="contained"
-                color="error"
-                fullWidth
-                onClick={handleDelete}
-              >
-                Delete Community
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                color={isMember ? "primary" : "primary"}
-                fullWidth
-                onClick={handleMembership}
-              >
-                {isMember ? "Leave" : "Join"}
-              </Button>
-            )}
-          </Box>
+  {isAdmin ? (
+    <Button
+      variant="contained"
+      color="error"
+      size="small"
+      onClick={handleDelete}
+      sx={{
+        px: 2,
+        py: 0.5,
+        fontSize: "0.875rem",
+        minWidth: 100,
+      }}
+    >
+      Delete
+    </Button>
+  ) : (
+    <Button
+      variant="contained"
+      color={isMember ? "primary" : "primary"}
+      size="small"
+      onClick={handleMembership}
+      sx={{
+        px: 2,
+        py: 0.5,
+        fontSize: "0.875rem",
+        minWidth: 100,
+      }}
+    >
+      {isMember ? "Leave" : "Join"}
+    </Button>
+  )}
+</Box>
 
-          {/* New Post Form */}
+
+          {/* New Post Form (only if the user is a member) */}
           {isMember && (
             <Box sx={{ mb: 4 }}>
               <TextField
@@ -433,82 +488,81 @@ const CommunityPage = () => {
                 multiline
                 rows={3}
                 placeholder="Write a post..."
-                value={newPost}
+                value={newPost}                  // controlled input
                 onChange={(e) => setNewPost(e.target.value)}
                 sx={{ mb: 2 }}
               />
               <Button
                 variant="contained"
                 fullWidth
-                onClick={handleCreatePost}
+                onClick={handleCreatePost}       // submit handler
               >
                 Post
               </Button>
             </Box>
           )}
 
-          {/* Community Stats */}
+          {/* Community Stats Card */}
           <Paper
-  sx={{
-    p: 3,
-    borderRadius: 2,
-    boxShadow: 2,
-    maxWidth: 400,
-    mx: "auto",        // center on narrow screens
-  }}
->
-  <Typography variant="h6" gutterBottom>
-    Community Stats
-  </Typography>
+            sx={{
+              p: 3,           // padding
+              maxWidth: 400,
+              mx: "auto", 
+              backgroundColor:"#f8f2ec",    // center on mobile
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Community Stats
+            </Typography>
 
-  <Stack
-    direction="row"
-    justifyContent="space-around"
-    alignItems="center"
-    spacing={2}
-  >
-    {/* Members */}
-    <Box textAlign="center">
-      <Avatar
-        sx={{
-          bgcolor: "primary.main",
-          width: 56,
-          height: 56,
-          mb: 1,
-        }}
-      >
-        <GroupsIcon fontSize="large" />
-      </Avatar>
-      <Typography variant="h5">
-        {selectedCommunity.members.length}
-      </Typography>
-      <Typography color="text.secondary" variant="body2">
-        Members
-      </Typography>
-    </Box>
+            {/* Stats icons and numbers side‑by‑side */}
+            <Stack
+              direction="row"
+              justifyContent="space-around"
+              alignItems="center"
+              spacing={2}
+            >
+              {/* Members stat */}
+              <Box textAlign="center">
+                <Avatar
+                  sx={{
+                    bgcolor: "primary.main",
+                    width: 56,
+                    height: 56,
+                    mb: 1,
+                  }}
+                >
+                  <GroupsIcon fontSize="large" />
+                </Avatar>
+                <Typography variant="h5">
+                  {selectedCommunity.members.length}  {/* number of members */}
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Members
+                </Typography>
+              </Box>
 
-    {/* Posts */}
-    <Box textAlign="center">
-      <Avatar
-        sx={{
-          bgcolor: "secondary.main",
-          width: 56,
-          height: 56,
-          mb: 1,
-        }}
-      >
-        <ArticleIcon fontSize="large" />
-      </Avatar>
-      <Typography variant="h5">
-        {posts.length}
-      </Typography>
-      <Typography color="text.secondary" variant="body2">
-        Posts
-      </Typography>
-    </Box>
-  </Stack>
-</Paper>
-
+              {/* Posts stat */}
+              <Box textAlign="center">
+                <Avatar
+                  sx={{
+                    bgcolor: "secondary.main",
+                    width: 56,
+                    height: 56,
+                    mb: 1,
+                  }}
+                >
+                  <ArticleIcon fontSize="large" />
+                </Avatar>
+                <Typography variant="h5">
+                  {posts.length}  {/* number of posts */}
+                </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  Posts
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
         </Grid>
 
         {/* ── RIGHT COLUMN: Posts Feed ── */}
@@ -516,9 +570,15 @@ const CommunityPage = () => {
           <Typography variant="h5" gutterBottom>
             Community Posts
           </Typography>
+
+          {/* List of posts or fallback text */}
           {posts.length > 0 ? (
             posts.map((post) => (
-              <Card key={post._id} sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
+              <Card
+                key={post._id}
+                sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}
+              >
+                {/* Post header with avatar and username */}
                 <CardContent sx={{ display: "flex", alignItems: "center" }}>
                   <Avatar src={post.userimg} sx={{ mr: 2 }} />
                   <Typography fontWeight="bold">
@@ -526,6 +586,7 @@ const CommunityPage = () => {
                   </Typography>
                 </CardContent>
 
+                {/* Optional post image */}
                 {post.image && (
                   <Box
                     component="img"
@@ -535,12 +596,15 @@ const CommunityPage = () => {
                   />
                 )}
 
+                {/* Post text and like button */}
                 <CardContent>
                   <Typography sx={{ mb: 1 }}>
                     {post.content}
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <IconButton onClick={() => handleLikePost(post._id)}>
+                    <IconButton
+                      onClick={() => handleLikePost(post._id)}
+                    >
                       <FavoriteIcon
                         color={
                           post.likes.includes(user._id)
@@ -558,6 +622,7 @@ const CommunityPage = () => {
             <Typography>No posts yet.</Typography>
           )}
 
+          {/* Back button to return to home */}
           <Box textAlign="center" mt={4}>
             <Button
               onClick={() => {
@@ -573,6 +638,7 @@ const CommunityPage = () => {
     )}
   </>
 )}
+
 
     
            {/* 🧱 Modal for Community Creation */}
@@ -781,6 +847,24 @@ const CommunityPage = () => {
     </Button>
   </Box>
 </Modal>
+<Dialog
+  open={rulesOpen}
+  onClose={handleCloseRules}
+  fullWidth
+  maxWidth="xs"
+>
+  <DialogTitle>Community Rules</DialogTitle>
+  <DialogContent dividers>
+    {selectedRules.map((rule, i) => (
+      <Typography key={i} sx={{ mb: 1 }}>
+        {rule.replace(/^\d+\.\s*/, "")}
+      </Typography>
+    ))}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={handleCloseRules}>Close</Button>
+  </DialogActions>
+</Dialog>
 
 
         </Box>
