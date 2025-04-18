@@ -65,27 +65,36 @@ const toggleMembership = async (req, res) => {
 };
 
 //  Get All Communities
+
 const getAllCommunities = async (req, res) => {
-    try {
-        const communities = await Community.find();
-        res.json(communities);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+  try {
+    const communities = await Community.find()
+    .populate("members.userId", "name")
+    .populate("createdBy", "name") 
+      .exec();
+    res.json(communities);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
-// ✅ Get a Community by ID
+
 const getCommunityById = async (req, res) => {
-    try {
-        const { communityId } = req.params;
-        const community = await Community.findById(communityId);
-        if (!community) {
-            return res.status(404).json({ message: "Community not found" });
-        }
-        res.json(community);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    const { communityId } = req.params;
+    const community = await Community.findById(communityId)
+    .populate("members.userId", "name")
+    .populate("createdBy", "name")  // ← populate name for each member
+      .exec();
+
+    if (!community) {
+      return res.status(404).json({ message: "Community not found" });
     }
+    res.json(community);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
+
 
 //  Delete a Community
 const deleteCommunity = async (req, res) => {
@@ -112,79 +121,94 @@ const deleteCommunity = async (req, res) => {
 
 //  Add a Community Post
 const createPost = async (req, res) => {
-    try {
-        console.log("posting started")
-        const { userId, content, communityId, username, userimg } = req.body;
+  try {
+    console.log("🟢 POST request body:", req.body); // ✅ Step 2
 
-        const post = new CommunityPost({ communityId, userId, content, username, userimg });
-        await post.save();
+    const { userId, content, communityId, username, userimg, image } = req.body;
 
-        await Community.findByIdAndUpdate(communityId, { $inc: { posts: 1 } });
-
-        res.status(201).json({ message: "Post created successfully", post });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    if (!userId || !content || !communityId || !username) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
+
+    const post = new CommunityPost({
+      communityId,
+      userId,
+      content,
+      username,
+      userimg,
+      image
+    });
+
+    await post.save();
+    await Community.findByIdAndUpdate(communityId, { $inc: { posts: 1 } });
+
+    res.status(201).json({ message: "Post created successfully", post });
+
+  } catch (error) {
+    console.error("🚨 CREATE POST ERROR:", error); // ✅ Step 2b
+    res.status(500).json({ error: error.message });
+  }
 };
+
 
 // ✅ Get All Posts for a Community
 const getCommunityPosts = async (req, res) => {
     try {
-        console.log("fetch started ", req.params)
-        const { communityId } = req.params;
-
-        const posts = await CommunityPost.find({ communityId: new mongoose.Types.ObjectId(communityId) });
-        console.log("fetch comleted")
-
-
-        console.log("Returning posts to client.");
-        res.json(posts);
+      const { communityId } = req.params;
+      const posts = await CommunityPost.find({ communityId })
+        .populate("comments.userId", "name profileImage")
+        .populate("userId", "name profileImage")
+        .exec();
+  
+      res.json(posts);
     } catch (error) {
-        console.error("Server Error:", error);
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
+  
 
 
 // ✅ Comment on a Community Post
 const commentOnPost = async (req, res) => {
     try {
-        const { postId } = req.params;
-        const { userId, text } = req.body;
-
-        const post = await CommunityPost.findById(postId);
-        if (!post) return res.status(404).json({ message: "Post not found" });
-
-        post.comments.push({ userId, text });
-        await post.save();
-
-        res.json({ message: "Comment added successfully", post });
+      const { postId } = req.params;
+      const { userId, text } = req.body;
+  
+      const post = await CommunityPost.findById(postId);
+      if (!post) return res.status(404).json({ message: "Post not found" });
+  
+      post.comments.push({ userId, text, createdAt: new Date() });
+      await post.save();
+  
+      res.json({ message: "Comment added successfully", post });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
+  
 
 // ✅ Like or Unlike a Community Post
 const likePost = async (req, res) => {
     try {
-        const { postId } = req.params;
-        const { userId } = req.body;
-
-        const post = await CommunityPost.findById(postId);
-        if (!post) return res.status(404).json({ message: "Post not found" });
-
-        if (!post.likes.includes(userId)) {
-            post.likes.push(userId);
-        } else {
-            post.likes = post.likes.filter(id => id.toString() !== userId);
-        }
-
-        await post.save();
-        res.json({ message: "Post like updated", post });
+      const { postId } = req.params;
+      const { userId } = req.body;
+  
+      const post = await CommunityPost.findById(postId);
+      if (!post) return res.status(404).json({ message: "Post not found" });
+  
+      if (post.likes.includes(userId)) {
+        post.likes.pull(userId);
+      } else {
+        post.likes.push(userId);
+      }
+  
+      await post.save();
+      res.json({ message: "Post like updated", post });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
+  
 
 // ✅ Delete a Community Post
 const deletePost = async (req, res) => {
