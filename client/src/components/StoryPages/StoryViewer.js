@@ -57,6 +57,7 @@ const StoryViewer = ({
     };
 
     useEffect(() => {
+        console.log("story", storyUser)
         metadataLoadedRef.current = false;
         videoReadyRef.current = false;
         setIsVideoReady(false);
@@ -241,7 +242,7 @@ const StoryViewer = ({
                         <Avatar
                             src={storyUser.profileImage}
                             sx={{ width: 30, height: 30, cursor: "pointer" }}
-                            onClick={() => handleProfile(storyUser.userId)}
+                            onClick={() => handleProfile(storyUser.id)}
                         />
                         <Typography variant="h6" sx={{ color: "white" }}>
                             {storyUser.name?.split(" ")[0]}

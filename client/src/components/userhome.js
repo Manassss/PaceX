@@ -505,6 +505,7 @@ const UserHome = () => {
           <StoryBar
             users={users}
             setOpenStoryCamera={setOpenStoryCamera}
+            handleProfile={handleProfile}
           />
 
           {/**FEED */}
