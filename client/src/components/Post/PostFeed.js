@@ -41,7 +41,7 @@ const PostFeed = ({
         <Box
             sx={{
                 width: "100%",
-                maxWidth: isMobile ? "100%" : isTablet ? "90%" : "750px",
+                maxWidth: isMobile ? "100%" : isTablet ? "90%" : "830px",
                 display: "flex",
                 flexDirection: "column",
                 gap: 2,

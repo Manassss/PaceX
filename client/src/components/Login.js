@@ -3,7 +3,7 @@ import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword } from "firebase/auth";
 import Logo from "../assets/PACE.png";
 import { motion } from "framer-motion";
 
@@ -31,10 +31,10 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            await setPersistence(auth, browserLocalPersistence);
             const { email, password } = formData;
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
             if (!user.emailVerified) {
                 setMessage("❌ Email not verified. Please check your inbox.");
                 return;
@@ -42,8 +42,8 @@ const Login = () => {
 
             const idToken = await user.getIdToken();
             const res = await axios.post('http://localhost:5001/api/users/login', { idToken });
-
-            setMessage('🎉 Login Successful!');
+            const now = Date.now();
+            localStorage.setItem("loginTime", `${now}`); setMessage('🎉 Login Successful!');
             login(res.data.user);
             navigate('/userhome');
         } catch (err) {
@@ -64,7 +64,7 @@ const Login = () => {
                 padding: "20px",
                 position: "relative",
                 overflow: "hidden",
-                background: "linear-gradient(135deg, #faf8f5 , #f0ebe4 )", 
+                background: "linear-gradient(135deg, #faf8f5 , #f0ebe4 )",
             }}
         >
             <motion.img

@@ -31,7 +31,7 @@ import { useAuth } from "../auth/AuthContext";
 import Logo from "../assets/PACE.png";
 import axios from "axios";
 import SearchPanel from "./Search";
-import AddPost from './AddPost'; // adjust the path if needed
+import AddPost from '../components/Post/AddPost'; // adjust the path if needed
 
 
 
@@ -63,12 +63,12 @@ const Navbar = () => {
       // Close search panel
       setShowSearchPanel(false);
       // Expand on Home, collapse on any other screen
-      if (item.path === "/userhome") {
+      if (item.path === "/userhome" || item.label === "Add Post") {
         setIsCollapsed(false);
       } else {
         setIsCollapsed(true);
       }
-      if (item.label === "Create") {
+      if (item.label === "Add Post") {
         setOpenCreateModal(true);
       }
       else {
@@ -103,7 +103,7 @@ const Navbar = () => {
     { icon: <MarketplaceIcon />, label: "Marketplace", path: "/marketplace" },
     {
       icon: <CreateIcon />,
-      label: "Create",
+      label: "Add Post",
       onClick: () => {
         setOpenCreateModal(true);
       },
@@ -301,35 +301,7 @@ const Navbar = () => {
 
       )}
 
-      <Modal
-        open={openCreateModal}
-        onClose={() => setOpenCreateModal(false)}
-        closeAfterTransition
-        BackdropProps={{
-          sx: {
-            backdropFilter: 'blur(8px)',
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-          },
-        }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: 500 },
-            bgcolor: '#f8f2ec',
-            borderRadius: 3,
-            boxShadow: 24,
-            p: 3,
-            maxHeight: '90vh',
-            overflowY: 'auto',
-          }}
-        >
-          <AddPost open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
-        </Box>
-      </Modal>
+      <AddPost open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
 
     </Box>
 

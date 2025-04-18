@@ -127,13 +127,13 @@ const ProfilePage = () => {
     setFollowersList(userDetails.followers || []);
     setOpenFollowersModal(true);
   };
-  
+
   const openFollowing = () => {
     // Similar logic for followings.
     setFollowingList(userDetails.followings || []);
     setOpenFollowingModal(true);
   };
-  
+
 
   // Function to delete the post
   const handleDeletePost = async () => {
@@ -564,420 +564,670 @@ const ProfilePage = () => {
         : posts.filter(post => !post.archived && !post.tempdelete); // Show normal posts;
 
 
-        const handlePostMenuOpen = (event) => {
-          setPostMenuAnchorEl(event.currentTarget);
-        };
-        
-        const handlePostMenuClose = () => {
-          setPostMenuAnchorEl(null);
-        };
-        
+  const handlePostMenuOpen = (event) => {
+    setPostMenuAnchorEl(event.currentTarget);
+  };
+
+  const handlePostMenuClose = () => {
+    setPostMenuAnchorEl(null);
+  };
+
 
 
 
   return (
     <>
-    {/* ============================
+      {/* ============================
   Main Layout Container
 ============================ */}
-  <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f2ec' }}>
+      <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f2ec' }}>
 
-          <Container maxWidth="md">
+        <Container maxWidth="md">
           <Box mt={0} >
-          {/* Profile Section */}
-          <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3}}>
-          <Box sx={{ position: "relative", width: "100%", mb: 2 }}>
-  <Box sx={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    px: 2 // padding for spacing
-  }}>
-    <Typography variant="h5" fontWeight={600}>
-      {userDetails.username}
-    </Typography>
-
-    <IconButton
-  onClick={handleMenuOpen}
-  sx={{
-    color: "black",
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    width: 35,
-    height: 35,
-    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.1)" },
-  }}
->
-  <CiMenuBurger />
-</IconButton>
-
-<Menu
-  anchorEl={anchorEl}
-  open={Boolean(anchorEl)}
-  onClose={handleMenuClose}
-  anchorOrigin={{
-    vertical: 'bottom',
-    horizontal: 'right',
-  }}
-  transformOrigin={{
-    vertical: 'top',
-    horizontal: 'right',
-  }}
-  sx={{ mt: 1 }}
->
-  {userDetails.id === user?._id ? (
-    <>
-      <MenuItem
-        onClick={() => {
-          setOpenBlockedContacts(true);
-          handleMenuClose();
-        }}
-      >
-        Blocked Contacts
-      </MenuItem>
-      <MenuItem
-        onClick={() => {
-          setEditMode((prev) => !prev);
-          handleMenuClose();
-        }}
-      >
-        {editMode ? "Cancel Edit Profile" : "Edit Profile"}
-      </MenuItem>
-    </>
-  ) : (
-    <MenuItem
-      onClick={() => {
-        handleBlock();
-        handleMenuClose();
-      }}
-    >
-      Block
-    </MenuItem>
-  )}
-
-  <MenuItem
-    onClick={() => {
-      setOpenShareModal(true);
-      handleMenuClose();
-    }}
-  >
-    <ShareIcon sx={{ mr: 1 }} />
-    Share Profile
-  </MenuItem>
-</Menu>
-
-  </Box>
-
-  <Box
-    sx={{
-      width: "250px",
-      height: "250px",
-      margin: "auto",
-      mt: 2,
-      position: "relative"
-    }}
-  >
-    <Avatar
-      src={userDetails.profileImage}
-      sx={{
-        width: "100%",
-        height: "100%",
-        border: "3px solid rgba(255, 255, 255, 0.5)",
-      }}
-    />
-  </Box>
-</Box>
-
-
-            {/* User Details Below Image */}
-            <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
-              {userDetails.name || "Your Name"}
-            </Typography>
-
-            <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
-              {userDetails.bio || "No bio available"}
-            </Typography>
-          </Box>
-
-
-          {/* User Stats */}
-          {/* User Stats */}
-        <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
-  {[
-    { label: "Posts", value: userDetails.postsCount || 0 },
-    { label: "Followers", value: userDetails.followersCount || 0 },
-    { label: "Following", value: userDetails.followingCount || 0 },
-  ].map((item, index) => (
-    <Box key={index} textAlign="center">
-      <Typography variant="h6" sx={{ fontWeight: "bold", cursor: item.label !== "Posts" ? "pointer" : "default" }}
-        onClick={() => {
-          if (item.label === "Followers") openFollowers();
-          else if (item.label === "Following") openFollowing();
-        }}
-      >
-        {item.value}
-      </Typography>
-      <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
-        {item.label}
-      </Typography>
-    </Box>
-  ))}
-</Box>
-
-
-
-          {/* follow and edit Buttons */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 1.5,
-              mt: 3,
-              width: "100%",
-              justifyContent: "center",
-            }}
-          >
-            {vistinguser ? <Button
-              variant="contained"
-              sx={{
-                borderRadius: 2,
-                padding: "6px 12px",
-                fontSize: "14px",
-                backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
-                color: isConnected ? "#000" : "#fff",
-                "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
-              }}
-              onClick={handleConnectToggle}
-              disabled={loading}
-            >
-              {loading ? (
-                <CircularProgress size={20} sx={{ color: "inherit" }} />
-              ) : isConnected ? (
-                <>
-                  Following <span style={{ marginLeft: "5px" }}>▼</span>
-                </>
-              ) : (
-                "Connect"
-              )}
-            </Button> : <></>}
-          </Box>
-        </Box>
-
-        {/* Right Side - Main Content */}
-        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
-          {/* Navbar at the Top */}
-
-          {/* Profile Edit Section */}
-          {editMode && (
-            <Paper
-              sx={{
-                p: 3,
-                mt: 15,
-                backgroundColor: "#fff",
-                borderRadius: 2,
-                boxShadow: 3,
-                height: 'auto',
-              }}
-            >
-              <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
-                Edit Profile
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <TextField
-                    name="username"
-                    value={formData.username || ""}
-                    onChange={handleChange}
-                    label="Username"
-                    variant="outlined"
-                    fullWidth
-                  />
-                  <TextField
-                    name="name"
-                    value={formData.name || ""}
-                    onChange={handleChange}
-                    label="Full Name"
-                    variant="outlined"
-                    fullWidth
-                  />
-                </Box>
-                <TextField
-                  name="bio"
-                  value={formData.bio || ""}
-                  onChange={handleChange}
-                  label="Bio"
-                  variant="outlined"
-                  fullWidth
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.private || false}
-                      onChange={(e) => setFormData({ ...formData, private: e.target.checked })}
-                      color="primary"
-                    />
-                  }
-                  label={formData.private ? "Private Account" : "Public Account"}
-                  sx={{ alignSelf: "center", mt: 2 }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ mt: 2, borderRadius: 2, width: 200, right: -700 }}
-                  onClick={handleSave}
-                >
-                  Save Changes
-                </Button>
-              </Box>
-            </Paper>
-          )}
-
-          {/* Posts Section */}
-          <Box sx={{ mt: 1}}>
-          <Box mt={4} display="flex" justifyContent="center" gap={6}>
-  <Typography
-    variant="body1"
-    onClick={() => setSelectedTab("all")}
-    sx={{
-      cursor: "pointer",
-      fontWeight: selectedTab === "all" ? "bold" : "normal",
-      pb: 1,
-      fontSize: "16px",
-      color: "#000",
-      borderBottom: selectedTab === "all" ? "2px solid black" : "2px solid transparent",
-      transition: "all 0.2s ease-in-out",
-      "&:hover": {
-        borderBottom: "2px solid #aaa",
-        opacity: 0.8,
-      },
-    }}
-  >
-    All Posts
-  </Typography>
-
-  <Typography
-    variant="body1"
-    onClick={() => setSelectedTab("archived")}
-    sx={{
-      cursor: "pointer",
-      fontWeight: selectedTab === "archived" ? "bold" : "normal",
-      pb: 1,
-      fontSize: "16px",
-      color: "#000",
-      borderBottom: selectedTab === "archived" ? "2px solid black" : "2px solid transparent",
-      transition: "all 0.2s ease-in-out",
-      "&:hover": {
-        borderBottom: "2px solid #aaa",
-        opacity: 0.8,
-      },
-    }}
-  >
-    Archived
-  </Typography>
-
-  <Typography
-    variant="body1"
-    onClick={() => setSelectedTab("recentlyDeleted")}
-    sx={{
-      cursor: "pointer",
-      fontWeight: selectedTab === "recentlyDeleted" ? "bold" : "normal",
-      pb: 1,
-      fontSize: "16px",
-      color: "#000",
-      borderBottom: selectedTab === "recentlyDeleted" ? "2px solid black" : "2px solid transparent",
-      transition: "all 0.2s ease-in-out",
-      "&:hover": {
-        borderBottom: "2px solid #aaa",
-        opacity: 0.8,
-      },
-    }}
-  >
-    Recently Deleted
-  </Typography>
-</Box>
-
-            {(userDetails.private === false || userDetails.followers?.includes(user?._id)) || userDetails.id === user?._id ? (
-              filteredPosts.length > 0 ? (
-                <Grid container spacing={1} mt={2}>
-                {filteredPosts.map((post, idx) => (
-                  <Grid item xs={4} key={idx}>
-                    <Box
-                      onClick={() => handlePostClick(post)}
-                      sx={{
-                        width: "100%",
-                        aspectRatio: "1/1",
-                        cursor: "pointer",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <img
-                        src={post.images?.[0] || post.postimg}
-                        alt="post"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-          
-              ) : (
-                <Typography
-                  variant="body2"
-                  sx={{ textAlign: "center", color: "gray", fontStyle: "italic", marginTop: '20%' }}
-                >
-                  No Posts Available
-                </Typography>
-              )
-            ) : (
-              <Box sx={{ textAlign: "center", mt: 5 }}>
-                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                  <LockIcon sx={{ fontSize: 50, color: "gray" }} />
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    This account is private
+            {/* Profile Section */}
+            <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+              <Box sx={{ position: "relative", width: "100%", mb: 2 }}>
+                <Box sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  px: 2 // padding for spacing
+                }}>
+                  <Typography variant="h5" fontWeight={600}>
+                    {userDetails.username}
                   </Typography>
-                  <Typography sx={{ color: "gray" }}>
-                    Follow to see their photos and videos.
-                  </Typography>
-                  <Button
-                    variant="contained"
+
+                  <IconButton
+                    onClick={handleMenuOpen}
                     sx={{
-                      borderRadius: 2,
-                      padding: "6px 12px",
-                      fontSize: "14px",
-                      backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
-                      color: isConnected ? "#000" : "#fff",
-                      "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
+                      color: "black",
+                      backgroundColor: "rgba(0, 0, 0, 0.05)",
+                      width: 35,
+                      height: 35,
+                      "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.1)" },
                     }}
-                    onClick={handleConnectToggle}
-                    disabled={loading}
                   >
-                    {loading ? (
-                      <CircularProgress size={20} sx={{ color: "inherit" }} />
-                    ) : isConnected ? (
+                    <CiMenuBurger />
+                  </IconButton>
+
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    sx={{ mt: 1 }}
+                  >
+                    {userDetails.id === user?._id ? (
                       <>
-                        Following <span style={{ marginLeft: "5px" }}>▼</span>
+                        <MenuItem
+                          onClick={() => {
+                            setOpenBlockedContacts(true);
+                            handleMenuClose();
+                          }}
+                        >
+                          Blocked Contacts
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => {
+                            setEditMode((prev) => !prev);
+                            handleMenuClose();
+                          }}
+                        >
+                          {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+                        </MenuItem>
                       </>
                     ) : (
-                      "Connect"
+                      <MenuItem
+                        onClick={() => {
+                          handleBlock();
+                          handleMenuClose();
+                        }}
+                      >
+                        Block
+                      </MenuItem>
                     )}
+
+                    <MenuItem
+                      onClick={() => {
+                        setOpenShareModal(true);
+                        handleMenuClose();
+                      }}
+                    >
+                      <ShareIcon sx={{ mr: 1 }} />
+                      Share Profile
+                    </MenuItem>
+                  </Menu>
+
+                </Box>
+
+                <Box
+                  sx={{
+                    width: "250px",
+                    height: "250px",
+                    margin: "auto",
+                    mt: 2,
+                    position: "relative"
+                  }}
+                >
+                  <Avatar
+                    src={userDetails.profileImage}
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      border: "3px solid rgba(255, 255, 255, 0.5)",
+                    }}
+                  />
+                </Box>
+              </Box>
+
+
+              {/* User Details Below Image */}
+              <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
+                {userDetails.name || "Your Name"}
+              </Typography>
+
+              <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
+                {userDetails.bio || "No bio available"}
+              </Typography>
+            </Box>
+
+
+            {/* User Stats */}
+            {/* User Stats */}
+            <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
+              {[
+                { label: "Posts", value: userDetails.postsCount || 0 },
+                { label: "Followers", value: userDetails.followersCount || 0 },
+                { label: "Following", value: userDetails.followingCount || 0 },
+              ].map((item, index) => (
+                <Box key={index} textAlign="center">
+                  <Typography variant="h6" sx={{ fontWeight: "bold", cursor: item.label !== "Posts" ? "pointer" : "default" }}
+                    onClick={() => {
+                      if (item.label === "Followers") openFollowers();
+                      else if (item.label === "Following") openFollowing();
+                    }}
+                  >
+                    {item.value}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
+                    {item.label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+
+
+
+            {/* follow and edit Buttons */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                gap: 1.5,
+                mt: 3,
+                width: "100%",
+                justifyContent: "center",
+              }}
+            >
+              {vistinguser ? <Button
+                variant="contained"
+                sx={{
+                  borderRadius: 2,
+                  padding: "6px 12px",
+                  fontSize: "14px",
+                  backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
+                  color: isConnected ? "#000" : "#fff",
+                  "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
+                }}
+                onClick={handleConnectToggle}
+                disabled={loading}
+              >
+                {loading ? (
+                  <CircularProgress size={20} sx={{ color: "inherit" }} />
+                ) : isConnected ? (
+                  <>
+                    Following <span style={{ marginLeft: "5px" }}>▼</span>
+                  </>
+                ) : (
+                  "Connect"
+                )}
+              </Button> : <></>}
+            </Box>
+          </Box>
+
+          {/* Right Side - Main Content */}
+          <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
+            {/* Navbar at the Top */}
+
+            {/* Profile Edit Section */}
+            {editMode && (
+              <Paper
+                sx={{
+                  p: 3,
+                  mt: 15,
+                  backgroundColor: "#fff",
+                  borderRadius: 2,
+                  boxShadow: 3,
+                  height: 'auto',
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
+                  Edit Profile
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <TextField
+                      name="username"
+                      value={formData.username || ""}
+                      onChange={handleChange}
+                      label="Username"
+                      variant="outlined"
+                      fullWidth
+                    />
+                    <TextField
+                      name="name"
+                      value={formData.name || ""}
+                      onChange={handleChange}
+                      label="Full Name"
+                      variant="outlined"
+                      fullWidth
+                    />
+                  </Box>
+                  <TextField
+                    name="bio"
+                    value={formData.bio || ""}
+                    onChange={handleChange}
+                    label="Bio"
+                    variant="outlined"
+                    fullWidth
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.private || false}
+                        onChange={(e) => setFormData({ ...formData, private: e.target.checked })}
+                        color="primary"
+                      />
+                    }
+                    label={formData.private ? "Private Account" : "Public Account"}
+                    sx={{ alignSelf: "center", mt: 2 }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 2, borderRadius: 2, width: 200, right: -700 }}
+                    onClick={handleSave}
+                  >
+                    Save Changes
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Posts Section */}
+            <Box sx={{ mt: 1 }}>
+              <Box mt={4} display="flex" justifyContent="center" gap={6}>
+                <Typography
+                  variant="body1"
+                  onClick={() => setSelectedTab("all")}
+                  sx={{
+                    cursor: "pointer",
+                    fontWeight: selectedTab === "all" ? "bold" : "normal",
+                    pb: 1,
+                    fontSize: "16px",
+                    color: "#000",
+                    borderBottom: selectedTab === "all" ? "2px solid black" : "2px solid transparent",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      borderBottom: "2px solid #aaa",
+                      opacity: 0.8,
+                    },
+                  }}
+                >
+                  All Posts
+                </Typography>
+
+                <Typography
+                  variant="body1"
+                  onClick={() => setSelectedTab("archived")}
+                  sx={{
+                    cursor: "pointer",
+                    fontWeight: selectedTab === "archived" ? "bold" : "normal",
+                    pb: 1,
+                    fontSize: "16px",
+                    color: "#000",
+                    borderBottom: selectedTab === "archived" ? "2px solid black" : "2px solid transparent",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      borderBottom: "2px solid #aaa",
+                      opacity: 0.8,
+                    },
+                  }}
+                >
+                  Archived
+                </Typography>
+
+                <Typography
+                  variant="body1"
+                  onClick={() => setSelectedTab("recentlyDeleted")}
+                  sx={{
+                    cursor: "pointer",
+                    fontWeight: selectedTab === "recentlyDeleted" ? "bold" : "normal",
+                    pb: 1,
+                    fontSize: "16px",
+                    color: "#000",
+                    borderBottom: selectedTab === "recentlyDeleted" ? "2px solid black" : "2px solid transparent",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      borderBottom: "2px solid #aaa",
+                      opacity: 0.8,
+                    },
+                  }}
+                >
+                  Recently Deleted
+                </Typography>
+              </Box>
+
+              {(userDetails.private === false || userDetails.followers?.includes(user?._id)) || userDetails.id === user?._id ? (
+                filteredPosts.length > 0 ? (
+                  <Grid container spacing={1} mt={2}>
+                    {filteredPosts.map((post, idx) => (
+                      <Grid item xs={4} key={idx}>
+                        <Box
+                          onClick={() => handlePostClick(post)}
+                          sx={{
+                            width: "100%",
+                            aspectRatio: "1/1",
+                            cursor: "pointer",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <img
+                            src={post.images?.[0] || post.postimg}
+                            alt="post"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{ textAlign: "center", color: "gray", fontStyle: "italic", marginTop: '20%' }}
+                  >
+                    No Posts Available
+                  </Typography>
+                )
+              ) : (
+                <Box sx={{ textAlign: "center", mt: 5 }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                    <LockIcon sx={{ fontSize: 50, color: "gray" }} />
+                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                      This account is private
+                    </Typography>
+                    <Typography sx={{ color: "gray" }}>
+                      Follow to see their photos and videos.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      sx={{
+                        borderRadius: 2,
+                        padding: "6px 12px",
+                        fontSize: "14px",
+                        backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
+                        color: isConnected ? "#000" : "#fff",
+                        "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
+                      }}
+                      onClick={handleConnectToggle}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <CircularProgress size={20} sx={{ color: "inherit" }} />
+                      ) : isConnected ? (
+                        <>
+                          Following <span style={{ marginLeft: "5px" }}>▼</span>
+                        </>
+                      ) : (
+                        "Connect"
+                      )}
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </Container>
+
+        {/* Post Modal */}
+        {selectedPost && (
+          <Modal
+            open={openPostModal}
+            onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0); setCurrentImageIndex(0) }}
+            BackdropProps={{
+              sx: {
+                backdropFilter: "blur(10px)",
+                backgroundColor: "rgba(0, 0, 0, 0.4)",
+              },
+            }}
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "80vw",
+                maxWidth: "900px",
+                maxHeight: "90vh",
+                height: "80vh",
+                display: "flex",
+                bgcolor: "#fff",
+                borderRadius: 2,
+
+                boxShadow: 3,
+                position: "relative",
+              }}
+            >
+              {/* Next Post Button */}
+              {currentPostIndex > 0 && (
+                <IconButton
+                  onClick={handlePrevPost}
+                  sx={{
+                    position: "fixed",
+                    left: "-50%", // Fixed positioning outside modal
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "white",
+                    backgroundColor: "rgba(0, 0, 0, 0.4)",
+                    zIndex: 1500, // Ensures it is above all elements
+                    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
+                  }}
+                >
+                  <ArrowBackIosNewIcon />
+                </IconButton>
+              )}
+
+              {/* Next Post Button */}
+              {currentPostIndex < posts.length - 1 && (
+                <IconButton
+                  onClick={handleNextPost}
+                  sx={{
+                    position: "fixed",
+                    right: "-50%", // Fixed positioning outside modal
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "white",
+                    backgroundColor: "rgba(0, 0, 0, 0.4)",
+                    zIndex: 1500, // Ensures it is above all elements
+                    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
+                  }}
+                >
+                  <ArrowForwardIosIcon />
+                </IconButton>
+              )}
+              {/* Left Section - Image Carousel */}
+              <Box sx={{ width: "60%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", bgcolor: "#000" }}>
+                {selectedPost?.images?.length > 0 ? (
+                  <>
+                    {currentImageIndex > 0 && (
+                      <IconButton
+                        onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
+                        sx={{
+                          position: "absolute",
+                          left: 10,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "white",
+                          backgroundColor: "rgba(0, 0, 0, 0.3)",
+                        }}
+                      >
+                        <ArrowBackIosNewIcon />
+                      </IconButton>
+                    )}
+                    <img
+                      src={selectedPost.images[currentImageIndex]}
+                      alt={`Post Image ${currentImageIndex + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
+                    {currentImageIndex < selectedPost.images.length - 1 && (
+                      <IconButton
+                        onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
+                        sx={{
+                          position: "absolute",
+                          right: 10,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "white",
+                          backgroundColor: "rgba(0, 0, 0, 0.3)",
+                        }}
+                      >
+                        <ArrowForwardIosIcon />
+                      </IconButton>
+                    )}
+                  </>
+                ) : (
+                  <img
+                    src={selectedPost.postimg}
+                    alt="Post"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Right Section - Comments */}
+              <Box sx={{ width: "40%", display: "flex", flexDirection: "column", bgcolor: "#fff", p: 2 }}>
+
+                {/* Post Owner with Three-Dot Menu */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Avatar src={userDetails.profileImage} sx={{ width: 32, height: 32, mr: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>{selectedPost?.userName}</Typography>
+                  </Box>
+                  <IconButton onClick={handlePostMenuOpen}>
+                    <MoreVertIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                    sx={{ mt: 1 }}
+                  >
+                    {userDetails.id === user?._id && (
+                      <>
+                        <MenuItem onClick={() => { handleArchivePost(); handleMenuClose(); }}>
+                          Archive
+                        </MenuItem>
+                        <MenuItem onClick={() => { handleDeleteclick(); handleMenuClose(); }}>
+                          Delete
+                        </MenuItem>
+                      </>
+                    )}
+                    <MenuItem onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
+                      <ShareIcon sx={{ mr: 1 }} /> Share Profile
+                    </MenuItem>
+                  </Menu>
+
+
+                </Box>
+
+                {/* Post Caption */}
+                {selectedPost?.content && (
+                  <Typography sx={{ color: "#555" }}>{selectedPost.content}</Typography>
+                )}
+
+                {/* Comments List */}
+                <Box sx={{ flexGrow: 1, overflowY: "auto", maxHeight: "90%", pr: 1 }}>
+                  <List>
+                    {comments[selectedPost.postId]?.map((comment, index) => (
+                      <ListItem key={index} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Avatar src={comment.userimg} sx={{ width: 28, height: 28 }} />
+                        <Box>
+                          <Typography sx={{ fontWeight: "bold", fontSize: "14px" }}>
+                            {comment.username}
+                          </Typography>
+                          <Typography sx={{ fontSize: "14px", color: "#555" }}>
+                            {comment.text}
+                          </Typography>
+                        </Box>
+                        <IconButton sx={{ ml: "auto", color: "#FF3040" }}>
+                          <FavoriteIcon fontSize="small" />
+                        </IconButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+                {/* Post Interaction Stats: Likes, Comments, Share */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1 }}>
+                  <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                    <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ color: "#FF3040" }}>
+                      <FavoriteIcon />
+                    </IconButton>
+                    <Typography variant="body2">{selectedPost.likes?.length || 0} Likes</Typography>
+
+                    <IconButton disabled>
+                      <ChatBubbleOutlineIcon />
+                    </IconButton>
+                    <Typography variant="body2">
+                      {comments[selectedPost.postId]?.length || 0} Comments
+                    </Typography>
+                  </Box>
+
+                  <IconButton
+                    onClick={() => {
+                      setOpenShareModal(true);
+                    }}
+                    sx={{ color: "#333" }}
+                  >
+                    <ShareIcon />
+                  </IconButton>
+                </Box>
+
+
+                {/* Add Comment Box */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    placeholder="Add a comment..."
+                    value={newComment[selectedPost.postId] || ""}
+                    onChange={(e) =>
+                      setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
+                    }
+                    sx={{
+                      borderRadius: "20px",
+                      backgroundColor: "#f8f8f8",
+                      "& .MuiOutlinedInput-root": { borderRadius: "20px" },
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleAddComment(selectedPost.postId)}
+                    sx={{ borderRadius: "20px" }}
+                  >
+                    Post
                   </Button>
                 </Box>
               </Box>
-            )}
-          </Box>
-          </Box>
-      </Container>
+            </Box>
+          </Modal>
+        )}
 
-      {/* Post Modal */}
-      {selectedPost && (
+        {/* Followers Modal */}
         <Modal
-          open={openPostModal}
-          onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0); setCurrentImageIndex(0) }}
+          open={openFollowersModal}
+          onClose={() => setOpenFollowersModal(false)}
           BackdropProps={{
             sx: {
-              backdropFilter: "blur(10px)",
-              backgroundColor: "rgba(0, 0, 0, 0.4)",
-            },
+              backdropFilter: "blur(5px)"
+            }
           }}
         >
           <Box
@@ -986,515 +1236,266 @@ const ProfilePage = () => {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "80vw",
-              maxWidth: "900px",
-              maxHeight: "90vh",
-              display: "flex",
-              bgcolor: "#fff",
+              width: 400,
+              bgcolor: "background.paper",
               borderRadius: 2,
+              p: 4,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
+              Followers
+            </Typography>
+            <List>
+              {followersList.length > 0 ? (
+                followersList.map((follower) => (
+                  <ListItem
+                    key={follower._id}
+                    button
+                    onClick={() => {
+                      setOpenFollowersModal(false);
+                      handleProfile(follower._id);
+                    }}
+                  >
+                    <Avatar src={follower.profileImage} sx={{ mr: 2 }} />
+                    <ListItemText primary={follower.name} />
+                  </ListItem>
+                ))
+              ) : (
+                <Typography variant="body2" sx={{ textAlign: "center" }}>
+                  No followers yet.
+                </Typography>
+              )}
+            </List>
+          </Box>
+        </Modal>
 
-              boxShadow: 3,
+        {/* Following Modal */}
+        <Modal
+          open={openFollowingModal}
+          onClose={() => setOpenFollowingModal(false)}
+          BackdropProps={{
+            sx: {
+              backdropFilter: "blur(5px)"
+            }
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 400,
+              bgcolor: "background.paper",
+              borderRadius: 2,
+              p: 4,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
+              Following
+            </Typography>
+            <List>
+              {followingList.length > 0 ? (
+                followingList.map((followingUser) => (
+                  <ListItem
+                    key={followingUser._id}
+                    button
+                    onClick={() => {
+                      setOpenFollowingModal(false);
+                      handleProfile(followingUser._id);
+                    }}
+                  >
+                    <Avatar src={followingUser.profileImage} sx={{ mr: 2 }} />
+                    <ListItemText primary={followingUser.name} />
+                  </ListItem>
+                ))
+              ) : (
+                <Typography variant="body2" sx={{ textAlign: "center" }}>
+                  Not following anyone.
+                </Typography>
+              )}
+            </List>
+          </Box>
+        </Modal>
+
+
+
+        {/* Delete Confirmation Modal */}
+        <Modal open={deleteConfirmation} onClose={() => setDeleteConfirmation(false)} >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: "white",
+              p: 3,
+              borderRadius: 2,
+              textAlign: "center"
+            }}
+          >
+            <Typography variant="h6">Are you sure you want to delete this post?</Typography>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button variant="contained" color="error" onClick={deletetype === "temp" ? handleDeletePosttemp : handleDeletePost}>
+                {deletetype === "temp" && selectedPost?.tempdelete ? "Recover" : "Yes, Delete"}
+              </Button>
+              <Button variant="outlined" onClick={() => setDeleteConfirmation(false)}>
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
+
+        {/* Modal for Camera Capture */}
+        <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              marginTop: '50px',
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 430,
+              bgcolor: "white",
+              boxShadow: 24,
+              borderRadius: 2,
+            }}
+          >
+            <CameraCapture onImageUpload={handleImageUpload} />
+          </Box>
+        </Modal>
+
+        {/* Modal for Story View */}
+        <Modal open={openStory} onClose={() => setOpenStory(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 430,
+              height: 800,
+              bgcolor: "black",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              borderRadius: 2,
+              overflow: "hidden",
+              mt: 6,
               position: "relative",
             }}
           >
-            {/* Next Post Button */}
-            {currentPostIndex > 0 && (
+            {userStories.length > 0 && (
+              <img
+                src={userStories[currentIndexStory].mediaUrl}
+                alt={`Story ${currentIndexStory + 1}`}
+                style={{
+                  width: 430,
+                  height: 800,
+                  objectFit: "cover",
+                  borderRadius: 10,
+                }}
+              />
+            )}
+            <IconButton
+              onClick={() => setOpenStory(false)}
+              sx={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                backgroundColor: "rgba(255, 255, 255, 0.5)",
+                color: "white",
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+            {currentIndexStory > 0 && (
               <IconButton
-                onClick={handlePrevPost}
+                onClick={handlePrevStory}
                 sx={{
-                  position: "fixed",
-                  left: "-50%", // Fixed positioning outside modal
+                  position: "absolute",
+                  left: 10,
                   top: "50%",
                   transform: "translateY(-50%)",
+                  backgroundColor: "rgba(255, 255, 255, 0.3)",
                   color: "white",
-                  backgroundColor: "rgba(0, 0, 0, 0.4)",
-                  zIndex: 1500, // Ensures it is above all elements
-                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
                 }}
               >
                 <ArrowBackIosNewIcon />
               </IconButton>
             )}
-
-            {/* Next Post Button */}
-            {currentPostIndex < posts.length - 1 && (
+            {currentIndexStory < userStories.length - 1 && (
               <IconButton
-                onClick={handleNextPost}
+                onClick={handleNextStory}
                 sx={{
-                  position: "fixed",
-                  right: "-50%", // Fixed positioning outside modal
+                  position: "absolute",
+                  right: 10,
                   top: "50%",
                   transform: "translateY(-50%)",
+                  backgroundColor: "rgba(255, 255, 255, 0.3)",
                   color: "white",
-                  backgroundColor: "rgba(0, 0, 0, 0.4)",
-                  zIndex: 1500, // Ensures it is above all elements
-                  "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
                 }}
               >
                 <ArrowForwardIosIcon />
               </IconButton>
             )}
-            {/* Left Section - Image Carousel */}
-            <Box sx={{ width: "60%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", bgcolor: "#000" }}>
-              {selectedPost?.images?.length > 0 ? (
-                <>
-                  {currentImageIndex > 0 && (
-                    <IconButton
-                      onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
-                      sx={{
-                        position: "absolute",
-                        left: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "white",
-                        backgroundColor: "rgba(0, 0, 0, 0.3)",
-                      }}
-                    >
-                      <ArrowBackIosNewIcon />
-                    </IconButton>
-                  )}
-                  <img
-                    src={selectedPost.images[currentImageIndex]}
-                    alt={`Post Image ${currentImageIndex + 1}`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                    }}
-                  />
-                  {currentImageIndex < selectedPost.images.length - 1 && (
-                    <IconButton
-                      onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
-                      sx={{
-                        position: "absolute",
-                        right: 10,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "white",
-                        backgroundColor: "rgba(0, 0, 0, 0.3)",
-                      }}
-                    >
-                      <ArrowForwardIosIcon />
-                    </IconButton>
-                  )}
-                </>
-              ) : (
-                <img
-                  src={selectedPost.postimg}
-                  alt="Post"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                />
-              )}
-            </Box>
-
-            {/* Right Section - Comments */}
-            <Box sx={{ width: "40%", display: "flex", flexDirection: "column", bgcolor: "#fff", p: 2 }}>
-              
-              {/* Post Owner with Three-Dot Menu */}
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Avatar src={userDetails.profileImage} sx={{ width: 32, height: 32, mr: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>{selectedPost?.userName}</Typography>
-                </Box>
-                <IconButton onClick={handlePostMenuOpen}>
-  <MoreVertIcon />
-</IconButton>
-<Menu
-  anchorEl={anchorEl}
-  open={Boolean(anchorEl)}
-  onClose={handleMenuClose}
-  anchorOrigin={{
-    vertical: 'bottom',
-    horizontal: 'right',
-  }}
-  transformOrigin={{
-    vertical: 'top',
-    horizontal: 'right',
-  }}
-  sx={{ mt: 1 }}
->
-  {userDetails.id === user?._id && (
-    <>
-      <MenuItem onClick={() => { handleArchivePost(); handleMenuClose(); }}>
-        Archive
-      </MenuItem>
-      <MenuItem onClick={() => { handleDeleteclick(); handleMenuClose(); }}>
-        Delete
-      </MenuItem>
-    </>
-  )}
-  <MenuItem onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
-    <ShareIcon sx={{ mr: 1 }} /> Share Profile
-  </MenuItem>
-</Menu>
-
-
-              </Box>
-
-              {/* Post Caption */}
-              {selectedPost?.content && (
-                <Typography sx={{ color: "#555" }}>{selectedPost.content}</Typography>
-              )}
-
-              {/* Comments List */}
-              <Box sx={{ flexGrow: 1, overflowY: "auto", maxHeight: "90%", pr: 1 }}>
-                <List>
-                  {comments[selectedPost.postId]?.map((comment, index) => (
-                    <ListItem key={index} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Avatar src={comment.userimg} sx={{ width: 28, height: 28 }} />
-                      <Box>
-                        <Typography sx={{ fontWeight: "bold", fontSize: "14px" }}>
-                          {comment.username}
-                        </Typography>
-                        <Typography sx={{ fontSize: "14px", color: "#555" }}>
-                          {comment.text}
-                        </Typography>
-                      </Box>
-                      <IconButton sx={{ ml: "auto", color: "#FF3040" }}>
-                        <FavoriteIcon fontSize="small" />
-                      </IconButton>
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-              {/* Post Interaction Stats: Likes, Comments, Share */}
-<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1 }}>
-  <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-    <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ color: "#FF3040" }}>
-      <FavoriteIcon />
-    </IconButton>
-    <Typography variant="body2">{selectedPost.likes?.length || 0} Likes</Typography>
-
-    <IconButton disabled>
-      <ChatBubbleOutlineIcon />
-    </IconButton>
-    <Typography variant="body2">
-      {comments[selectedPost.postId]?.length || 0} Comments
-    </Typography>
-  </Box>
-
-  <IconButton
-    onClick={() => {
-      setOpenShareModal(true);
-    }}
-    sx={{ color: "#333" }}
-  >
-    <ShareIcon />
-  </IconButton>
-</Box>
-
-
-              {/* Add Comment Box */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  size="small"
-                  placeholder="Add a comment..."
-                  value={newComment[selectedPost.postId] || ""}
-                  onChange={(e) =>
-                    setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
-                  }
-                  sx={{
-                    borderRadius: "20px",
-                    backgroundColor: "#f8f8f8",
-                    "& .MuiOutlinedInput-root": { borderRadius: "20px" },
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddComment(selectedPost.postId)}
-                  sx={{ borderRadius: "20px" }}
-                >
-                  Post
-                </Button>
-              </Box>
-            </Box>
           </Box>
         </Modal>
-      )}
 
-      {/* Followers Modal */}
-<Modal
-  open={openFollowersModal}
-  onClose={() => setOpenFollowersModal(false)}
-  BackdropProps={{
-    sx: {
-      backdropFilter: "blur(5px)"
-    }
-  }}
->
-  <Box
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 400,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      p: 4,
-    }}
-  >
-    <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
-      Followers
-    </Typography>
-    <List>
-      {followersList.length > 0 ? (
-        followersList.map((follower) => (
-          <ListItem
-            key={follower._id}
-            button
-            onClick={() => {
-              setOpenFollowersModal(false);
-              handleProfile(follower._id);
-            }}
-          >
-            <Avatar src={follower.profileImage} sx={{ mr: 2 }} />
-            <ListItemText primary={follower.name} />
-          </ListItem>
-        ))
-      ) : (
-        <Typography variant="body2" sx={{ textAlign: "center" }}>
-          No followers yet.
-        </Typography>
-      )}
-    </List>
-  </Box>
-</Modal>
-
-{/* Following Modal */}
-<Modal
-  open={openFollowingModal}
-  onClose={() => setOpenFollowingModal(false)}
-  BackdropProps={{
-    sx: {
-      backdropFilter: "blur(5px)"
-    }
-  }}
->
-  <Box
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 400,
-      bgcolor: "background.paper",
-      borderRadius: 2,
-      p: 4,
-    }}
-  >
-    <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
-      Following
-    </Typography>
-    <List>
-      {followingList.length > 0 ? (
-        followingList.map((followingUser) => (
-          <ListItem
-            key={followingUser._id}
-            button
-            onClick={() => {
-              setOpenFollowingModal(false);
-              handleProfile(followingUser._id);
-            }}
-          >
-            <Avatar src={followingUser.profileImage} sx={{ mr: 2 }} />
-            <ListItemText primary={followingUser.name} />
-          </ListItem>
-        ))
-      ) : (
-        <Typography variant="body2" sx={{ textAlign: "center" }}>
-          Not following anyone.
-        </Typography>
-      )}
-    </List>
-  </Box>
-</Modal>
-
-
-
-      {/* Delete Confirmation Modal */}
-      <Modal open={deleteConfirmation} onClose={() => setDeleteConfirmation(false)} >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            bgcolor: "white",
-            p: 3,
-            borderRadius: 2,
-            textAlign: "center"
-          }}
-        >
-          <Typography variant="h6">Are you sure you want to delete this post?</Typography>
-          <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
-            <Button variant="contained" color="error" onClick={deletetype === "temp" ? handleDeletePosttemp : handleDeletePost}>
-              {deletetype === "temp" && selectedPost?.tempdelete ? "Recover" : "Yes, Delete"}
-            </Button>
-            <Button variant="outlined" onClick={() => setDeleteConfirmation(false)}>
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-
-      {/* Modal for Camera Capture */}
-      <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            marginTop: '50px',
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 430,
-            bgcolor: "white",
-            boxShadow: 24,
-            borderRadius: 2,
-          }}
-        >
-          <CameraCapture onImageUpload={handleImageUpload} />
-        </Box>
-      </Modal>
-
-      {/* Modal for Story View */}
-      <Modal open={openStory} onClose={() => setOpenStory(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 430,
-            height: 800,
-            bgcolor: "black",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: 2,
-            overflow: "hidden",
-            mt: 6,
-            position: "relative",
-          }}
-        >
-          {userStories.length > 0 && (
-            <img
-              src={userStories[currentIndexStory].mediaUrl}
-              alt={`Story ${currentIndexStory + 1}`}
-              style={{
-                width: 430,
-                height: 800,
-                objectFit: "cover",
-                borderRadius: 10,
-              }}
-            />
-          )}
-          <IconButton
-            onClick={() => setOpenStory(false)}
+        {/*blocked conatcts modal */}
+        <Modal open={openBlockedContacts} onClose={() => setOpenBlockedContacts(false)}>
+          <Box
             sx={{
               position: "absolute",
-              top: 10,
-              right: 10,
-              backgroundColor: "rgba(255, 255, 255, 0.5)",
-              color: "white",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: "white",
+              p: 3,
+              borderRadius: 2,
+              textAlign: "center",
+              width: "400px",
+              maxHeight: "500px",
+              overflowY: "auto",
             }}
           >
-            <CloseIcon />
-          </IconButton>
-          {currentIndexStory > 0 && (
-            <IconButton
-              onClick={handlePrevStory}
-              sx={{
-                position: "absolute",
-                left: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                backgroundColor: "rgba(255, 255, 255, 0.3)",
-                color: "white",
-              }}
-            >
-              <ArrowBackIosNewIcon />
-            </IconButton>
-          )}
-          {currentIndexStory < userStories.length - 1 && (
-            <IconButton
-              onClick={handleNextStory}
-              sx={{
-                position: "absolute",
-                right: 10,
-                top: "50%",
-                transform: "translateY(-50%)",
-                backgroundColor: "rgba(255, 255, 255, 0.3)",
-                color: "white",
-              }}
-            >
-              <ArrowForwardIosIcon />
-            </IconButton>
-          )}
-        </Box>
-      </Modal>
+            <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
+            <List>
+              {blockedUsers?.length > 0 ? (
+                blockedUsers.map((blockedUser, index) => (
+                  <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Avatar src={blockedUser.profileImage} />
+                      <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      onClick={() => handleUnblock(blockedUser.id)}
+                    >
+                      Unblock
+                    </Button>
+                  </ListItem>
+                ))
+              ) : (
+                <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
+              )}
+            </List>
+          </Box>
+        </Modal>
 
-      {/*blocked conatcts modal */}
-      <Modal open={openBlockedContacts} onClose={() => setOpenBlockedContacts(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            bgcolor: "white",
-            p: 3,
-            borderRadius: 2,
-            textAlign: "center",
-            width: "400px",
-            maxHeight: "500px",
-            overflowY: "auto",
+        {/* sharemodal*/}
+        <ShareModal
+          open={openShareModal}
+          onClose={() => setOpenShareModal(false)}
+          contentToShare={{
+            senderId: user?._id,
+            id: userDetails.id,
+            name: userDetails.name,
+            username: userDetails.username,
+            profileImage: userDetails.profileImage,
           }}
-        >
-          <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
-          <List>
-            {blockedUsers?.length > 0 ? (
-              blockedUsers.map((blockedUser, index) => (
-                <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Avatar src={blockedUser.profileImage} />
-                    <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    onClick={() => handleUnblock(blockedUser.id)}
-                  >
-                    Unblock
-                  </Button>
-                </ListItem>
-              ))
-            ) : (
-              <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
-            )}
-          </List>
-        </Box>
-      </Modal>
-
-      {/* sharemodal*/}
-      <ShareModal
-        open={openShareModal}
-        onClose={() => setOpenShareModal(false)}
-        contentToShare={{
-          senderId: user?._id,
-          id: userDetails.id,
-          name: userDetails.name,
-          username: userDetails.username,
-          profileImage: userDetails.profileImage,
-        }}
-        type="profile"
-      />
+          type="profile"
+        />
       </Box>
     </>
   );

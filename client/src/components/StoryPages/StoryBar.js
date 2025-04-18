@@ -10,6 +10,7 @@ import CameraCapture from "../CameraComponent";
 
 const StoryBar = ({
     users,
+
 }) => {
     const { user } = useAuth();
     const storyScrollRef = useRef(null);

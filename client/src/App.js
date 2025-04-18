@@ -4,7 +4,7 @@ import { Box } from "@mui/material";
 import Register from "./components/Register";
 import Login from "./components/Login";
 import Home from "./components/Home";
-import AddPost from "./components/AddPost";
+import AddPost from "./components/Post/AddPost";
 import { AuthProvider } from "./auth/AuthContext";
 import ProfilePage from "./components/ProfilePage";
 import UserHome from "./components/userhome";
@@ -133,15 +133,15 @@ function App() {
 
   return (
     <div className="App">
-      <AuthProvider>
-        <Router> {/* ✅ Only One Router */}
-          {/* ✅ Notification Toast Container */}
-          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} pauseOnHover draggable />
 
-          {/* ✅ Main App Content */}
-          <AppContent userId={userId} />
-        </Router>
-      </AuthProvider>
+      <Router> {/* ✅ Only One Router */}
+        {/* ✅ Notification Toast Container */}
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} pauseOnHover draggable />
+
+        {/* ✅ Main App Content */}
+        <AppContent userId={userId} />
+      </Router>
+
     </div>
   );
 }
