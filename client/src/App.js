@@ -54,77 +54,77 @@ function AppContent({ userId }) {
 
   return (
     <>
-           <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      {/* Navbar Section */}
-      {showNavbar && (
-        <Navbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-      )}
+      <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+        {/* Navbar Section */}
+        {showNavbar && (
+          <Navbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        )}
 
-    {/* Main Content */}
-    <Box
-      sx={{
-        flexGrow: 1,
-        width: "100%",
-        overflowY: "auto",
-        ml: showNavbar ? { xs: "80px", sm: "139px" } : 0,
-        height: "100vh",
-        transition: "margin-left 0.3s ease",
-      }}
-    >
-      {/* Toast Notifications */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        pauseOnHover
-        draggable
-      />
+        {/* Main Content */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            width: "100%",
+            overflowY: "auto",
+            ml: showNavbar ? { xs: "80px", sm: "139px" } : 0,
+            height: "100vh",
+            transition: "margin-left 0.3s ease",
+          }}
+        >
+          {/* Toast Notifications */}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            pauseOnHover
+            draggable
+          />
 
-      {/* Real-time Notification Component */}
-      {userId && <Notifications userId={userId} />}
+          {/* Real-time Notification Component */}
+          {userId && <Notifications userId={userId} />}
 
-      {/* Routes */}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/Search" element={<SearchPanel />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/add-post" element={<AddPost />} />
-        <Route path="/profile/:id" element={<ProfilePage />} />
-        <Route path="/userhome/" element={<UserHome />} />
-        <Route path="/chatbox" element={<Chatbox />} />
-        <Route path="/marketplace/:userId" element={<Marketplace />} />
-        <Route path="/marketplace" element={<Marketplace />} />
-        <Route path="/navbar" element={<Navbar />} />
-        <Route path="/community" element={<CommunityHome />} />
-        <Route path="/community/:id" element={<CommunityDetail />} />
-        <Route
-          path="/marketplaceupload"
-          element={
-            <LoadScript googleMapsApiKey={process.env.GOOGLE_MAPS_API} libraries={["places"]}>
-              <MarketplaceUpload />
-            </LoadScript>
-          }
-        />
-        <Route path="/messenger" element={ <Box
-      sx={{
-        position: "fixed",
-        top: 0,
-        left: isCollapsed ? "120px" : "139px", // Match collapsed navbar
-        height: "100vh",
-        display: "flex",
-        zIndex: 1100,
-        transition: "left 0.4s ease",
-      }}
-    >
-      <Messenger isCollapsed={isCollapsed} />
-    </Box>} />
-      </Routes>
-    </Box>
-  </Box>
-  </>
-);
+          {/* Routes */}
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/Search" element={<SearchPanel />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/add-post" element={<AddPost />} />
+            <Route path="/profile/:id" element={<ProfilePage />} />
+            <Route path="/userhome/" element={<UserHome />} />
+            <Route path="/chatbox" element={<Chatbox />} />
+            <Route path="/marketplace/:userId" element={<Marketplace />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/navbar" element={<Navbar />} />
+            <Route path="/community" element={<CommunityHome />} />
+            <Route path="/community/:id" element={<CommunityDetail />} />
+            <Route
+              path="/marketplaceupload"
+              element={
+                <LoadScript googleMapsApiKey={process.env.GOOGLE_MAPS_API} libraries={["places"]}>
+                  <MarketplaceUpload />
+                </LoadScript>
+              }
+            />
+            <Route path="/messenger" element={<Box
+              sx={{
+                position: "fixed",
+                top: 0,
+                left: isCollapsed ? "120px" : "139px", // Match collapsed navbar
+                height: "100vh",
+                display: "flex",
+                zIndex: 1100,
+                transition: "left 0.4s ease",
+              }}
+            >
+              <Messenger isCollapsed={isCollapsed} />
+            </Box>} />
+          </Routes>
+        </Box>
+      </Box>
+    </>
+  );
 }
 
 function App() {

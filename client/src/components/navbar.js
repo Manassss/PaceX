@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Avatar,
@@ -10,6 +10,7 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
+  IconButton,
   Modal
 } from "@mui/material";
 import {
@@ -25,7 +26,7 @@ import {
   MoreHoriz as MoreIcon
 } from "@mui/icons-material";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import Logo from "../assets/PACE.png";
 import axios from "axios";
@@ -42,7 +43,40 @@ const Navbar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
+  const location = useLocation();
 
+  useEffect(() => {
+    // Expand only on userhome, collapse on any other route
+    if (location.pathname === "/userhome") {
+      setIsCollapsed(false);
+    } else {
+      setIsCollapsed(true);
+    }
+  }, [location.pathname, setIsCollapsed]);
+
+  const handleNavItem = (item) => {
+    if (item.label === "Search") {
+      // Open search panel and collapse sidebar immediately
+      setShowSearchPanel(true);
+      setIsCollapsed(true);
+    } else {
+      // Close search panel
+      setShowSearchPanel(false);
+      // Expand on Home, collapse on any other screen
+      if (item.path === "/userhome") {
+        setIsCollapsed(false);
+      } else {
+        setIsCollapsed(true);
+      }
+      if (item.label === "Create") {
+        setOpenCreateModal(true);
+      }
+      else {
+        navigate(item.path);
+      }
+
+    }
+  };
 
 
   const getGreeting = () => {
@@ -59,8 +93,7 @@ const Navbar = () => {
       icon: <SearchIcon />,
       label: "Search",
       onClick: () => {
-        setIsCollapsed(true);
-        setShowSearchPanel(true); // show the panel
+        setOpenCreateModal(true);
       },
     },
     { icon: <NotificationsIcon />, label: "Notifications", path: "/notifications" },
@@ -81,7 +114,7 @@ const Navbar = () => {
     <Box
       sx={{
         width: isCollapsed ? "120px" : "380px",
-        transition: "width 0.3s ease",
+        transition: "width 0.2s ease",
         height: "100vh",
         bgcolor: "#073574",
         color: "white",
@@ -100,7 +133,7 @@ const Navbar = () => {
     >
       {/* Top Section */}
       <Box>
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
           <Box
             component="img"
             src={Logo}
@@ -119,34 +152,38 @@ const Navbar = () => {
 
         </Box>
 
-        {!isCollapsed && (
-          <Typography
-            variant="body1"
-            sx={{
-              textAlign: "center",
-              fontWeight: 900,
-              fontSize: "1.7rem",
-              textTransform: "capitalize",
-              letterSpacing: "0.5px",
-              mb: 3,
-              background: "linear-gradient(to right,rgb(236, 50, 152), #fad0c4)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)"
-            }}
-          >
-            {getGreeting()},<br /> {user?.name?.split(" ")[0]}
-          </Typography>
-        )}
+        {/* <Box>
+          {!isCollapsed && (
+            <Typography
+              variant="body1"
+              sx={{
+                textAlign: 'center',
+                fontWeight: 900,
+                fontSize: "1rem",
+                textTransform: "capitalize",
+                letterSpacing: "0.5px",
+                mb: 3,
+                background: "linear-gradient(to right,rgb(236, 50, 152), #fad0c4)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
+
+              }}
+            >
+              {getGreeting()}, {user?.name?.split(" ")[0]}
+            </Typography>
+          )}
+        </Box> */}
+
 
         {/* Profile Section */}
         <Box
           sx={{
             display: "flex",
-            flexDirection: "column",
+            flexDirection: "row",
             alignItems: "center",
-            mt: 3,
-            gap: 1,
+            justifyContent: 'center',
+            gap: 2,
             cursor: "pointer",
             transition: "all 0.3s ease"
           }}
@@ -165,10 +202,26 @@ const Navbar = () => {
             }}
           />
           {!isCollapsed && (
-            <Typography variant="subtitle1" sx={{ fontWeight: "bold", fontSize: "1.5rem" }}>
-              {user?.name}
-            </Typography>
+            <Box sx={{ display: 'flex' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: "bold", fontSize: "1.5rem", textTransform: "capitalize" }}>
+                {user?.name}
+              </Typography>
+
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMoreMenuAnchor(e.currentTarget);
+                }}
+
+                sx={{ ml: isCollapsed ? 0 : 1, color: "white" }}
+              >
+                <MoreIcon />
+              </IconButton>
+            </Box>
+
           )}
+
         </Box>
 
 
@@ -181,25 +234,7 @@ const Navbar = () => {
             <Tooltip title={isCollapsed ? item.label : ""} placement="right" key={i}>
               <ListItem
                 button
-                onClick={() => {
-                  if (item.label === "Search") {
-                    setIsCollapsed(true);
-                    setShowSearchPanel(true);
-                  } else {
-                    setShowSearchPanel(false);
-                    if (item.label === "Home") {
-                      setIsCollapsed(false);
-                      navigate(item.path);
-                    } else if (item.onClick) {
-                      setIsCollapsed(true);
-                      item.onClick();
-                    } else {
-                      setIsCollapsed(true);
-                      navigate(item.path);
-                    }
-                  }
-
-                }}
+                onClick={() => handleNavItem(item)}
                 sx={{
                   cursor: "pointer",
                   bgcolor: "#f8f2ec",
@@ -237,44 +272,12 @@ const Navbar = () => {
         </Menu>
       </Box>
 
-      {/* Bottom Section */}
-      <Box>
-        {/* More Dropdown */}
-        <Tooltip title={isCollapsed ? "More" : ""} placement="right">
-          <ListItem
-            button
-            onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
-            sx={{
-              cursor: "pointer",
-              bgcolor: "#f8f2ec",
-              borderRadius: 2,
-              my: 1,
-              width: "80%",
-              mx: "auto",
-              justifyContent: isCollapsed ? "center" : "flex-start",
-              "&:hover": { bgcolor: "#e3dad3" },
-              mb: 4
-            }}
-          >
-            <ListItemIcon sx={{ color: "#073574" }}>
-              <MoreIcon />
-            </ListItemIcon>
-            {!isCollapsed && (
-              <ListItemText
-                primary="More"
-                primaryTypographyProps={{ fontSize: "0.9rem", color: "#073574" }}
-                sx={{ textAlign: "center" }}
-              />
-            )}
-          </ListItem>
-        </Tooltip>
-
-        <Menu anchorEl={moreMenuAnchor} open={Boolean(moreMenuAnchor)} onClose={() => setMoreMenuAnchor(null)}>
-          <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
-          <MenuItem onClick={() => navigate("/saved")}>Saved Posts</MenuItem>
-          <MenuItem onClick={() => navigate("/home")}>Logout</MenuItem>
-        </Menu>
-      </Box>
+      {/* More Menu */}
+      <Menu anchorEl={moreMenuAnchor} open={Boolean(moreMenuAnchor)} onClose={() => setMoreMenuAnchor(null)}>
+        <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
+        <MenuItem onClick={() => navigate("/saved")}>Saved Posts</MenuItem>
+        <MenuItem onClick={() => navigate("/home")}>Logout</MenuItem>
+      </Menu>
 
       {showSearchPanel && (
         <Box

@@ -55,7 +55,7 @@ const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowTo
             sx={{
                 width: 350,
                 position: "fixed",
-                top: 20,
+                top: 40,
                 right: "5%",
                 height: "90vh",
                 display: { xs: "none", md: "block" },
