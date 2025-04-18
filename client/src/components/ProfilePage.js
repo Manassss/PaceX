@@ -15,7 +15,12 @@ import {
   ListItem,
   ListItemText,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -43,7 +48,12 @@ import CameraCapture from './CameraComponent';
 import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
 import ShareModal from './ShareModal';
-import { CiMenuBurger } from "react-icons/ci";
+import { CiMenuKebab } from "react-icons/ci";
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+
+
+
 
 
 
@@ -348,26 +358,92 @@ const ProfilePage = () => {
     setSelectedFile(event.target.files[0]);
   };
 
-  const handleImageUpload = async () => {
-    if (!selectedFile) return alert("Please select an image first!");
+  // returns the downloadURL when it's done
+const handleImageUpload = () => {
+  if (!selectedFile) return Promise.reject("No file");
+
+  return new Promise((resolve, reject) => {
     const storageRef = ref(storage, `profilePictures/${userId}/${selectedFile.name}`);
     const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+
     uploadTask.on(
       "state_changed",
       null,
-      (error) => alert("Upload failed! Check Firebase permissions."),
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        setFormData({ ...formData, profileImage: downloadURL });
+      reject,
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref)
+          .then((downloadURL) => {
+            // update formData for preview
+            setFormData((prev) => ({ ...prev, profileImage: downloadURL }));
+            resolve(downloadURL);
+          })
+          .catch(reject);
       }
     );
-  };
+  });
+};
+
 
   // Callback for camera capture upload
-  const handleCameraImageUpload = (downloadURL) => {
-    setFormData({ ...formData, profileImage: downloadURL });
-    setOpenCamera(false);
-  };
+// helper: converts a proper dataURL to a Blob
+function dataURLtoBlob(dataURL) {
+  const parts = dataURL.split(',');
+  if (parts.length !== 2) {
+    throw new Error('Invalid dataURL format');
+  }
+  const header = parts[0];
+  const base64 = parts[1];
+  const mimeMatch = header.match(/data:(.+);base64/);
+  if (!mimeMatch) {
+    throw new Error('Invalid dataURL header');
+  }
+  const mime = mimeMatch[1];
+  const binary = atob(base64);
+  const len = binary.length;
+  const u8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    u8[i] = binary.charCodeAt(i);
+  }
+  return new Blob([u8], { type: mime });
+}
+
+const handleCameraImageUpload = async (media) => {
+  let fileForUpload;
+  let previewUrl;
+
+  if (typeof media === 'string') {
+    if (media.startsWith('data:')) {
+      // true data URL
+      previewUrl = media;
+      fileForUpload = dataURLtoBlob(media);
+
+    } else if (media.startsWith('blob:')) {
+      // blob URL: fetch the blob behind it
+      previewUrl = media;
+      fileForUpload = await fetch(media).then(res => res.blob());
+
+    } else {
+      // some other URL (e.g. remote image)—we’ll preview but not upload
+      previewUrl = media;
+      console.warn('Camera returned a non-blob URL; skipping upload.');
+      setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+      setOpenCamera(false);
+      return;
+    }
+
+  } else {
+    // already a Blob/File
+    previewUrl = URL.createObjectURL(media);
+    fileForUpload = media;
+  }
+
+  // store for both preview and upload
+  setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+  setSelectedFile(fileForUpload);
+  setOpenCamera(false);
+};
+
+
 
   // Story modal navigation
   const handleNextStory = () => {
@@ -576,154 +652,128 @@ const ProfilePage = () => {
 
 
   return (
-    <>
-    {/* ============================
-  Main Layout Container
-============================ */}
-  <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f2ec' }}>
-
-          <Container maxWidth="md">
-          <Box mt={0} >
-          {/* Profile Section */}
-          <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3}}>
-          <Box sx={{ position: "relative", width: "100%", mb: 2 }}>
-  <Box sx={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    px: 2 // padding for spacing
-  }}>
-    <Typography variant="h5" fontWeight={600}>
-      {userDetails.username}
+<>
+  <Container maxWidth="lg">
+    <Grid container spacing={4}>
+    {/* =========================== Main Layout Container Left Side ============================ */}
+     <Grid item xs={12} md={3}>         
+          {/* UserName */}
+          <Box
+            sx={{
+                mt: 5,
+                mx: 2,
+                p: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderRadius: 2,
+                boxShadow: 1,
+              }}
+           >
+    {/*  username */}
+    <Typography variant="h6" fontWeight={600}>
+      @{userDetails.username}
     </Typography>
 
-    <IconButton
-  onClick={handleMenuOpen}
-  sx={{
-    color: "black",
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    width: 35,
-    height: 35,
-    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.1)" },
-  }}
->
-  <CiMenuBurger />
-</IconButton>
-
-<Menu
-  anchorEl={anchorEl}
-  open={Boolean(anchorEl)}
-  onClose={handleMenuClose}
-  anchorOrigin={{
-    vertical: 'bottom',
-    horizontal: 'right',
-  }}
-  transformOrigin={{
-    vertical: 'top',
-    horizontal: 'right',
-  }}
-  sx={{ mt: 1 }}
->
-  {userDetails.id === user?._id ? (
-    <>
-      <MenuItem
-        onClick={() => {
-          setOpenBlockedContacts(true);
-          handleMenuClose();
-        }}
-      >
-        Blocked Contacts
-      </MenuItem>
-      <MenuItem
-        onClick={() => {
-          setEditMode((prev) => !prev);
-          handleMenuClose();
-        }}
-      >
-        {editMode ? "Cancel Edit Profile" : "Edit Profile"}
-      </MenuItem>
-    </>
-  ) : (
-    <MenuItem
-      onClick={() => {
-        handleBlock();
-        handleMenuClose();
-      }}
-    >
-      Block
-    </MenuItem>
-  )}
-
-  <MenuItem
-    onClick={() => {
-      setOpenShareModal(true);
-      handleMenuClose();
-    }}
-  >
-    <ShareIcon sx={{ mr: 1 }} />
-    Share Profile
-  </MenuItem>
-</Menu>
-
-  </Box>
-
-  <Box
+  {/* Right side: menu button */}
+  <IconButton
+    onClick={handleMenuOpen}
     sx={{
-      width: "250px",
-      height: "250px",
-      margin: "auto",
-      mt: 2,
-      position: "relative"
+      color: "text.primary",
+      bgcolor: "action.hover",
+      width: 36,
+      height: 36,
+      "&:hover": { bgcolor: "action.selected" },
     }}
   >
-    <Avatar
-      src={userDetails.profileImage}
-      sx={{
-        width: "100%",
-        height: "100%",
-        border: "3px solid rgba(255, 255, 255, 0.5)",
-      }}
-    />
-  </Box>
-</Box>
+    <CiMenuKebab />
+  </IconButton>
 
-
-            {/* User Details Below Image */}
-            <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
-              {userDetails.name || "Your Name"}
-            </Typography>
-
-            <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
-              {userDetails.bio || "No bio available"}
-            </Typography>
+  {/* Menu */}
+  <Menu
+    anchorEl={anchorEl}
+    open={Boolean(anchorEl)}
+    onClose={handleMenuClose}
+    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+    transformOrigin={{ vertical: "top", horizontal: "right" }}
+    sx={{ mt: 1 }}
+  >
+    {userDetails.id === user?._id ? (
+      <>
+        <MenuItem onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
+          Blocked Contacts
+        </MenuItem>
+        <MenuItem onClick={() => { setEditMode(prev => !prev); handleMenuClose(); }}>
+          {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+        </MenuItem>
+      </>
+    ) : (
+      <MenuItem onClick={() => { handleBlock(); handleMenuClose(); }}>
+        Block
+      </MenuItem>
+    )}
+    <MenuItem onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
+      <ShareIcon sx={{ mr: 1 }} />
+      Share Profile
+    </MenuItem>
+  </Menu>
           </Box>
 
 
-          {/* User Stats */}
-          {/* User Stats */}
-        <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
-  {[
-    { label: "Posts", value: userDetails.postsCount || 0 },
-    { label: "Followers", value: userDetails.followersCount || 0 },
-    { label: "Following", value: userDetails.followingCount || 0 },
-  ].map((item, index) => (
-    <Box key={index} textAlign="center">
-      <Typography variant="h6" sx={{ fontWeight: "bold", cursor: item.label !== "Posts" ? "pointer" : "default" }}
-        onClick={() => {
-          if (item.label === "Followers") openFollowers();
-          else if (item.label === "Following") openFollowing();
-        }}
-      >
-        {item.value}
-      </Typography>
-      <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
-        {item.label}
-      </Typography>
-    </Box>
-  ))}
-</Box>
+                {/* Profile Image */}
+                  <Box
+                      sx={{
+                      width: "250px",
+                      height: "250px",
+                      margin: "auto",
+                      mt: 2,
+                      position: "relative"
+                          }}
+                    >
+                  <Avatar
+                      src={userDetails.profileImage}
+                      sx={{
+                      width: "100%",
+                      height: "100%",
+                      border: "3px solid rgba(255, 255, 255, 0.5)",
+                      }}
+                      />
+                  </Box>
 
+
+            {/* User's Name */}
+            <Typography variant="h5" sx={{ fontWeight: "bold", mt: 5, textAlign: "center", fontSize:"1.8rem" }}>
+              {userDetails.name || "Your Name"}
+            </Typography>
+             {/* User's Bio */}               
+            <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
+              {userDetails.bio || "No bio available"}
+            </Typography>
+
+
+            {/* User Stats */}
+            <Box sx={{ display: "flex", gap: 3, mt: 5, justifyContent: "center" }}>
+              {[
+                { label: "Posts", value: userDetails.postsCount || 0 },
+                { label: "Followers", value: userDetails.followersCount || 0 },
+                { label: "Following", value: userDetails.followingCount || 0 },
+                ].map((item, index) => (
+              <Box key={index} textAlign="center">
+                <Typography variant="h6" sx={{ fontWeight: "bold", cursor: item.label !== "Posts" ? "pointer" : "default" }}
+                  onClick={() => {
+                  if (item.label === "Followers") openFollowers();
+                  else if (item.label === "Following") openFollowing();
+                  }}
+                >
+                {item.value}
+                </Typography>
+
+            <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
+              {item.label}
+            </Typography>
+            </Box>
+              ))}
+      </Box>
 
 
           {/* follow and edit Buttons */}
@@ -761,79 +811,243 @@ const ProfilePage = () => {
               )}
             </Button> : <></>}
           </Box>
-        </Box>
 
-        {/* Right Side - Main Content */}
         <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
-          {/* Navbar at the Top */}
 
           {/* Profile Edit Section */}
           {editMode && (
-            <Paper
-              sx={{
-                p: 3,
-                mt: 15,
-                backgroundColor: "#fff",
-                borderRadius: 2,
-                boxShadow: 3,
-                height: 'auto',
+            <Dialog
+            open={editMode}
+            onClose={() => setEditMode(false)}
+            fullWidth
+            maxWidth="sm"
+            TransitionProps={{ appear: true }}
+            PaperProps={{
+              sx: {
+                borderRadius: 4,          // curved corners
+                bgcolor: '#f8f2ec',       // background color
+                boxShadow: 3,             // subtle elevation
+                p: 2                      // padding around content
+              }
+            }}
+          >
+              <DialogTitle
+    sx={{
+      textAlign: 'center',
+      fontWeight: 'bold',
+      color: '#333'
+    }}
+  >Edit Profile</DialogTitle>
+          
+            <DialogContent>
+              <Stack spacing={3} mt={1}>
+          
+               {/* Avatar preview + upload button */}
+               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                 {/* <Avatar
+                   src={formData.profileImage}
+                   sx={{ width: 80, height: 80 }}
+                 /> */}
+                  {/* Upload/Preview Box */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 3,
+          border: '2px dashed #1976d2',
+          borderRadius: 3,
+          backgroundColor: '#f5f9ff',
+          textAlign: 'center',
+          color: '#444',
+          transition: '0.3s',
+          '&:hover': {
+            backgroundColor: '#e3f2fd',
+          },
+        }}
+      >
+        {/* Show prompt when no image selected */}
+        {!formData.profileImage && (
+          <Box component="label" sx={{ cursor: 'pointer' }}>
+            <CloudUploadIcon fontSize="large" sx={{ color: '#1976d2', mb: 1 }} />
+            <Typography variant="subtitle1" fontWeight={600}>
+              Drag & drop or click to upload
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Supported: JPG, PNG | Max size: 2MB
+            </Typography>
+
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={e => {
+                const file = e.target.files[0];
+                if (file) {
+                  setSelectedFile(file);
+                  const url = URL.createObjectURL(file);
+                  setFormData(prev => ({ ...prev, profileImage: url }));
+                }
               }}
-            >
-              <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
-                Edit Profile
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box sx={{ display: "flex", gap: 2 }}>
+            />
+          </Box>
+        )}
+
+        {/* Preview after selection */}
+        {formData.profileImage && (
+          <Box sx={{ textAlign: 'center' }}>
+            <Avatar
+              src={formData.profileImage}
+              sx={{ width: 80, height: 80, mx: 'auto', boxShadow: 2 }}
+            />
+            <Stack direction="row" justifyContent="center" spacing={1} mt={2}>
+              {/* Change via file picker */}
+              <Button variant="outlined" component="label" sx={{ textTransform: 'none' }}>
+                Change
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setSelectedFile(file);
+                      const url = URL.createObjectURL(file);
+                      setFormData(prev => ({ ...prev, profileImage: url }));
+                    }
+                  }}
+                />
+              </Button>
+
+              {/* Discard upload */}
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{ textTransform: 'none' }}
+                onClick={() => {
+                  setSelectedFile(null);
+                  setFormData(prev => ({ ...prev, profileImage: '' }));
+                }}
+              >
+                Discard
+              </Button>
+
+             
+            </Stack>
+            
+          </Box>
+          
+        )}
+         {/* Open camera */}
+         <Button
+                variant="outlined"
+                sx={{ textTransform: 'none' }}
+                onClick={() => setOpenCamera(true)}
+                startIcon={<PhotoCamera />}
+              >
+                Camera
+              </Button>
+      </Box>
+
+               </Box>
+          
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <TextField
                     name="username"
-                    value={formData.username || ""}
-                    onChange={handleChange}
                     label="Username"
-                    variant="outlined"
+                    value={formData.username}
+                    onChange={handleChange}
                     fullWidth
                   />
                   <TextField
                     name="name"
-                    value={formData.name || ""}
-                    onChange={handleChange}
                     label="Full Name"
-                    variant="outlined"
+                    value={formData.name}
+                    onChange={handleChange}
                     fullWidth
                   />
-                </Box>
+                </Stack>
+          
                 <TextField
                   name="bio"
-                  value={formData.bio || ""}
-                  onChange={handleChange}
                   label="Bio"
-                  variant="outlined"
+                  value={formData.bio}
+                  onChange={handleChange}
+                  multiline
+                  rows={3}
                   fullWidth
                 />
+          
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={formData.private || false}
-                      onChange={(e) => setFormData({ ...formData, private: e.target.checked })}
-                      color="primary"
+                      checked={formData.private}
+                      onChange={e =>
+                        setFormData({ ...formData, private: e.target.checked })
+                      }
                     />
                   }
-                  label={formData.private ? "Private Account" : "Public Account"}
-                  sx={{ alignSelf: "center", mt: 2 }}
+                  label={formData.private ? 'Private Account' : 'Public Account'}
                 />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ mt: 2, borderRadius: 2, width: 200, right: -700 }}
-                  onClick={handleSave}
-                >
-                  Save Changes
-                </Button>
-              </Box>
-            </Paper>
+              </Stack>
+            </DialogContent>
+          
+            <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'center' }}>
+  <Button onClick={() => setEditMode(false)}>Cancel</Button>
+  <Button
+  variant="contained"
+  disabled={loading}
+  onClick={async () => {
+    setLoading(true);
+    try {
+      // 1) upload if needed, and capture the new URL
+      const newImageUrl = selectedFile
+        ? await handleImageUpload()
+        : formData.profileImage;
+
+      // 2) build the payload using that URL (not relying on setFormData finishing)
+      const payload = {
+        ...formData,
+        profileImage: newImageUrl,
+      };
+
+      // 3) send your profile‐update request
+      const res = await axios.put(
+        `http://localhost:5001/api/users/profile/${userId}`,
+        payload
+      );
+
+      // 4) update local state & exit edit mode
+      setUserDetails(res.data.user);
+      setEditMode(false);
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save profile.");
+    } finally {
+      setLoading(false);
+    }
+  }}
+>
+  {loading ? "Saving…" : "Save Changes"}
+</Button>
+
+</DialogActions>
+
+          </Dialog>
+          
           )}
 
-          {/* Posts Section */}
-          <Box sx={{ mt: 1}}>
+
+          </Box>
+
+
+      </Grid>
+
+
+
+      {/* RIGHT COLUMN */}
+      <Grid item xs={12} md={8}>
+                    {/* Posts Section */}
+                    <Box sx={{ mt: 1}}>
           <Box mt={4} display="flex" justifyContent="center" gap={6}>
   <Typography
     variant="body1"
@@ -965,11 +1179,12 @@ const ProfilePage = () => {
               </Box>
             )}
           </Box>
-          </Box>
-      </Container>
+      </Grid>
 
-      {/* Post Modal */}
-      {selectedPost && (
+      </Grid>
+
+            {/* Post Modal */}
+            {selectedPost && (
         <Modal
           open={openPostModal}
           onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0); setCurrentImageIndex(0) }}
@@ -1345,23 +1560,6 @@ const ProfilePage = () => {
         </Box>
       </Modal>
 
-      {/* Modal for Camera Capture */}
-      <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            marginTop: '50px',
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 430,
-            bgcolor: "white",
-            boxShadow: 24,
-            borderRadius: 2,
-          }}
-        >
-          <CameraCapture onImageUpload={handleImageUpload} />
-        </Box>
-      </Modal>
 
       {/* Modal for Story View */}
       <Modal open={openStory} onClose={() => setOpenStory(false)}>
@@ -1495,7 +1693,27 @@ const ProfilePage = () => {
         }}
         type="profile"
       />
-      </Box>
+
+      {/* Modal for Camera Capture */}
+<Modal open={openCamera} onClose={() => setOpenCamera(false)}>
+  <Box
+    sx={{
+      position: "absolute",
+      marginTop: '50px',
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: 430,
+      bgcolor: "white",
+      boxShadow: 24,
+      borderRadius: 2,
+    }}
+  >
+    {/* tell CameraCapture to hand you back a blob */}
+    <CameraCapture onMediaUpload={handleCameraImageUpload} />
+  </Box>
+</Modal>
+
+      </Container>
     </>
   );
 };
