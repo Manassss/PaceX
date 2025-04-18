@@ -16,6 +16,7 @@ const socket = io("http://localhost:5001", {
 
 const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   const [search, setSearch] = useState('');
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetails, setUserDetails] = useState({});
   const { user } = useAuth();
@@ -28,38 +29,57 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Fetch chat users with defensive API parsing
+  const fetchChatUsers = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/chat/getusers/${userId}`);
+      const data = Array.isArray(res.data) ? res.data : res.data.users; // Check response structure
+      setUsers(data.map(user => ({
+        id: user._id,
+        name: user.name,
+        profileImage: user.profileImage,
+      })));
+    } catch (err) {
+      console.error("❌ Error fetching chat users:", err.message);
+    }
+  };
+  // Fetch user profile
+  const fetchUserProfile = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+      setUserDetails(res.data);
+    } catch (err) {
+      console.error("Error fetching profile:", err.message);
+    }
+  };
+
   useEffect(() => {
     console.log("🔁 Messenger component mounted");
     if (!userId) return;
 
-    // Fetch user profile
-    const fetchUserProfile = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
-        setUserDetails(res.data);
-      } catch (err) {
-        console.error("Error fetching profile:", err.message);
-      }
-    };
-
-    // Fetch chat users with defensive API parsing
-    const fetchChatUsers = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5001/api/chat/getusers/${userId}`);
-        const data = Array.isArray(res.data) ? res.data : res.data.users; // Check response structure
-        setUsers(data.map(user => ({
-          id: user._id,
-          name: user.name,
-          profileImage: user.profileImage,
-        })));
-      } catch (err) {
-        console.error("❌ Error fetching chat users:", err.message);
-      }
-    };
-
     fetchUserProfile();
     fetchChatUsers();
   }, [userId]);
+
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      if (!search.trim()) {
+        // fall back to your “chatted‑with” list
+        return fetchChatUsers();
+      }
+      try {
+        const res = await axios.get(
+          'http://localhost:5001/api/users/search',
+          { params: { query: search } }
+        );
+        setUsers(res.data);
+      } catch (err) {
+        console.error('Search failed:', err);
+      }
+    };
+
+    fetchAllUsers();
+  }, [search]);
 
   useEffect(() => {
     if (resetChatbox) {
@@ -94,6 +114,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
 
   const getMessages = async () => {
     try {
+      console.log("selccccc", selectedUser)
       const response = await axios.get('http://localhost:5001/api/chat/get', {
         params: { user1: selectedUser.id, user2: user._id }
       });
@@ -121,12 +142,12 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
     const messageData = {
       senderId: user._id,
       senderName: user.name,
-      receiverId: selectedUser.id,
+      receiverId: selectedUser._id,
       text: sharedContent ? "" : message.trim(),
       roomId,
       ...(sharedContent && { sharedContent }),
     };
-
+    console.log("ababababab", messageData)
     socket.emit('send_message', messageData);
     postMessage(messageData);
     setMessage('');

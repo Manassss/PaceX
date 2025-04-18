@@ -302,7 +302,7 @@ const searchbyname = async (req, res) => {
         // Case-insensitive search using regex
         const users = await User.find({
             name: { $regex: query, $options: 'i' }
-        }).select('_id name profileImage'); // Select only required fields
+        }).select('_id name profileImage').limit(20); // Select only required fields
 
         res.json(users);
     } catch (error) {

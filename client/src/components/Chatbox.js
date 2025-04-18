@@ -62,9 +62,12 @@ const Chatbox = ({ userId, username }) => {
 
     const getMessages = async () => {
         try {
+
+            console.log("user whom connecting", userId);
             const response = await axios.get('http://localhost:5001/api/chat/get', {
                 params: { user1: userId, user2: user._id }
-            });
+            }); console.log("manasi", userId)
+            console.log("resssss", response.data)
             setChatHistory(response.data);
         } catch (err) {
             console.error('Error getting messages:', err.response?.data || err.message);
@@ -78,7 +81,10 @@ const Chatbox = ({ userId, username }) => {
                 receiverId: userId,
                 text: message.trim(),
             };
-            await axios.post('http://localhost:5001/api/chat/send', postData);
+            const res = await axios.post('http://localhost:5001/api/chat/send', postData);
+            console.log("res", res.chat)
+
+
         } catch (err) {
             console.error('Error sending message:', err.response?.data || err.message);
         }
@@ -88,15 +94,15 @@ const Chatbox = ({ userId, username }) => {
         <Container
             maxWidth="lg"
             sx={{
-                width: 1450,
-                    height: "97vh",
-                    background: "#f8f2ec",
-                    display: "flex",
-                    flexDirection: "column",
-                    padding: "20px",
-                    borderLeft: "1px solid #ccc",
-                    overflow: 'hidden',
-                    marginleft: "500",
+                width: 450,
+                height: "97vh",
+                background: "#f8f2ec",
+                display: "flex",
+                flexDirection: "column",
+                padding: "20px",
+                borderLeft: "1px solid #ccc",
+                overflow: 'hidden',
+                marginleft: "500",
 
             }}
         >
