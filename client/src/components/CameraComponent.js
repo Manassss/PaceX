@@ -1,12 +1,13 @@
 import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
-import { Button, Box, IconButton } from "@mui/material";
+import { Button, Box, IconButton, Typography, Avatar } from "@mui/material";
 import { storage } from "../firebase";  // Firebase Storage
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ReplayIcon from "@mui/icons-material/Replay";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import StopIcon from "@mui/icons-material/Stop";
+import { useAuth } from "../auth/AuthContext";
 
 const CameraCapture = ({ userId, onMediaUpload }) => {
     const webcamRef = useRef(null);
@@ -15,7 +16,7 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
     const [recording, setRecording] = useState(false);
     const [videoBlob, setVideoBlob] = useState(null);
     const [uploading, setUploading] = useState(false);
-
+    const { user } = useAuth()
 
     //  Capture Photo
     const capturePhoto = () => {
@@ -105,7 +106,7 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
     };
 
     return (
-        <Box display="flex" flexDirection="column" alignItems="center" sx={{ border: "2px solid #ccc", borderRadius: 3, width: '435px', height: '790px', backgroundColor: 'RGBA(255,255,255,1)' }}>
+        <Box display="flex" flexDirection="column" alignItems="center" sx={{ border: "2px solid #ccc", borderRadius: 3, width: '435px', height: '100%', backgroundColor: 'RGBA(255,255,255,1)' }}>
 
             {/* Webcam & Media Preview */}
             {!capturedImage && !videoBlob ? (
@@ -115,49 +116,110 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
                     screenshotFormat="image/jpeg"
                     videoConstraints={{ facingMode: "user" }}
                     style={{
-                        width: "100%", height: "auto", aspectRatio: '3/5', borderRadius: "10px", objectFit: "cover",
+                        width: 430, height: 800, objectFit: 'cover', borderRadius: 10
                     }}
                 />
             ) : capturedImage ? (
-                <img src={capturedImage} alt="Captured" style={{ width: 430, height: 800, objectFit: 'cover', borderRadius: 10 }} />
+                <img src={capturedImage} alt="Captured" style={{ width: 435, height: 800, objectFit: 'cover', borderRadius: 10 }} />
             ) : (
                 <video controls src={URL.createObjectURL(videoBlob)} style={{ width: 430, height: 800, objectFit: 'cover', borderRadius: 10 }} />
             )}
 
-            {/* Action Buttons */}
-            <Box display="flex" justifyContent="center" gap={2} marginTop={1}>
+            <Box
+                sx={{
+                    position: "absolute",
+                    top: "2%",
+                    display: "flex",
+                    gap: 1,
+                    padding: "5px 10px",
+                    left: "3%"
+                }}
+            >
+                <Avatar
+                    src={user.profileImage}
+                    sx={{ width: 30, height: 30, cursor: "pointer" }}
 
-                {/* Photo & Video Buttons */}
+                />
+                <Typography variant="h6" sx={{ color: "white" }}>
+                    {user.name}
+                </Typography>
+            </Box>
+
+            {/* <IconButton
+                onClick={() => {
+                    setCapturedImage(null);
+                    setVideoBlob(null);
+                    if (typeof onMediaUpload === "function") {
+                        onMediaUpload(null); // optionally trigger close if parent clears modal on null
+                    }
+                }}
+                sx={{
+                    position: "absolute",
+                    top: "2%",
+                    right: "3%",
+                    backgroundColor: "rgba(255,255,255,0.7)",
+                    "&:hover": { backgroundColor: "rgba(255,255,255,1)" }
+                }}
+            >
+                <Typography variant="h6" fontWeight="bold">✕</Typography>
+            </IconButton> */}
+
+            {/* Action Buttons */}
+
+            <Box display="flex" justifyContent="center" alignItems="center" gap={2} marginTop={2} position='absolute' bottom={30} >
+
+                {/* Capture and Record */}
                 {!capturedImage && !videoBlob && !recording && (
                     <>
-                        <Button variant="contained" color="primary" onClick={capturePhoto}>📸 Capture</Button>
-                        <IconButton color="secondary" onClick={startRecording}><VideocamIcon fontSize="large" /></IconButton>
+                        <IconButton
+                            onClick={capturePhoto}
+                            sx={{ backgroundColor: "#fff", border: "2px solid #000", "&:hover": { backgroundColor: "#f0f0f0" } }}
+                        >
+                            <span role="img" aria-label="camera" style={{ fontSize: "24px" }}>📸</span>
+                        </IconButton>
+
+                        <IconButton
+                            onClick={startRecording}
+                            sx={{ backgroundColor: "#fff", border: "2px solid #000", "&:hover": { backgroundColor: "#f0f0f0" } }}
+                        >
+                            <VideocamIcon sx={{ fontSize: 24 }} />
+                        </IconButton>
                     </>
                 )}
 
                 {/* Stop Recording */}
                 {recording && (
-                    <IconButton color="error" onClick={stopRecording}><StopIcon fontSize="large" /></IconButton>
+                    <IconButton
+                        onClick={stopRecording}
+                        sx={{ backgroundColor: "#fff", border: "2px solid red", "&:hover": { backgroundColor: "#ffe5e5" } }}
+                    >
+                        <StopIcon sx={{ color: "red", fontSize: 24 }} />
+                    </IconButton>
                 )}
 
-                {/* Upload & Retake Buttons */}
                 {(capturedImage || videoBlob) && (
-                    <>
-                        <IconButton
-                            sx={{ position: "absolute", bottom: 10, left: 10, backgroundColor: "green", color: "white", "&:hover": { backgroundColor: "darkgreen" } }}
+                    <Box display="flex" justifyContent="center" gap={2} position="absolute" bottom={5}>
+                        <Button
+                            variant="contained"
+
                             onClick={uploadMedia}
                             disabled={uploading}
+                            sx={{ textTransform: "none", borderRadius: 5, px: 4, backgroundColor: '#073574' }}
                         >
-                            <CheckCircleIcon fontSize="large" />
-                        </IconButton>
-
-                        <IconButton
-                            sx={{ position: "absolute", bottom: 10, right: 10, backgroundColor: "red", color: "white", "&:hover": { backgroundColor: "darkred" } }}
-                            onClick={() => { setCapturedImage(null); setVideoBlob(null); }}
+                            Post
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => {
+                                setCapturedImage(null);
+                                setVideoBlob(null);
+                            }}
+                            sx={{ textTransform: "none", borderRadius: 10, px: 4, backgroundColor: '#073574' }}
                         >
-                            <ReplayIcon fontSize="large" />
-                        </IconButton>
-                    </>
+                            Cancel
+                        </Button>
+                    </Box>
                 )}
             </Box>
         </Box>

@@ -52,7 +52,7 @@ const Navbar = () => {
     else return "Good evening";
   };
 
-  
+
   const navItems = [
     { icon: <HomeIcon />, label: "Home", path: "/userhome" },
     {
@@ -62,7 +62,7 @@ const Navbar = () => {
         setIsCollapsed(true);
         setShowSearchPanel(true); // show the panel
       },
-    }, 
+    },
     { icon: <NotificationsIcon />, label: "Notifications", path: "/notifications" },
     { icon: <ChatIcon />, label: "Messenger", path: "/messenger" },
     { icon: <EventIcon />, label: "Events", path: "/events" },
@@ -75,47 +75,47 @@ const Navbar = () => {
         setOpenCreateModal(true);
       },
     }
-      ];
+  ];
 
   return (
-<Box
-  sx={{
-    width: isCollapsed ? "120px" : "380px",
-    transition: "width 0.3s ease",
-    height: "100vh",
-    bgcolor: "#073574",
-    color: "white",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    paddingLeft: isCollapsed ? "8px" : "16px",
-    paddingRight: isCollapsed ? "8px" : "16px",
-    py: 2,
-    position: "fixed",
-    top: 0,
-    left: 0,
-    zIndex: 1000,
-    overflow: "hidden"
-  }}
->
+    <Box
+      sx={{
+        width: isCollapsed ? "120px" : "380px",
+        transition: "width 0.3s ease",
+        height: "100vh",
+        bgcolor: "#073574",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        paddingLeft: isCollapsed ? "8px" : "16px",
+        paddingRight: isCollapsed ? "8px" : "16px",
+        py: 2,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        zIndex: 1000,
+        overflow: "hidden"
+      }}
+    >
       {/* Top Section */}
       <Box>
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: 3 }}>
-        <Box
-  component="img"
-  src={Logo}
-  alt="PaceX Logo"
-  sx={{
-    height: isCollapsed ? 100 : 150, // ✅ reduce size when collapsed
-    maxWidth: "100%",              // ✅ avoid overflow
-    objectFit: "contain",
-    transition: "all 0.3s ease",
-    marginLeft: "auto",
-    marginRight: "auto",
-    display: "block"
-  }}
-  onClick={() => navigate("/userhome")}
-/>
+          <Box
+            component="img"
+            src={Logo}
+            alt="PaceX Logo"
+            sx={{
+              height: isCollapsed ? 100 : 150, // ✅ reduce size when collapsed
+              maxWidth: "100%",              // ✅ avoid overflow
+              objectFit: "contain",
+              transition: "all 0.3s ease",
+              marginLeft: "auto",
+              marginRight: "auto",
+              display: "block"
+            }}
+            onClick={() => navigate("/userhome")}
+          />
 
         </Box>
 
@@ -141,40 +141,42 @@ const Navbar = () => {
 
         {/* Profile Section */}
         <Box
-  sx={{
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    mt: 3,
-    gap: 1,
-    cursor: "pointer",
-    transition: "all 0.3s ease"
-  }}
-  onClick={() => {
-    setIsCollapsed(true);
-    setShowSearchPanel(false);
-    navigate(`/profile/${user?._id}`);
-  }}
->
-  <Avatar
-    src={user?.profileImage}
-    sx={{
-      width: isCollapsed ? 80 : 95,
-      height: isCollapsed ? 80 : 95,
-      transition: "all 0.3s ease"
-    }}
-  />
-  {!isCollapsed && (
-    <Typography variant="subtitle1" sx={{ fontWeight: "bold", fontSize: "1.5rem" }}>
-      {user?.name}
-    </Typography>
-  )}
-</Box>
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            mt: 3,
+            gap: 1,
+            cursor: "pointer",
+            transition: "all 0.3s ease"
+          }}
+          onClick={() => {
+            setIsCollapsed(true);
+            setShowSearchPanel(false);
+            navigate(`/profile/${user?._id}`);
+          }}
+        >
+          <Avatar
+            src={user?.profileImage}
+            sx={{
+              width: isCollapsed ? 80 : 95,
+              height: isCollapsed ? 80 : 95,
+              transition: "all 0.3s ease"
+            }}
+          />
+          {!isCollapsed && (
+            <Typography variant="subtitle1" sx={{ fontWeight: "bold", fontSize: "1.5rem" }}>
+              {user?.name}
+            </Typography>
+          )}
+        </Box>
 
 
         {/* Navigation Items */}
-        <List sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: isCollapsed ? 2 : 1, // spacing between icons
-    mt: isCollapsed ? 3 : 2, }}>
+        <List sx={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: isCollapsed ? 2 : 1, // spacing between icons
+          mt: isCollapsed ? 3 : 2,
+        }}>
           {navItems.map((item, i) => (
             <Tooltip title={isCollapsed ? item.label : ""} placement="right" key={i}>
               <ListItem
@@ -196,7 +198,7 @@ const Navbar = () => {
                       navigate(item.path);
                     }
                   }
-                  
+
                 }}
                 sx={{
                   cursor: "pointer",
@@ -273,61 +275,61 @@ const Navbar = () => {
           <MenuItem onClick={() => navigate("/home")}>Logout</MenuItem>
         </Menu>
       </Box>
-      
-      {showSearchPanel && (
-            <Box
-            sx={{
-              position: "fixed",
-              top: 0,
-              left: isCollapsed ? "120px" : "380px",
-              height: "100vh",
-              width: 300,
-              bgcolor: "#f8f2ec",
-              zIndex: 1200,
-              boxShadow: "4px 0 12px rgba(0,0,0,0.1)",
-              transform: showSearchPanel ? "translateX(0)" : "translateX(-100%)",
-              opacity: showSearchPanel ? 1 : 0,
-              pointerEvents: showSearchPanel ? 'auto' : 'none', // Prevent interaction when hidden
-              transition: "transform 0.4s ease, opacity 0.4s ease"
-            }}
-          >
-            <SearchPanel onClose={() => setShowSearchPanel(false)} />
-          </Box>
-          
-)}
 
-<Modal
-  open={openCreateModal}
-  onClose={() => setOpenCreateModal(false)}
-  closeAfterTransition
-  BackdropProps={{
-    sx: {
-      backdropFilter: 'blur(8px)',
-      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    },
-  }}
->
-  <Box
-    sx={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: { xs: '90%', sm: 500 },
-      bgcolor: '#f8f2ec',
-      borderRadius: 3,
-      boxShadow: 24,
-      p: 3,
-      maxHeight: '90vh',
-      overflowY: 'auto',
-    }}
-  >
-<AddPost open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
-</Box>
-</Modal>
+      {showSearchPanel && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: isCollapsed ? "120px" : "380px",
+            height: "100vh",
+            width: 300,
+            bgcolor: "#f8f2ec",
+            zIndex: 1200,
+            boxShadow: "4px 0 12px rgba(0,0,0,0.1)",
+            transform: showSearchPanel ? "translateX(0)" : "translateX(-100%)",
+            opacity: showSearchPanel ? 1 : 0,
+            pointerEvents: showSearchPanel ? 'auto' : 'none', // Prevent interaction when hidden
+            transition: "transform 0.4s ease, opacity 0.4s ease"
+          }}
+        >
+          <SearchPanel onClose={() => setShowSearchPanel(false)} />
+        </Box>
+
+      )}
+
+      <Modal
+        open={openCreateModal}
+        onClose={() => setOpenCreateModal(false)}
+        closeAfterTransition
+        BackdropProps={{
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: { xs: '90%', sm: 500 },
+            bgcolor: '#f8f2ec',
+            borderRadius: 3,
+            boxShadow: 24,
+            p: 3,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}
+        >
+          <AddPost open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
+        </Box>
+      </Modal>
 
     </Box>
-    
+
   );
 };
 
