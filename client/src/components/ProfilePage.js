@@ -10,28 +10,25 @@ import {
   Grid,
   IconButton,
   Modal,
-  Input,
   List,
   ListItem,
   ListItemText,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
+  ListItemButton,
+  ListItemAvatar,
 } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import LockIcon from '@mui/icons-material/Lock';
-import ShareIcon from '@mui/icons-material/Share';
 import { getAuth } from "firebase/auth";
 import { storage } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -40,10 +37,24 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { signOut } from "firebase/auth";
 import axios from 'axios';
 import CameraCapture from './CameraComponent';
-import Navbar from "../components/navbar"; // Import Navbar
 import CircularProgress from "@mui/material/CircularProgress";
 import ShareModal from './ShareModal';
-import { CiMenuBurger } from "react-icons/ci";
+import { CiMenuKebab } from "react-icons/ci";
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { AiFillLike, AiOutlineLike } from 'react-icons/ai';
+import { FaRegComment, FaShare } from "react-icons/fa6";
+import { Divider } from "@mui/material";
+import PersonOffIcon from '@mui/icons-material/PersonOff';
+import EditIcon from '@mui/icons-material/Edit';
+import BlockIcon from '@mui/icons-material/Block';
+import { GiShare } from "react-icons/gi";
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+
+
+
+
 
 
 
@@ -90,137 +101,19 @@ const ProfilePage = () => {
   const [openFollowingModal, setOpenFollowingModal] = useState(false);
   const [followersList, setFollowersList] = useState([]);
   const [followingList, setFollowingList] = useState([]);
-
-  // For the Three Dot menu
-
-
-
-
-  // Fetch comments for a specific post
-  const fetchComments = async (postId) => {
-    try {
-      console.log("Fetching comments for post:", postId);
-      const res = await axios.get(`http://localhost:5001/api/comment/${postId}`);
-
-      console.log("Fetched Comments:", res.data);  // Debugging log
-
-      // ✅ Store only the array inside the comments state
-      setComments(prev => ({
-        ...prev,
-        [postId]: res.data.comments // Extract the `comments` array
-      }));
-    } catch (err) {
-      console.error("Error fetching comments:", err.message);
-    }
-  };
-
-  // Function to handle delete button click
-  const handleDeleteclick = () => {
-    setDeletetype("permanent");
-    setPostToDelete(selectedPost?.postId);
-    setDeleteConfirmation(true);
-    handleMenuClose();
-  };
-
-  const openFollowers = () => {
-    // If userDetails.followers are full user objects, you can set them directly.
-    setFollowersList(userDetails.followers || []);
-    setOpenFollowersModal(true);
-  };
-
-  const openFollowing = () => {
-    // Similar logic for followings.
-    setFollowingList(userDetails.followings || []);
-    setOpenFollowingModal(true);
-  };
+  const [likedPosts, setLikedPosts] = useState([]);
+  const theme = useTheme();
+  // iPad Pro is ≥ 1024px wide
+  const isIpad = useMediaQuery(theme.breakpoints.up('md'));
+  // iPhone 14 Pro Max is ≤ 430px wide
+  const isPhone = useMediaQuery('(max-width:430px)');
+  const [openChat, setOpenChat] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
 
 
-  // Function to delete the post
-  const handleDeletePost = async () => {
-    if (!postToDelete) return;
 
-    try {
-      console.log("postid", postToDelete)
-      await axios.post(`http://localhost:5001/api/posts/delete/${postToDelete}`);
-      setPosts((prevPosts) => prevPosts.filter(post => post.postId !== postToDelete));
-      setDeleteConfirmation(false);
-      setOpenPostModal(false);
-      setDeletetype("");
-    } catch (error) {
-      console.error("Error deleting post:", error);
-    }
-  };
-  const handleDeletePosttemp = async () => {
-    if (!postToDelete) return;
-
-    try {
-      console.log("temp-postid", postToDelete)
-      await axios.post(`http://localhost:5001/api/posts/tempdelete/${postToDelete}`);
-      setPosts((prevPosts) => prevPosts.filter(post => post.postId !== postToDelete));
-      setDeleteConfirmation(false);
-      setOpenPostModal(false);
-      setDeletetype("");
-    } catch (error) {
-      console.error("Error deleting post:", error);
-    }
-  };
-  // Add a new comment
-  const handleAddComment = async (postId) => {
-    if (!newComment[postId]) return;  // Ensure input is not empty
-
-    try {
-      const payload = {
-        userId: user._id,
-        postId: postId,
-        text: newComment[postId],
-        username: user?.name,
-        userimg: user?.profileImage,
-        post_userid: userDetails.id
-      }
-      console.log(user);
-      console.log("payload", payload);
-      const res = await axios.post("http://localhost:5001/api/comment/add", payload);
-
-      console.log("✅ Comment Added:", res.data);
-      setNewComment({ ...newComment, [postId]: "" }); // Clear input field
-      fetchComments(postId); // Refresh comments for the post
-    } catch (err) {
-      console.error("🔥 Error adding comment:", err.response?.data || err.message);
-    }
-  };
-  // Toggle comment box visibility
-  const toggleCommentBox = (postId) => {
-    setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
-  };
-  // Handle post like (optional)
-  const handleLike = async (postId) => {
-    try {
-      const res = await axios.put(`http://localhost:5001/api/posts/like/${postId}`);
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post.postId === postId ? { ...post, likes: res.data.likes } : post
-        )
-      );
-    } catch (err) {
-      console.error("Error liking post:", err);
-    }
-
-  };
-  // Handle follow/unfollow (optional)
-  const handleConnectToggle = async () => {
-    setLoading(true);
-    try {
-      // Simulating API call with a timeout (Replace with actual API request)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Toggle connection state
-      setIsConnected((prev) => !prev);
-      handleFollowToggle(userId);
-    } catch (error) {
-      console.error("Error updating connection:", error);
-    }
-    setLoading(false);
-  };
+  //User Profile Details
   const fetchUserProfile = async () => {
     try {
 
@@ -263,6 +156,256 @@ const ProfilePage = () => {
     fetchblockedusers();
 
   }, [userId]);
+
+
+
+  // Handle delete button click
+  const handleDeleteclick = () => {
+    setDeletetype("permanent");
+    setPostToDelete(selectedPost?.postId);
+    setDeleteConfirmation(true);
+    handleMenuClose();
+  };
+
+  // user followers
+  const openFollowers = async () => {
+    try {
+      const ids = userDetails.followers || [];
+      const list = await Promise.all(
+        ids.map(fid =>
+          axios.get(`http://localhost:5001/api/users/${fid}`)   // ← no “profile” here
+            .then(res => ({
+              _id: res.data._id,
+              name: res.data.name,
+              username: res.data.username,
+              profileImage: res.data.profileImage,
+            }))
+        )
+      );
+      setFollowersList(list);
+      setOpenFollowersModal(true);
+    } catch (err) {
+      console.error("Error loading followers list:", err);
+      alert("Failed to load followers.");
+    }
+  };
+
+
+
+  // user following
+  const openFollowing = async () => {
+    try {
+      const ids = userDetails.followings || []
+      const list = await Promise.all(
+        ids.map(async (fid) => {
+          const res = await axios.get(`http://localhost:5001/api/users/profile/${fid}`)
+          const u = res.data
+          return {
+            _id: u._id,
+            name: u.name,
+            username: u.username,
+            profileImage: u.profileImage,
+          }
+        })
+      )
+      setFollowingList(list)
+      setOpenFollowingModal(true)
+    } catch (err) {
+      console.error("Error loading following list:", err)
+      alert("Failed to load following.")
+    }
+  }
+
+
+  // Delete the post
+  const handleDeletePost = async () => {
+    if (!postToDelete) return;
+
+    try {
+      console.log("🗑️  Permanently deleting post:", postToDelete);
+      const res = await axios.post(
+        `http://localhost:5001/api/posts/delete/${postToDelete}`
+      );
+      console.log("🗑️  delete response:", res.data);
+
+      setPosts(prevPosts => {
+        const newPosts = prevPosts.filter(p => p.postId !== postToDelete);
+        console.log("🗑️  Posts after permanent delete:", newPosts);
+        return newPosts;
+      });
+
+      setDeleteConfirmation(false);
+      setOpenPostModal(false);
+      setDeletetype("");
+    } catch (error) {
+      console.error("Error deleting post:", error);
+    }
+  };
+
+  const handleDeletePosttemp = async () => {
+    if (!postToDelete) return;
+
+    try {
+      console.log("⏱️  Toggling temp-delete for post:", postToDelete);
+      const res = await axios.post(
+        `http://localhost:5001/api/posts/tempdelete/${postToDelete}`
+      );
+      console.log("⏱️  temp-delete response:", res.data);
+
+      const updatedPost = res.data.post;
+      console.log("⏱️  Updated post:", updatedPost);
+
+      setPosts(prev =>
+        prev.map(p => {
+          if (p.postId === updatedPost._id) {
+            const patched = { ...p, tempdelete: updatedPost.tempdelete };
+            console.log(
+              `⏱️  Marking post ${p.postId} as tempdelete=${patched.tempdelete}`
+            );
+            return patched;
+          }
+          return p;
+        })
+      );
+
+      setDeleteConfirmation(false);
+      setOpenPostModal(false);
+      setDeletetype("");
+    } catch (err) {
+      console.error("Error toggling temp-delete:", err);
+    }
+  };
+
+
+
+
+  // Function to fetch comments on posts
+  const fetchComments = async (postId) => {
+    try {
+      console.log("Fetching comments for post:", postId);
+      const res = await axios.get(`http://localhost:5001/api/comment/${postId}`);
+
+      console.log("Fetched Comments:", res.data);  // Debugging log
+
+      // ✅ Store only the array inside the comments state
+      setComments(prev => ({
+        ...prev,
+        [postId]: res.data.comments // Extract the `comments` array
+      }));
+    } catch (err) {
+      console.error("Error fetching comments:", err.message);
+    }
+  };
+
+  // Add a new comment
+  const handleAddComment = async (postId) => {
+    if (!newComment[postId]) return;  // Ensure input is not empty
+
+    try {
+      const payload = {
+        userId: user._id,
+        postId: postId,
+        text: newComment[postId],
+        username: user?.name,
+        userimg: user?.profileImage,
+        post_userid: userDetails.id
+      }
+      console.log(user);
+      console.log("payload", payload);
+      const res = await axios.post("http://localhost:5001/api/comment/add", payload);
+
+      console.log("✅ Comment Added:", res.data);
+      setNewComment({ ...newComment, [postId]: "" }); // Clear input field
+      fetchComments(postId); // Refresh comments for the post
+    } catch (err) {
+      console.error("🔥 Error adding comment:", err.response?.data || err.message);
+    }
+  };
+
+  // Toggle comment box visibility
+  const toggleCommentBox = (postId) => {
+    setShowCommentBox((prev) => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
+
+  // Handle post like (optional)
+  const handleLike = async (postId) => {
+    if (!user || !user._id) {
+      console.error("🚨 Not logged in!");
+      return;
+    }
+
+    // find the post in your feed
+    const post = posts.find((p) => p.postId === postId);
+    if (!post || !Array.isArray(post.likes)) {
+      console.warn("⚠️ Post not found or likes not initialized");
+      return;
+    }
+
+    const alreadyLiked = post.likes.includes(user._id);
+
+    try {
+      // call the correct endpoint
+      const res = alreadyLiked
+        ? await axios.delete("http://localhost:5001/api/likes/remove", {
+          data: { userId: user._id, postId },
+        })
+        : await axios.post("http://localhost:5001/api/likes/add", { userId: user._id, postId });
+
+      console.log("✅ Like toggled:", res.data);
+
+      // update your local “feed” state
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.postId === postId
+            ? {
+              ...p,
+              likes: alreadyLiked
+                ? p.likes.filter((id) => id !== user._id)
+                : [...p.likes, user._id],
+            }
+            : p
+        )
+      );
+
+      // update the single‐post modal if it’s open
+      setSelectedPost((prev) =>
+        prev && prev.postId === postId
+          ? {
+            ...prev,
+            likes: alreadyLiked
+              ? prev.likes.filter((id) => id !== user._id)
+              : [...prev.likes, user._id],
+          }
+          : prev
+      );
+
+      // optional: track which posts this user has liked
+      setLikedPosts((lp) =>
+        alreadyLiked ? lp.filter((id) => id !== postId) : [...lp, postId]
+      );
+    } catch (err) {
+      console.error("🔥 Error toggling like:", err.response?.data || err.message);
+    }
+  };
+
+  // Handle follow/unfollow (optional)
+  const handleConnectToggle = async () => {
+    setLoading(true);
+    try {
+      // Simulating API call with a timeout (Replace with actual API request)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Toggle connection state
+      setIsConnected((prev) => !prev);
+      handleFollowToggle(userId);
+    } catch (error) {
+      console.error("Error updating connection:", error);
+    }
+    setLoading(false);
+  };
+
+
 
   // Fetch posts for this user
   useEffect(() => {
@@ -326,49 +469,6 @@ const ProfilePage = () => {
     fetchStories();
   }, [userId]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleSave = async () => {
-    try {
-      const res = await axios.put(`http://localhost:5001/api/users/profile/${userId}`, formData);
-      if (res.data && res.data.user) {
-        setUserDetails(res.data.user);
-      }
-      setEditMode(false);
-      alert('Profile updated successfully!');
-    } catch (err) {
-      console.error("Error updating profile:", err.message);
-    }
-  };
-
-  const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
-
-  const handleImageUpload = async () => {
-    if (!selectedFile) return alert("Please select an image first!");
-    const storageRef = ref(storage, `profilePictures/${userId}/${selectedFile.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, selectedFile);
-    uploadTask.on(
-      "state_changed",
-      null,
-      (error) => alert("Upload failed! Check Firebase permissions."),
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        setFormData({ ...formData, profileImage: downloadURL });
-      }
-    );
-  };
-
-  // Callback for camera capture upload
-  const handleCameraImageUpload = (downloadURL) => {
-    setFormData({ ...formData, profileImage: downloadURL });
-    setOpenCamera(false);
-  };
-
   // Story modal navigation
   const handleNextStory = () => {
     if (currentIndexStory < userStories.length - 1) {
@@ -377,6 +477,97 @@ const ProfilePage = () => {
       setOpenStory(false);
     }
   };
+
+  //Handle Change
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // returns the downloadURL when it's done
+  const handleImageUpload = () => {
+    if (!selectedFile) return Promise.reject("No file");
+
+    return new Promise((resolve, reject) => {
+      const storageRef = ref(storage, `profilePictures/${userId}/${selectedFile.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+
+      uploadTask.on(
+        "state_changed",
+        null,
+        reject,
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref)
+            .then((downloadURL) => {
+              // update formData for preview
+              setFormData((prev) => ({ ...prev, profileImage: downloadURL }));
+              resolve(downloadURL);
+            })
+            .catch(reject);
+        }
+      );
+    });
+  };
+
+  // Callback for camera capture upload
+  // helper: converts a proper dataURL to a Blob
+  function dataURLtoBlob(dataURL) {
+    const parts = dataURL.split(',');
+    if (parts.length !== 2) {
+      throw new Error('Invalid dataURL format');
+    }
+    const header = parts[0];
+    const base64 = parts[1];
+    const mimeMatch = header.match(/data:(.+);base64/);
+    if (!mimeMatch) {
+      throw new Error('Invalid dataURL header');
+    }
+    const mime = mimeMatch[1];
+    const binary = atob(base64);
+    const len = binary.length;
+    const u8 = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      u8[i] = binary.charCodeAt(i);
+    }
+    return new Blob([u8], { type: mime });
+  }
+  //handleCameraImageUpload
+  const handleCameraImageUpload = async (media) => {
+    let fileForUpload;
+    let previewUrl;
+
+    if (typeof media === 'string') {
+      if (media.startsWith('data:')) {
+        // true data URL
+        previewUrl = media;
+        fileForUpload = dataURLtoBlob(media);
+
+      } else if (media.startsWith('blob:')) {
+        // blob URL: fetch the blob behind it
+        previewUrl = media;
+        fileForUpload = await fetch(media).then(res => res.blob());
+
+      } else {
+        // some other URL (e.g. remote image)—we’ll preview but not upload
+        previewUrl = media;
+        console.warn('Camera returned a non-blob URL; skipping upload.');
+        setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+        setOpenCamera(false);
+        return;
+      }
+
+    } else {
+      // already a Blob/File
+      previewUrl = URL.createObjectURL(media);
+      fileForUpload = media;
+    }
+
+    // store for both preview and upload
+    setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+    setSelectedFile(fileForUpload);
+    setOpenCamera(false);
+  };
+
 
   const handlePrevStory = () => {
     if (currentIndexStory > 0) {
@@ -396,21 +587,8 @@ const ProfilePage = () => {
   const handleProfile = (profileUserId) => {
     navigate(`/profile/${profileUserId}`);
   };
-  // Navigate to add post page (for bottom nav)
-  const handleAddpost = () => {
-    navigate('/add-post');
-  };
-  const handleHomeClick = () => {
-    navigate('/userhome');
-  };
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/home');
-    } catch (err) {
-      console.error("Error signing out:", err.message);
-    }
-  };
+
+
   // When a post is clicked, open a modal to show its details
   const handlePostClick = async (post) => {
     console.log("🔍 Post Clicked:", post); // ✅ Debugging log
@@ -423,6 +601,8 @@ const ProfilePage = () => {
     setCurrentPostIndex(postIndex);
     setOpenPostModal(true);
   };
+
+  // Follow Unfollow other users
   const handleFollowToggle = async (targetUserId) => {
     try {
       console.log(`user id ${user?._id} and targetid ${targetUserId}`);
@@ -441,31 +621,9 @@ const ProfilePage = () => {
       console.error("Error:", error);
     }
   };
-  const openPostGallery = (index) => {
-    setCurrentPostIndex(index);
-    setSelectedPost(posts[index]);
-    fetchComments(posts[index].postId);
-    setShowCommentBox({ [posts[index].postId]: true });
-    setOpenPostModal(true);
-  };
-  const handleNextPost = () => {
-    if (currentPostIndex < posts.length - 1) {
-      const nextIndex = currentPostIndex + 1;
-      setCurrentPostIndex(nextIndex);
-      setSelectedPost(posts[nextIndex]);
-      fetchComments(posts[nextIndex].postId);
-      setShowCommentBox({ [posts[nextIndex].postId]: true });
-    }
-  };
-  const handlePrevPost = () => {
-    if (currentPostIndex > 0) {
-      const prevIndex = currentPostIndex - 1;
-      setCurrentPostIndex(prevIndex);
-      setSelectedPost(posts[prevIndex]);
-      fetchComments(posts[prevIndex].postId);
-      setShowCommentBox({ [posts[prevIndex].postId]: true });
-    }
-  };
+
+
+  // Fetch blocked users
   const fetchblockedusers = async () => {
     try {
 
@@ -522,6 +680,8 @@ const ProfilePage = () => {
     }
 
   }
+
+  // Archieve Post
   const handleArchivePost = async () => {
     console.log("Archive Post Clicked:", selectedPost?.postId);
     try {
@@ -547,6 +707,8 @@ const ProfilePage = () => {
       console.error("Error archiving post:", error);
     }
   };
+
+  // Delete Post
   const handletempDeletePost = () => {
     console.log("Delete Post Clicked:", selectedPost?.postId);
     setDeletetype("temp");
@@ -556,12 +718,14 @@ const ProfilePage = () => {
   };
 
 
+  // At the top of your render (or just above your return)
   const filteredPosts =
     selectedTab === "recentlyDeleted"
-      ? posts.filter(post => post.tempdelete) // Show only deleted posts
+      ? posts.filter(post => post.tempdelete)                              // deleted
       : selectedTab === "archived"
-        ? posts.filter(post => post.archived && !post.tempdelete) // Show archived but not deleted
-        : posts.filter(post => !post.archived && !post.tempdelete); // Show normal posts;
+        ? posts.filter(post => post.archived && !post.tempdelete)         // archived but not deleted
+        : posts.filter(post => !post.archived && !post.tempdelete);       // normal posts
+
 
 
   const handlePostMenuOpen = (event) => {
@@ -573,691 +737,515 @@ const ProfilePage = () => {
   };
 
 
+  const isLiked =
+    selectedPost != null &&
+    Array.isArray(selectedPost.likes) &&
+    selectedPost.likes.includes(user._id);
+
 
 
   return (
     <>
-      {/* ============================
-  Main Layout Container
-============================ */}
-      <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f2ec' }}>
+      <Container
+        maxWidth={false}
+        sx={{
+          // bring back a bit of horizontal breathing room
+          px: { xs: 2, md: 4 }
+        }}
+      >
 
-        <Container maxWidth="md">
-          <Box mt={0} >
-            {/* Profile Section */}
-            <Box sx={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
-              <Box sx={{ position: "relative", width: "100%", mb: 2 }}>
-                <Box sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  width: "100%",
-                  px: 2 // padding for spacing
-                }}>
-                  <Typography variant="h5" fontWeight={600}>
-                    {userDetails.username}
-                  </Typography>
-
-                  <IconButton
-                    onClick={handleMenuOpen}
-                    sx={{
-                      color: "black",
-                      backgroundColor: "rgba(0, 0, 0, 0.05)",
-                      width: 35,
-                      height: 35,
-                      "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.1)" },
-                    }}
-                  >
-                    <CiMenuBurger />
-                  </IconButton>
-
-                  <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    transformOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                    sx={{ mt: 1 }}
-                  >
-                    {userDetails.id === user?._id ? (
-                      <>
-                        <MenuItem
-                          onClick={() => {
-                            setOpenBlockedContacts(true);
-                            handleMenuClose();
-                          }}
-                        >
-                          Blocked Contacts
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            setEditMode((prev) => !prev);
-                            handleMenuClose();
-                          }}
-                        >
-                          {editMode ? "Cancel Edit Profile" : "Edit Profile"}
-                        </MenuItem>
-                      </>
-                    ) : (
-                      <MenuItem
-                        onClick={() => {
-                          handleBlock();
-                          handleMenuClose();
-                        }}
-                      >
-                        Block
-                      </MenuItem>
-                    )}
-
-                    <MenuItem
-                      onClick={() => {
-                        setOpenShareModal(true);
-                        handleMenuClose();
-                      }}
-                    >
-                      <ShareIcon sx={{ mr: 1 }} />
-                      Share Profile
+        <Grid container spacing={4} direction={isPhone ? 'column' : 'row'}>
+          {/* =========================== Main Layout Container Left Side ============================ */}
+          <Grid
+            item
+            xs={12}
+            md={3}
+            sx={{ pb: 3 }}
+          >
+            {/* 1. Username + menu */}
+            <Box
+              sx={{
+                mt: 5,
+                ml: -2,
+                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderRadius: 2,
+                boxShadow: 1,
+                flexWrap: 'nowrap',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Typography variant="h6" fontWeight={600} sx={{ mr: 1 }}>
+                @{userDetails.username}
+              </Typography>
+              <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
+                <CiMenuKebab />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+              >
+                {userDetails.id === user?._id
+                  ? [
+                    <MenuItem key="blocked" onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
+                      Blocked Contacts
+                    </MenuItem>,
+                    <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
+                      {editMode ? "Cancel Edit Profile" : "Edit Profile"}
                     </MenuItem>
-                  </Menu>
-
-                </Box>
-
-                <Box
-                  sx={{
-                    width: "250px",
-                    height: "250px",
-                    margin: "auto",
-                    mt: 2,
-                    position: "relative"
-                  }}
-                >
-                  <Avatar
-                    src={userDetails.profileImage}
-                    sx={{
-                      width: "100%",
-                      height: "100%",
-                      border: "3px solid rgba(255, 255, 255, 0.5)",
-                    }}
-                  />
-                </Box>
-              </Box>
-
-
-              {/* User Details Below Image */}
-              <Typography variant="h5" sx={{ fontWeight: "bold", mt: 4, textAlign: "center" }}>
-                {userDetails.name || "Your Name"}
-              </Typography>
-
-              <Typography variant="body1" sx={{ opacity: 0.8, textAlign: "center", mt: 1 }}>
-                {userDetails.bio || "No bio available"}
-              </Typography>
+                  ]
+                  : [
+                    <MenuItem key="block" onClick={() => { handleBlock(); handleMenuClose(); }}>
+                      Block
+                    </MenuItem>
+                  ]
+                }
+                <MenuItem key="share" onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
+                  Share Profile
+                </MenuItem>
+              </Menu>
             </Box>
 
+            {/* 2. Avatar */}
+            <Box sx={{ width: 250, height: 250, ml: 'auto', mt: 2 }}>
+              <Avatar
+                src={userDetails.profileImage}
+                sx={{
+                  width: isPhone ? 120 : isIpad ? 200 : 250,
+                  height: isPhone ? 120 : isIpad ? 200 : 250,
+                  border: "3px solid rgba(255,255,255,0.5)"
+                }}
+              />
+            </Box>
 
-            {/* User Stats */}
-            {/* User Stats */}
-            <Box sx={{ display: "flex", gap: 2, mt: 3, justifyContent: "center" }}>
+            {/* 3. Name */}
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 'bold', mt: 5, textAlign: 'center', fontSize: '1.8rem' }}
+            >
+              {userDetails.name || "Your Name"}
+            </Typography>
+
+            {/* 4. Bio */}
+            <Typography
+              variant="body1"
+              sx={{ opacity: 0.8, textAlign: 'center', mt: 1 }}
+            >
+              {userDetails.bio || "No bio available"}
+            </Typography>
+
+            {/* 5. Stats */}
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 3,
+                mt: 5,
+                flexDirection: isPhone ? 'column' : 'row',
+                justifyContent: 'center'
+              }}
+            >
               {[
-                { label: "Posts", value: userDetails.postsCount || 0 },
-                { label: "Followers", value: userDetails.followersCount || 0 },
-                { label: "Following", value: userDetails.followingCount || 0 },
-              ].map((item, index) => (
-                <Box key={index} textAlign="center">
-                  <Typography variant="h6" sx={{ fontWeight: "bold", cursor: item.label !== "Posts" ? "pointer" : "default" }}
-                    onClick={() => {
-                      if (item.label === "Followers") openFollowers();
-                      else if (item.label === "Following") openFollowing();
-                    }}
-                  >
-                    {item.value}
-                  </Typography>
-                  <Typography sx={{ fontSize: "14px", opacity: 0.8 }}>
-                    {item.label}
-                  </Typography>
+                { label: "Posts", value: userDetails.postsCount },
+                { label: "Followers", value: userDetails.followersCount },
+                { label: "Following", value: userDetails.followingCount },
+              ].map(({ label, value }) => (
+                <Box key={label} textAlign="center" sx={{ cursor: label !== 'Posts' ? 'pointer' : 'default' }} onClick={() => {
+                  if (label === 'Followers') openFollowers()
+                  if (label === 'Following') openFollowing()
+                }}>
+                  <Typography variant="h6" fontWeight={600}>{value}</Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>{label}</Typography>
                 </Box>
               ))}
             </Box>
 
+            {/* 6. Connect / Follow button */}
+            {vistinguser && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, gap: 1 }}>
+                {/* Connect / Follow */}
+                <Button
+                  variant="contained"
+                  onClick={handleConnectToggle}
+                  disabled={loading}
+                  sx={{
+                    borderRadius: 2,
+                    px: 2,
+                    textTransform: 'none',
+                    backgroundColor: isConnected ? '#f0f0f0' : '#007bff',
+                    color: isConnected ? '#000' : '#fff',
+                    '&:hover': {
+                      backgroundColor: isConnected ? '#e0e0e0' : '#0056b3',
+                    },
+                  }}
+                >
+                  {loading
+                    ? <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                    : isConnected
+                      ? <>Following ▼</>
+                      : 'Connect'
+                  }
+                </Button>
 
+                {/* Message */}
+                <Button
+                  variant="outlined"
+                  onClick={() => setOpenChat(true)}
+                  sx={{
+                    borderRadius: 2,
+                    px: 2,
+                    textTransform: 'none',
+                    borderColor: '#007bff',
+                    color: '#007bff',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0,123,255,0.1)',
+                      borderColor: '#0056b3',
+                      color: '#0056b3',
+                    },
+                  }}
+                >
+                  Message
+                </Button>
+              </Box>
 
-            {/* follow and edit Buttons */}
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                gap: 1.5,
-                mt: 3,
-                width: "100%",
-                justifyContent: "center",
-              }}
-            >
-              {vistinguser ? <Button
-                variant="contained"
-                sx={{
-                  borderRadius: 2,
-                  padding: "6px 12px",
-                  fontSize: "14px",
-                  backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
-                  color: isConnected ? "#000" : "#fff",
-                  "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
-                }}
-                onClick={handleConnectToggle}
-                disabled={loading}
-              >
-                {loading ? (
-                  <CircularProgress size={20} sx={{ color: "inherit" }} />
-                ) : isConnected ? (
-                  <>
-                    Following <span style={{ marginLeft: "5px" }}>▼</span>
-                  </>
-                ) : (
-                  "Connect"
-                )}
-              </Button> : <></>}
-            </Box>
-          </Box>
-
-          {/* Right Side - Main Content */}
-          <Box sx={{ flexGrow: 1, overflowY: "auto", p: 3 }}>
-            {/* Navbar at the Top */}
-
-            {/* Profile Edit Section */}
-            {editMode && (
-              <Paper
-                sx={{
-                  p: 3,
-                  mt: 15,
-                  backgroundColor: "#fff",
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  height: 'auto',
-                }}
-              >
-                <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
-                  Edit Profile
-                </Typography>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <TextField
-                      name="username"
-                      value={formData.username || ""}
-                      onChange={handleChange}
-                      label="Username"
-                      variant="outlined"
-                      fullWidth
-                    />
-                    <TextField
-                      name="name"
-                      value={formData.name || ""}
-                      onChange={handleChange}
-                      label="Full Name"
-                      variant="outlined"
-                      fullWidth
-                    />
-                  </Box>
-                  <TextField
-                    name="bio"
-                    value={formData.bio || ""}
-                    onChange={handleChange}
-                    label="Bio"
-                    variant="outlined"
-                    fullWidth
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.private || false}
-                        onChange={(e) => setFormData({ ...formData, private: e.target.checked })}
-                        color="primary"
-                      />
-                    }
-                    label={formData.private ? "Private Account" : "Public Account"}
-                    sx={{ alignSelf: "center", mt: 2 }}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    sx={{ mt: 2, borderRadius: 2, width: 200, right: -700 }}
-                    onClick={handleSave}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              </Paper>
             )}
+          </Grid>
 
-            {/* Posts Section */}
+
+
+
+          {/* RIGHT COLUMN */}
+          <Grid
+            item
+            xs={12}
+            md={8.5}            // 3 + 9 = 12 columns
+            sx={{
+              borderLeft: { xs: 'none', md: '1px solid' },
+              // match the left column’s padding on the inner edge
+              ml: { xs: 2, md: 3 },
+            }}
+          >
             <Box sx={{ mt: 1 }}>
+              {/* Tab Bar */}
               <Box mt={4} display="flex" justifyContent="center" gap={6}>
                 <Typography
                   variant="body1"
-                  onClick={() => setSelectedTab("all")}
+                  onClick={() => setSelectedTab('all')}
                   sx={{
-                    cursor: "pointer",
-                    fontWeight: selectedTab === "all" ? "bold" : "normal",
+                    cursor: 'pointer',
+                    fontWeight: selectedTab === 'all' ? 'bold' : 'normal',
                     pb: 1,
-                    fontSize: "16px",
-                    color: "#000",
-                    borderBottom: selectedTab === "all" ? "2px solid black" : "2px solid transparent",
-                    transition: "all 0.2s ease-in-out",
-                    "&:hover": {
-                      borderBottom: "2px solid #aaa",
-                      opacity: 0.8,
-                    },
+                    fontSize: '16px',
+                    color: '#000',
+                    borderBottom: selectedTab === 'all' ? '2px solid black' : '2px solid transparent',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': { borderBottom: '2px solid #aaa', opacity: 0.8 },
                   }}
                 >
                   All Posts
                 </Typography>
 
-                <Typography
-                  variant="body1"
-                  onClick={() => setSelectedTab("archived")}
-                  sx={{
-                    cursor: "pointer",
-                    fontWeight: selectedTab === "archived" ? "bold" : "normal",
-                    pb: 1,
-                    fontSize: "16px",
-                    color: "#000",
-                    borderBottom: selectedTab === "archived" ? "2px solid black" : "2px solid transparent",
-                    transition: "all 0.2s ease-in-out",
-                    "&:hover": {
-                      borderBottom: "2px solid #aaa",
-                      opacity: 0.8,
-                    },
-                  }}
-                >
-                  Archived
-                </Typography>
-
-                <Typography
-                  variant="body1"
-                  onClick={() => setSelectedTab("recentlyDeleted")}
-                  sx={{
-                    cursor: "pointer",
-                    fontWeight: selectedTab === "recentlyDeleted" ? "bold" : "normal",
-                    pb: 1,
-                    fontSize: "16px",
-                    color: "#000",
-                    borderBottom: selectedTab === "recentlyDeleted" ? "2px solid black" : "2px solid transparent",
-                    transition: "all 0.2s ease-in-out",
-                    "&:hover": {
-                      borderBottom: "2px solid #aaa",
-                      opacity: 0.8,
-                    },
-                  }}
-                >
-                  Recently Deleted
-                </Typography>
+                {!vistinguser && (
+                  <>  {/* Only show for owner */}
+                    <Typography
+                      variant="body1"
+                      onClick={() => setSelectedTab('archived')}
+                      sx={{
+                        cursor: 'pointer',
+                        fontWeight: selectedTab === 'archived' ? 'bold' : 'normal',
+                        pb: 1,
+                        fontSize: '16px',
+                        color: '#000',
+                        borderBottom: selectedTab === 'archived' ? '2px solid black' : '2px solid transparent',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': { borderBottom: '2px solid #aaa', opacity: 0.8 },
+                      }}
+                    >
+                      Archived
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      onClick={() => setSelectedTab('recentlyDeleted')}
+                      sx={{
+                        cursor: 'pointer',
+                        fontWeight: selectedTab === 'recentlyDeleted' ? 'bold' : 'normal',
+                        pb: 1,
+                        fontSize: '16px',
+                        color: '#000',
+                        borderBottom: selectedTab === 'recentlyDeleted' ? '2px solid black' : '2px solid transparent',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': { borderBottom: '2px solid #aaa', opacity: 0.8 },
+                      }}
+                    >
+                      Recently Deleted
+                    </Typography>
+                  </>
+                )}
               </Box>
 
-              {(userDetails.private === false || userDetails.followers?.includes(user?._id)) || userDetails.id === user?._id ? (
+              {/* Posts Grid or Private Message */}
+              {((selectedTab === 'all') ||
+                (!vistinguser && selectedTab === 'archived') ||
+                (!vistinguser && selectedTab === 'recentlyDeleted')) ? (
                 filteredPosts.length > 0 ? (
                   <Grid container spacing={1} mt={2}>
                     {filteredPosts.map((post, idx) => (
                       <Grid item xs={4} key={idx}>
                         <Box
                           onClick={() => handlePostClick(post)}
-                          sx={{
-                            width: "100%",
-                            aspectRatio: "1/1",
-                            cursor: "pointer",
-                            overflow: "hidden",
-                          }}
+                          sx={{ width: '100%', aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden' }}
                         >
                           <img
                             src={post.images?.[0] || post.postimg}
                             alt="post"
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         </Box>
                       </Grid>
                     ))}
                   </Grid>
-
                 ) : (
                   <Typography
                     variant="body2"
-                    sx={{ textAlign: "center", color: "gray", fontStyle: "italic", marginTop: '20%' }}
+                    sx={{ textAlign: 'center', color: 'gray', fontStyle: 'italic', marginTop: '20%' }}
                   >
                     No Posts Available
                   </Typography>
                 )
               ) : (
-                <Box sx={{ textAlign: "center", mt: 5 }}>
-                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                    <LockIcon sx={{ fontSize: 50, color: "gray" }} />
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                <Box sx={{ textAlign: 'center', mt: 5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <LockIcon sx={{ fontSize: 50, color: 'gray' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                       This account is private
                     </Typography>
-                    <Typography sx={{ color: "gray" }}>
+                    <Typography sx={{ color: 'gray' }}>
                       Follow to see their photos and videos.
                     </Typography>
                     <Button
                       variant="contained"
-                      sx={{
-                        borderRadius: 2,
-                        padding: "6px 12px",
-                        fontSize: "14px",
-                        backgroundColor: isConnected ? "#f0f0f0" : "#007bff",
-                        color: isConnected ? "#000" : "#fff",
-                        "&:hover": { backgroundColor: isConnected ? "#e0e0e0" : "#0056b3" },
-                      }}
+                      sx={{ borderRadius: 2, padding: '6px 12px', fontSize: '14px', backgroundColor: isConnected ? '#f0f0f0' : '#007bff', color: isConnected ? '#000' : '#fff', '&:hover': { backgroundColor: isConnected ? '#e0e0e0' : '#0056b3' } }}
                       onClick={handleConnectToggle}
                       disabled={loading}
                     >
-                      {loading ? (
-                        <CircularProgress size={20} sx={{ color: "inherit" }} />
-                      ) : isConnected ? (
-                        <>
-                          Following <span style={{ marginLeft: "5px" }}>▼</span>
-                        </>
-                      ) : (
-                        "Connect"
-                      )}
+                      {loading ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : isConnected ? <>Following ▼</> : 'Connect'}
                     </Button>
                   </Box>
                 </Box>
               )}
             </Box>
-          </Box>
-        </Container>
+          </Grid>
+
+        </Grid>
 
         {/* Post Modal */}
         {selectedPost && (
           <Modal
             open={openPostModal}
-            onClose={() => { setOpenPostModal(false); setCurrentPostIndex(0); setCurrentImageIndex(0) }}
+            onClose={() => setOpenPostModal(false)}
             BackdropProps={{
-              sx: {
-                backdropFilter: "blur(10px)",
-                backgroundColor: "rgba(0, 0, 0, 0.4)",
-              },
+              sx: { backdropFilter: "blur(10px)", backgroundColor: "rgba(0,0,0,0.4)" }
             }}
           >
             <Box
               sx={{
                 position: "absolute",
-                top: "50%",
-                left: "50%",
+                top: "50%", left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: "80vw",
-                maxWidth: "900px",
-                maxHeight: "90vh",
-                height: "80vh",
-                display: "flex",
+                width: 800,
+                height: 600,
                 bgcolor: "#fff",
                 borderRadius: 2,
-
                 boxShadow: 3,
-                position: "relative",
+                p: 0,
+                display: "flex",
               }}
             >
-              {/* Next Post Button */}
-              {currentPostIndex > 0 && (
-                <IconButton
-                  onClick={handlePrevPost}
-                  sx={{
-                    position: "fixed",
-                    left: "-50%", // Fixed positioning outside modal
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "white",
-                    backgroundColor: "rgba(0, 0, 0, 0.4)",
-                    zIndex: 1500, // Ensures it is above all elements
-                    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
-                  }}
-                >
-                  <ArrowBackIosNewIcon />
-                </IconButton>
-              )}
-
-              {/* Next Post Button */}
-              {currentPostIndex < posts.length - 1 && (
-                <IconButton
-                  onClick={handleNextPost}
-                  sx={{
-                    position: "fixed",
-                    right: "-50%", // Fixed positioning outside modal
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "white",
-                    backgroundColor: "rgba(0, 0, 0, 0.4)",
-                    zIndex: 1500, // Ensures it is above all elements
-                    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.6)" },
-                  }}
-                >
-                  <ArrowForwardIosIcon />
-                </IconButton>
-              )}
-              {/* Left Section - Image Carousel */}
-              <Box sx={{ width: "60%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", bgcolor: "#000" }}>
-                {selectedPost?.images?.length > 0 ? (
-                  <>
-                    {currentImageIndex > 0 && (
-                      <IconButton
-                        onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
-                        sx={{
-                          position: "absolute",
-                          left: 10,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: "white",
-                          backgroundColor: "rgba(0, 0, 0, 0.3)",
-                        }}
-                      >
-                        <ArrowBackIosNewIcon />
-                      </IconButton>
-                    )}
-                    <img
-                      src={selectedPost.images[currentImageIndex]}
-                      alt={`Post Image ${currentImageIndex + 1}`}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                      }}
-                    />
-                    {currentImageIndex < selectedPost.images.length - 1 && (
-                      <IconButton
-                        onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
-                        sx={{
-                          position: "absolute",
-                          right: 10,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          color: "white",
-                          backgroundColor: "rgba(0, 0, 0, 0.3)",
-                        }}
-                      >
-                        <ArrowForwardIosIcon />
-                      </IconButton>
-                    )}
-                  </>
-                ) : (
-                  <img
-                    src={selectedPost.postimg}
-                    alt="Post"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                    }}
+              <Grid container sx={{ height: "100%" }}>
+                {/* ─── LEFT COLUMN: IMAGE ─── */}
+                <Grid item xs={6} sx={{ backgroundColor: "#000", position: "relative" }}>
+                  <Box
+                    component="img"
+                    src={selectedPost.images?.[currentImageIndex] || selectedPost.postimg}
+                    sx={{ width: "100%", height: "100%", objectFit: "contain" }}
                   />
-                )}
-              </Box>
+                </Grid>
 
-              {/* Right Section - Comments */}
-              <Box sx={{ width: "40%", display: "flex", flexDirection: "column", bgcolor: "#fff", p: 2 }}>
+                {/* ─── RIGHT COLUMN: CAPTION, ICONS, COMMENTS ─── */}
+                <Grid
+                  item
+                  xs={6}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
 
-                {/* Post Owner with Three-Dot Menu */}
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar src={userDetails.profileImage} sx={{ width: 32, height: 32, mr: 1 }} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>{selectedPost?.userName}</Typography>
-                  </Box>
-                  <IconButton onClick={handlePostMenuOpen}>
-                    <MoreVertIcon />
-                  </IconButton>
-                  <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    transformOrigin={{
-                      vertical: 'top',
-                      horizontal: 'right',
-                    }}
-                    sx={{ mt: 1 }}
-                  >
-                    {userDetails.id === user?._id && (
-                      <>
-                        <MenuItem onClick={() => { handleArchivePost(); handleMenuClose(); }}>
-                          Archive
-                        </MenuItem>
-                        <MenuItem onClick={() => { handleDeleteclick(); handleMenuClose(); }}>
-                          Delete
-                        </MenuItem>
-                      </>
-                    )}
-                    <MenuItem onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
-                      <ShareIcon sx={{ mr: 1 }} /> Share Profile
-                    </MenuItem>
-                  </Menu>
-
-
-                </Box>
-
-                {/* Post Caption */}
-                {selectedPost?.content && (
-                  <Typography sx={{ color: "#555" }}>{selectedPost.content}</Typography>
-                )}
-
-                {/* Comments List */}
-                <Box sx={{ flexGrow: 1, overflowY: "auto", maxHeight: "90%", pr: 1 }}>
-                  <List>
-                    {comments[selectedPost.postId]?.map((comment, index) => (
-                      <ListItem key={index} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Avatar src={comment.userimg} sx={{ width: 28, height: 28 }} />
-                        <Box>
-                          <Typography sx={{ fontWeight: "bold", fontSize: "14px" }}>
-                            {comment.username}
-                          </Typography>
-                          <Typography sx={{ fontSize: "14px", color: "#555" }}>
-                            {comment.text}
-                          </Typography>
-                        </Box>
-                        <IconButton sx={{ ml: "auto", color: "#FF3040" }}>
-                          <FavoriteIcon fontSize="small" />
-                        </IconButton>
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-                {/* Post Interaction Stats: Likes, Comments, Share */}
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1 }}>
-                  <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                    <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ color: "#FF3040" }}>
-                      <FavoriteIcon />
-                    </IconButton>
-                    <Typography variant="body2">{selectedPost.likes?.length || 0} Likes</Typography>
-
-                    <IconButton disabled>
-                      <ChatBubbleOutlineIcon />
-                    </IconButton>
-                    <Typography variant="body2">
-                      {comments[selectedPost.postId]?.length || 0} Comments
+                  }}
+                >
+                  {/* Caption */}
+                  <Box sx={{ p: 2 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {selectedPost.content}
                     </Typography>
                   </Box>
 
-                  <IconButton
-                    onClick={() => {
-                      setOpenShareModal(true);
-                    }}
-                    sx={{ color: "#333" }}
-                  >
-                    <ShareIcon />
-                  </IconButton>
-                </Box>
-
-
-                {/* Add Comment Box */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    placeholder="Add a comment..."
-                    value={newComment[selectedPost.postId] || ""}
-                    onChange={(e) =>
-                      setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
-                    }
+                  {/* ─── Like / Comment / Share ─── */}
+                  <Box
                     sx={{
-                      borderRadius: "20px",
-                      backgroundColor: "#f8f8f8",
-                      "& .MuiOutlinedInput-root": { borderRadius: "20px" },
+                      px: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 3,
                     }}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleAddComment(selectedPost.postId)}
-                    sx={{ borderRadius: "20px" }}
                   >
-                    Post
-                  </Button>
-                </Box>
-              </Box>
+                    {/* LIKE */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ p: 0 }}>
+                        {isLiked
+                          ? <AiFillLike size={20} color="#073574" />   // filled + your blue
+                          : <AiOutlineLike size={20} />                // outline default
+                        }
+                      </IconButton>
+                      <Typography variant="body2">
+                        {Array.isArray(selectedPost.likes)
+                          ? selectedPost.likes.length
+                          : selectedPost.likes || 0}
+                      </Typography>
+                    </Box>
+
+
+                    {/* COMMENT */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <FaRegComment size={18} />
+                      <Typography variant="body2">
+                        {comments[selectedPost.postId]?.length || 0}
+                      </Typography>
+                    </Box>
+
+                    {/* SHARE */}
+                    <IconButton sx={{ p: 0 }}>
+                      <GiShare size={18} />
+                    </IconButton>
+                  </Box>
+                  {/* Three-dot menu for owner */}
+                  {selectedPost?.userId === user?._id && (
+                    <IconButton
+                      onClick={handlePostMenuOpen}
+                      sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
+                    >
+                      <CiMenuKebab size={24} />
+                    </IconButton>
+                  )}
+                  <Menu
+                    anchorEl={postMenuAnchorEl}
+                    open={Boolean(postMenuAnchorEl)}
+                    onClose={handlePostMenuClose}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        handleDeleteclick();
+                        handlePostMenuClose();
+                      }}
+                    >
+                      Delete Post
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleArchivePost();
+                        handlePostMenuClose();
+                      }}
+                    >
+                      {selectedPost.archived ? 'Unarchive Post' : 'Archive Post'}
+                    </MenuItem>
+                  </Menu>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  {/* Scrollable comments list */}
+                  <Box
+                    sx={{
+                      flexGrow: 1,
+                      overflowY: "auto",
+                      px: 2,
+                    }}
+                  >
+                    {comments[selectedPost.postId]?.map((c, i) => (
+                      <Box key={i} sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
+                        <Avatar src={c.userimg} sx={{ width: 32, height: 32, mr: 1 }} />
+                        <Box>
+                          <Typography variant="subtitle2">{c.username}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {c.text}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )) || (
+                        <Typography color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
+                          No comments yet.
+                        </Typography>
+                      )}
+                  </Box>
+
+                  {/* Add comment input */}
+                  <Box
+                    sx={{
+                      p: 2,
+                      display: "flex",
+                      gap: 1,
+                      borderTop: "1px solid #eee",
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Add a comment…"
+                      value={newComment[selectedPost.postId] || ""}
+                      onChange={e =>
+                        setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
+                      }
+                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: "20px" } }}
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={() => handleAddComment(selectedPost.postId)}
+                      sx={{ borderRadius: "20px" }}
+                    >
+                      Post
+                    </Button>
+                  </Box>
+                </Grid>
+              </Grid>
             </Box>
           </Modal>
+
+
         )}
 
         {/* Followers Modal */}
-        <Modal
-          open={openFollowersModal}
-          onClose={() => setOpenFollowersModal(false)}
-          BackdropProps={{
-            sx: {
-              backdropFilter: "blur(5px)"
-            }
-          }}
-        >
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 400,
-              bgcolor: "background.paper",
-              borderRadius: 2,
-              p: 4,
-            }}
-          >
+        <Modal open={openFollowersModal} onClose={() => setOpenFollowersModal(false)}>
+          <Box sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            p: 4,
+          }}>
             <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
               Followers
             </Typography>
             <List>
               {followersList.length > 0 ? (
-                followersList.map((follower) => (
-                  <ListItem
-                    key={follower._id}
-                    button
-                    onClick={() => {
-                      setOpenFollowersModal(false);
-                      handleProfile(follower._id);
-                    }}
-                  >
-                    <Avatar src={follower.profileImage} sx={{ mr: 2 }} />
-                    <ListItemText primary={follower.name} />
+                followersList.map((f) => (
+                  <ListItem key={f._id} button onClick={() => { setOpenFollowersModal(false); handleProfile(f._id) }}>
+                    <Avatar src={f.profileImage} sx={{ mr: 2 }} />
+                    <ListItemText primary={f.name} />
                   </ListItem>
                 ))
               ) : (
@@ -1269,15 +1257,12 @@ const ProfilePage = () => {
           </Box>
         </Modal>
 
+
         {/* Following Modal */}
         <Modal
           open={openFollowingModal}
           onClose={() => setOpenFollowingModal(false)}
-          BackdropProps={{
-            sx: {
-              backdropFilter: "blur(5px)"
-            }
-          }}
+          BackdropProps={{ sx: { backdropFilter: "blur(5px)" } }}
         >
           <Box
             sx={{
@@ -1294,19 +1279,24 @@ const ProfilePage = () => {
             <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
               Following
             </Typography>
-            <List>
+            <List sx={{ maxHeight: 300, overflowY: 'auto' }}>
               {followingList.length > 0 ? (
-                followingList.map((followingUser) => (
-                  <ListItem
-                    key={followingUser._id}
-                    button
-                    onClick={() => {
-                      setOpenFollowingModal(false);
-                      handleProfile(followingUser._id);
-                    }}
-                  >
-                    <Avatar src={followingUser.profileImage} sx={{ mr: 2 }} />
-                    <ListItemText primary={followingUser.name} />
+                followingList.map((u) => (
+                  <ListItem key={u._id} disablePadding>
+                    <ListItemButton
+                      onClick={() => {
+                        setOpenFollowingModal(false);
+                        handleProfile(u._id);
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar src={u.profileImage} />
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={u.name}
+                        secondary={`@${u.username}`}
+                      />
+                    </ListItemButton>
                   </ListItem>
                 ))
               ) : (
@@ -1317,6 +1307,7 @@ const ProfilePage = () => {
             </List>
           </Box>
         </Modal>
+
 
 
 
@@ -1346,23 +1337,6 @@ const ProfilePage = () => {
           </Box>
         </Modal>
 
-        {/* Modal for Camera Capture */}
-        <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
-          <Box
-            sx={{
-              position: "absolute",
-              marginTop: '50px',
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 430,
-              bgcolor: "white",
-              boxShadow: 24,
-              borderRadius: 2,
-            }}
-          >
-            <CameraCapture onImageUpload={handleImageUpload} />
-          </Box>
-        </Modal>
 
         {/* Modal for Story View */}
         <Modal open={openStory} onClose={() => setOpenStory(false)}>
@@ -1399,64 +1373,18 @@ const ProfilePage = () => {
               onClick={() => setOpenStory(false)}
               sx={{
                 position: "absolute",
-                top: 10,
-                right: 10,
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
-                color: "white",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                bgcolor: "white",
+                p: 3,
+                borderRadius: 2,
+                textAlign: "center",
+                width: "400px",
+                maxHeight: "500px",
+                overflowY: "auto",
               }}
-            >
-              <CloseIcon />
-            </IconButton>
-            {currentIndexStory > 0 && (
-              <IconButton
-                onClick={handlePrevStory}
-                sx={{
-                  position: "absolute",
-                  left: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
-                  color: "white",
-                }}
-              >
-                <ArrowBackIosNewIcon />
-              </IconButton>
-            )}
-            {currentIndexStory < userStories.length - 1 && (
-              <IconButton
-                onClick={handleNextStory}
-                sx={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
-                  color: "white",
-                }}
-              >
-                <ArrowForwardIosIcon />
-              </IconButton>
-            )}
-          </Box>
-        </Modal>
-
-        {/*blocked conatcts modal */}
-        <Modal open={openBlockedContacts} onClose={() => setOpenBlockedContacts(false)}>
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              bgcolor: "white",
-              p: 3,
-              borderRadius: 2,
-              textAlign: "center",
-              width: "400px",
-              maxHeight: "500px",
-              overflowY: "auto",
-            }}
-          >
+            ></IconButton>
             <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
             <List>
               {blockedUsers?.length > 0 ? (
@@ -1484,6 +1412,33 @@ const ProfilePage = () => {
         </Modal>
 
         {/* sharemodal*/}
+
+        <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
+        <List>
+          {blockedUsers?.length > 0 ? (
+            blockedUsers.map((blockedUser, index) => (
+              <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar src={blockedUser.profileImage} />
+                  <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
+                </Box>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={() => handleUnblock(blockedUser.id)}
+                >
+                  Unblock
+                </Button>
+              </ListItem>
+            ))
+          ) : (
+            <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
+          )}
+        </List>
+
+
+        {/* sharemodal*/}
         <ShareModal
           open={openShareModal}
           onClose={() => setOpenShareModal(false)}
@@ -1496,7 +1451,29 @@ const ProfilePage = () => {
           }}
           type="profile"
         />
-      </Box>
+
+        {/* Modal for Camera Capture */}
+        <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
+          <Box
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80vw',    // 80% of the viewport width
+              maxWidth: 400,    // but never exceed 400px
+              height: '50vh',   // 60% of the viewport height
+              maxHeight: 300,   // but never exceed 400px
+              boxShadow: 24,
+              borderRadius: 2,
+            }}
+          >
+
+            {/* tell CameraCapture to hand you back a blob */}
+            <CameraCapture onMediaUpload={handleCameraImageUpload} />
+          </Box>
+        </Modal>
+
+      </Container>
     </>
   );
 };
