@@ -51,51 +51,61 @@ const registerUser = async (req, res) => {
 };
 const loginUser = async (req, res) => {
     try {
-        const { idToken } = req.body; // Frontend should send Firebase ID Token
-
-        // Verify the token with Firebase
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const email = decodedToken.email;
-
-        const firebaseUser = await admin.auth().getUser(decodedToken.uid);
-        if (!firebaseUser.emailVerified) {
-            return res.status(400).json({ message: "❌ Email not verified. Please check your email." });
+      const { idToken } = req.body; // Frontend should send Firebase ID Token
+  
+      // Verify the token with Firebase
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const email = decodedToken.email;
+  
+      const firebaseUser = await admin.auth().getUser(decodedToken.uid);
+      if (!firebaseUser.emailVerified) {
+        return res
+          .status(400)
+          .json({ message: "❌ Email not verified. Please check your email." });
+      }
+  
+      // Find user in MongoDB and populate follow lists
+      const user = await User.findOne({ email })
+        .populate("followings")
+        .populate("followers");
+  
+      if (!user) {
+        return res.status(400).json({ message: "Invalid email or password" });
+      }
+  
+      // Build the payload with every field from your schema
+      res.status(200).json({
+        message: "Login successful!",
+        user: {
+          _id:             user._id,
+          name:            user.name,
+          username:        user.username,
+          email:           user.email,
+          role:            user.role,
+          joinedAt:        user.joinedAt,
+          profileImage:    user.profileImage,
+          university:      user.university,
+          major:           user.major,
+          graduationYear:  user.graduationYear,
+          birthdate:       user.birthdate,
+          bio:             user.bio,
+          followings:      user.followings,        // populated array
+          followers:       user.followers,         // populated array
+          followingsNumber:user.followingsNumber,
+          followersNumber: user.followersNumber,
+          posts:           user.posts,
+          private:         user.private,
+          blockeduser:     user.blockeduser,       // array of IDs
+          blockedby:       user.blockedby          // array of IDs
         }
-        // Find user in MongoDB
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(400).json({ message: "Invalid email or password" });
-        }
-
-        // Debugging: Check what user object looks like
-        // console.log('User found:', user);
-
-        // Ensure the response sends the user object
-        res.status(200).json({
-            message: "Login successful!",
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                profileImage: user.profileImage,
-                university: user.university,
-                major: user.major,
-                graduationYear: user.graduationYear,
-                birthdate: user.birthdate,
-                bio: user.bio,
-                blockeduser: user.blockeduser,
-                blockedby: user.blockedby,
-
-            }
-        });
-
+      });
+  
     } catch (err) {
-        console.error(err);
-        res.status(401).json({ message: "Invalid or expired token" });
+      console.error(err);
+      res.status(401).json({ message: "Invalid or expired token" });
     }
-};
+  };
+  
 
 // Get User Profile
 const getUserProfile = async (req, res) => {
