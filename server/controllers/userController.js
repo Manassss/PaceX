@@ -347,7 +347,7 @@ const followrequest = async (req, res) => {
 
 const approvereject = async (req, res) => {
     const { targetUserId, requesterId, action } = req.body;
-
+    console.log
     try {
         // Always remove request from list
         await User.findByIdAndUpdate(targetUserId, {
