@@ -34,7 +34,7 @@ const Home = () => {
       }}
     >
       <motion.img
-        src={Logo}
+        src="/PACE.png"
         alt="PaceX Logo"
         initial={{ y: 0, scale: 1.3, opacity: 1 }}
         animate={{
