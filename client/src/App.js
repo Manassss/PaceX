@@ -22,8 +22,11 @@ import "react-toastify/dist/ReactToastify.css";
 import CommunityHome from "./components/CommunityHome";
 import CommunityDetail from "./components/CommunityDetail";
 import SearchPanel from "./components/Search";
-import { host } from '../components/apinfo';
+//import { host } from '../components/apinfo';
 // ✅ Initialize socket connection
+const host = process.env.NODE_ENV === 'development'
+  ? process.env.REACT_APP_DEV_API_BASE_URL
+  : process.env.REACT_APP_PROD_API_BASE_URL;
 const socket = io(`${host}`, { transports: ["websocket"] });
 
 function AppContent({ userId }) {
