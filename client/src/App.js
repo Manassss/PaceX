@@ -30,7 +30,7 @@ function AppContent({ userId }) {
   const location = useLocation();
   const hiddenRoutes = ["/", "/register", "/login", "/home", "/chatbox"];
   const showNavbar = !hiddenRoutes.includes(location.pathname);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
 
   // ✅ Listen for real-time notifications
@@ -55,6 +55,14 @@ function AppContent({ userId }) {
   return (
     <>
       <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/home" element={<Home />} />
+        </Routes>
+
         {/* Navbar Section */}
         {showNavbar && (
           <Navbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
@@ -64,11 +72,12 @@ function AppContent({ userId }) {
         <Box
           sx={{
             flexGrow: 1,
-            width: "100%",
+            // width: "100%",
             overflowY: "auto",
-            ml: showNavbar ? { xs: "80px", sm: "139px" } : 0,
+            ml: { xs: "0", sm: "7.5%", md: "7.5%", lg: "7.5%", },
             height: "100vh",
             transition: "margin-left 0.3s ease",
+            // mr: "10%"
           }}
         >
           {/* Toast Notifications */}
@@ -85,11 +94,9 @@ function AppContent({ userId }) {
 
           {/* Routes */}
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/register" element={<Register />} />
+
             <Route path="/Search" element={<SearchPanel />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/home" element={<Home />} />
+
             <Route path="/add-post" element={<AddPost />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/userhome/" element={<UserHome />} />
@@ -111,7 +118,7 @@ function AppContent({ userId }) {
               sx={{
                 position: "fixed",
                 top: 0,
-                left: isCollapsed ? "120px" : "139px", // Match collapsed navbar
+                left: { xs: '0', sm: "120px", md: '120px', lg: '120px' }, // Match collapsed navbar
                 height: "100vh",
                 display: "flex",
                 zIndex: 1100,

@@ -39,7 +39,7 @@ const UserHome = () => {
   const [isMessengerOpen, setMessengerOpen] = useState(false); // Messenger Toggle State
   const [userProfile, setUserProfile] = useState(null);
   const [recommendedProfiles, setRecommendedProfiles] = useState([]);
-  const isTablet = useMediaQuery("(max-width: 960px)");
+  const isTablet = useMediaQuery("(max-width: 1000px)");
   const [open, setOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -466,27 +466,29 @@ const UserHome = () => {
       sx={{
         background: "#f8f2ec",
         minHeight: "100vh",
-        pr: 0,
+        width: '100%',
         overflowX: "hidden",
-        transition: "margin-left 0.3s ease",
+        //transition: "margin-left 0.3s ease",
         display: "flex",
         flexDirection: "row",
-        alignItems: "center",
-
-        backgroundColor: "#e5e5e5"
+        // alignItems: "center",
+        left: 0,
+        backgroundColor: "#e5e5e5",
+        //position: 'sticky'
       }}
     >
       <Box
         sx={{
-          position: "relative",
+          // position: "relative",
           width: "100%",
           maxWidth: "1000px",
-          margin: "0 auto",
+
           py: 2,
           mt: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center", // ✅ center the post box horizontally
+          ml: { xs: "0", sm: "0", md: "5%", lg: "15%" },
         }}
       >
         <Box
@@ -498,7 +500,7 @@ const UserHome = () => {
             gap: 2,
             overflowY: "hidden",
 
-            marginRight: '10%'
+            alignItems: "center", // ✅ center the post box horizontally
 
           }}
         >
@@ -532,13 +534,16 @@ const UserHome = () => {
         </Box>
       </Box>
 
-      <RecommendedUsers
-        users={users}
-        visibleCount={visibleCount}
-        setVisibleCount={setVisibleCount}
-        following={following}
-        handleFollowToggle={handleFollowToggle}
-      />
+
+      {(!isMobile || !isTablet) ?
+        <RecommendedUsers
+          users={users}
+          visibleCount={visibleCount}
+          setVisibleCount={setVisibleCount}
+          following={following}
+          handleFollowToggle={handleFollowToggle}
+        /> : <></>}
+
 
 
       {/* Modal for Viewed Story View */}

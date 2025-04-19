@@ -40,34 +40,34 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     // Expand only on userhome, collapse on any other route
-    if (location.pathname === "/userhome") {
-      setIsCollapsed(false);
-    } else {
-      setIsCollapsed(true);
-    }
+    // if (location.pathname === "/userhome") {
+    //   setIsCollapsed(false);
+    // } else {
+    //   setIsCollapsed(true);
+    // }
   }, [location.pathname, setIsCollapsed]);
 
   const handleNavItem = (item) => {
     if (item.label === "Search") {
       // Open search panel and collapse sidebar immediately
       setShowSearchPanel(true);
-      setIsCollapsed(true);
+      // setIsCollapsed(true);
     } else {
       // Close search panel
       setShowSearchPanel(false);
       // Expand on Home, collapse on any other screen
-      if (item.path === "/userhome" || item.label === "Add Post") {
-        setIsCollapsed(false);
-      } else {
-        setIsCollapsed(true);
-      }
+      // if (item.path === "/userhome" || item.label === "Add Post") {
+      //   setIsCollapsed(false);
+      // } else {
+      //   setIsCollapsed(true);
+      // }
       if (item.label === "Add Post") {
         setOpenCreateModal(true);
       }
@@ -118,7 +118,7 @@ const Navbar = () => {
         height: "100vh",
         bgcolor: "#073574",
         color: "white",
-        display: "flex",
+        display: { xs: "none", sm: "flex", md: "flex", lg: "flex" },
         flexDirection: "column",
         justifyContent: "space-between",
         paddingLeft: isCollapsed ? "8px" : "16px",
@@ -188,7 +188,7 @@ const Navbar = () => {
             transition: "all 0.3s ease"
           }}
           onClick={() => {
-            setIsCollapsed(true);
+            // setIsCollapsed(true);
             setShowSearchPanel(false);
             navigate(`/profile/${user?._id}`);
           }}

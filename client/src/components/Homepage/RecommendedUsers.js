@@ -1,6 +1,6 @@
 // components/RecommendedUsers.js
 import React from 'react';
-import { Box, Paper, Typography, List, ListItem, Avatar, ListItemText, Button } from '@mui/material';
+import { Box, Paper, Typography, List, ListItem, Avatar, ListItemText, Button, useMediaQuery } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
@@ -50,15 +50,17 @@ const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowTo
         const dummyFrequentlySearched = ["dummyId1", "dummyId2"];
         return dummyFrequentlySearched.includes(candidateId) ? 5 : 0;
     };
+    const isMobile = useMediaQuery('(max-width: 480px)');
+    const isTablet = useMediaQuery('(max-width: 1030px)')
     return (
         <Box
             sx={{
-                width: 350,
+                width: "20%",
                 position: "fixed",
                 top: 40,
                 right: "5%",
                 height: "90vh",
-                display: { xs: "none", md: "block" },
+                display: { xs: 'none', md: 'none', lg: 'block' },
                 zIndex: 1,
             }}
         >
