@@ -52,7 +52,7 @@ import { GiShare } from "react-icons/gi";
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FollowRequest from '../components/Profile/FollowRequest';
-
+import { host } from '../components/apinfo';
 
 
 const ProfilePage = () => {
@@ -114,7 +114,7 @@ const ProfilePage = () => {
   const fetchUserProfile = async () => {
     try {
 
-      const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+      const res = await axios.get(`${host}/api/users/profile/${userId}`);
       console.log("Fetched User Data:", res.data); // Debugging output
 
       // Transform the data
@@ -149,7 +149,7 @@ const ProfilePage = () => {
         const profiles = await Promise.all(
           res.data.requests.map(async (reqUserId) => {
             try {
-              const userRes = await axios.get(`http://localhost:5001/api/users/profile/${reqUserId}`);
+              const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
 
               return {
                 _id: userRes.data._id,
@@ -203,7 +203,7 @@ const ProfilePage = () => {
       const ids = userDetails.followers || [];
       const list = await Promise.all(
         ids.map(fid =>
-          axios.get(`http://localhost:5001/api/users/profile/${fid}`)   // ← no “profile” here
+          axios.get(`${host}/api/users/profile/${fid}`)   // ← no “profile” here
             .then(res => ({
               _id: res.data._id,
               name: res.data.name,
@@ -228,7 +228,7 @@ const ProfilePage = () => {
       const ids = userDetails.followings || []
       const list = await Promise.all(
         ids.map(async (fid) => {
-          const res = await axios.get(`http://localhost:5001/api/users/profile/${fid}`)
+          const res = await axios.get(`${host}/api/users/profile/${fid}`)
           const u = res.data
           return {
             _id: u._id,
@@ -254,7 +254,7 @@ const ProfilePage = () => {
     try {
       console.log("🗑️  Permanently deleting post:", postToDelete);
       const res = await axios.post(
-        `http://localhost:5001/api/posts/delete/${postToDelete}`
+        `${host}/api/posts/delete/${postToDelete}`
       );
       console.log("🗑️  delete response:", res.data);
 
@@ -278,7 +278,7 @@ const ProfilePage = () => {
     try {
       console.log("⏱️  Toggling temp-delete for post:", postToDelete);
       const res = await axios.post(
-        `http://localhost:5001/api/posts/tempdelete/${postToDelete}`
+        `${host}/api/posts/tempdelete/${postToDelete}`
       );
       console.log("⏱️  temp-delete response:", res.data);
 
@@ -309,7 +309,7 @@ const ProfilePage = () => {
   const handleRequestToggle = async () => {
     try {
 
-      const response = await axios.put("http://localhost:5001/api/users/followrequest", {
+      const response = await axios.put(`${host}/api/users/followrequest`, {
         requesterId: user?._id,
         targetUserId: userDetails.id,
       });
@@ -325,7 +325,7 @@ const ProfilePage = () => {
 
   const handleRespondRequest = async (requesterId, action) => {
     try {
-      const res = await axios.put("http://localhost:5001/api/users/approvereject", {
+      const res = await axios.put(`${host}/api/users/approvereject`, {
         targetUserId: user?._id,
         requesterId,
         action
@@ -345,7 +345,7 @@ const ProfilePage = () => {
   const fetchComments = async (postId) => {
     try {
       console.log("Fetching comments for post:", postId);
-      const res = await axios.get(`http://localhost:5001/api/comment/${postId}`);
+      const res = await axios.get(`${host}/api/comment/${postId}`);
 
       console.log("Fetched Comments:", res.data);  // Debugging log
 
@@ -374,7 +374,7 @@ const ProfilePage = () => {
       }
       console.log(user);
       console.log("payload", payload);
-      const res = await axios.post("http://localhost:5001/api/comment/add", payload);
+      const res = await axios.post(`${host}/api/comment/add`, payload);
 
       console.log("✅ Comment Added:", res.data);
       setNewComment({ ...newComment, [postId]: "" }); // Clear input field
@@ -409,10 +409,10 @@ const ProfilePage = () => {
     try {
       // call the correct endpoint
       const res = alreadyLiked
-        ? await axios.delete("http://localhost:5001/api/likes/remove", {
+        ? await axios.delete(`${host}/api/likes/remove`, {
           data: { userId: user._id, postId },
         })
-        : await axios.post("http://localhost:5001/api/likes/add", { userId: user._id, postId });
+        : await axios.post(`${host}/api/likes/add`, { userId: user._id, postId });
 
       console.log("✅ Like toggled:", res.data);
 
@@ -474,7 +474,7 @@ const ProfilePage = () => {
     if (!userId) return;
     const fetchPosts = async () => {
       try {
-        const res = await axios.get(`http://localhost:5001/api/posts/${id}`);
+        const res = await axios.get(`${host}/api/posts/${id}`);
         console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
 
@@ -498,7 +498,7 @@ const ProfilePage = () => {
         const postsWithComments = await Promise.all(
           transformedPosts.map(async (post) => {
             try {
-              const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post.postId}`);
+              const commentsRes = await axios.get(`${host}/api/comment/${post.postId}`);
               return { ...post, comments: commentsRes.data }; // Attach fetched comments
             } catch (commentErr) {
               console.error(`Error fetching comments for post ${post.postId}:`, commentErr.message);
@@ -520,7 +520,7 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/story/all');
+        const res = await axios.get(`${host}/api/story/all`);
         setStories(res.data);
         const filtered = res.data.filter(story => story.userId.toString() === userId.toString());
         setUserStories(filtered);
@@ -668,7 +668,7 @@ const ProfilePage = () => {
   const handleFollowToggle = async (targetUserId) => {
     try {
       console.log(`user id ${user?._id} and targetid ${targetUserId}`);
-      const response = await fetch('http://localhost:5001/api/users/follow', {
+      const response = await fetch(`${host}/api/users/follow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -693,7 +693,7 @@ const ProfilePage = () => {
 
       const blockedUsersDetails = await Promise.all(
         blockedUserIds.map(async (blockedUserId) => {
-          const userRes = await axios.get(`http://localhost:5001/api/users/profile/${blockedUserId}`);
+          const userRes = await axios.get(`${host}/api/users/profile/${blockedUserId}`);
           return {
             id: userRes.data._id,
             name: userRes.data.name,
@@ -714,7 +714,7 @@ const ProfilePage = () => {
         userId: user?._id,
         blocked_userId: blockedUserId
       }
-      const res = await axios.post(`http://localhost:5001/api/users/unblock`, payload);
+      const res = await axios.post(`${host}/api/users/unblock`, payload);
       console.log("Response:", res.data.message);
       setblockedUsers((prevBlockedUsers) =>
         prevBlockedUsers.filter(user => user.id !== blockedUserId)
@@ -732,7 +732,7 @@ const ProfilePage = () => {
         userId: user?._id,
         blocked_userId: userDetails.id
       }
-      const res = await axios.post(`http://localhost:5001/api/users/block`, payload);
+      const res = await axios.post(`${host}/api/users/block`, payload);
       console.log("Response:", res.message);
       fetchUserProfile();
       navigate('/userhome')
@@ -752,7 +752,7 @@ const ProfilePage = () => {
         userId: userDetails.id, // Ensure correct user ID is sent
       };
 
-      const res = await axios.post(`http://localhost:5001/api/posts/archive`, payload);
+      const res = await axios.post(`${host}/api/posts/archive`, payload);
 
       console.log("Archive Response:", res.data);
 

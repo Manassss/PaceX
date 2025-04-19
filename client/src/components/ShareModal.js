@@ -3,7 +3,7 @@ import { Modal, Box, Typography, List, ListItem, Avatar, ListItemText, Button, I
 import CloseIcon from '@mui/icons-material/Close';
 import axios from 'axios';
 import { useAuth } from '../auth/AuthContext';
-
+import { host } from '../components/apinfo';
 const ShareModal = ({ open, onClose, contentToShare, type }) => {
     const [users, setUsers] = useState([]);
     const { user } = useAuth();
@@ -11,7 +11,7 @@ const ShareModal = ({ open, onClose, contentToShare, type }) => {
         console.log("contenttoshare", contentToShare);
         const fetchUsers = async () => {
             try {
-                const res = await axios.get(`http://localhost:5001/api/chat/getusers/${user?._id}`);
+                const res = await axios.get(`${host}/api/chat/getusers/${user?._id}`);
                 setUsers(res.data);
             } catch (err) {
                 console.error("Error fetching users:", err);
@@ -44,7 +44,7 @@ const ShareModal = ({ open, onClose, contentToShare, type }) => {
         console.log("Sending messageData:", messageData); // ✅ Debugging log
 
         try {
-            await axios.post("http://localhost:5001/api/chat/send", messageData);
+            await axios.post(`${host}/api/chat/send`, messageData);
             onClose(); // Close modal after sharing
         } catch (err) {
             console.error("Error sharing:", err.response?.data || err);

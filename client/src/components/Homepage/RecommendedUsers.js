@@ -4,7 +4,7 @@ import { Box, Paper, Typography, List, ListItem, Avatar, ListItemText, Button, u
 import { Link } from 'react-router-dom';
 import { useAuth } from "../../auth/AuthContext";
 import axios from "axios";
-
+import { host } from '../apinfo';
 const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowToggle, following }) => {
     const { user } = useAuth();
     const [recommendedProfiles, setRecommendedProfiles] = useState([]);
@@ -30,7 +30,7 @@ const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowTo
         const fetchFollowing = async () => {
             try {
                 if (!user?._id) return;
-                const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+                const res = await axios.get(`${host}/api/users/profile/${user._id}`);
                 const followingList = res.data.followings || [];
 
                 const rec = users

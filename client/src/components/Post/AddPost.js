@@ -19,7 +19,7 @@ import { storage } from '../../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Cropper from 'react-easy-crop';
 import { transform } from 'framer-motion';
-
+import { host } from '../apinfo';
 const AddPost = ({ open: isOpen, onClose }) => {
   const resetForm = () => {
     setContent('');
@@ -156,7 +156,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
         content: content || " ",
         images: postImages, // Send multiple images
       };
-      await axios.post('http://localhost:5001/api/posts/add', postData);
+      await axios.post(`${host}/api/posts/add`, postData);
       alert('Post created successfully!');
       setContent('');
       setPostImages([]);

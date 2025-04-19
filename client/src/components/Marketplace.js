@@ -15,7 +15,7 @@ import ChatIcon from "@mui/icons-material/Chat"; // ✅ Correct import for Mater
 import { useNavigate } from 'react-router-dom';  // Import useNavigate at the top
 import Chatbox from './Chatbox';
 
-
+import { host } from '../components/apinfo';
 
 
 const Marketplace = () => {
@@ -56,7 +56,7 @@ const Marketplace = () => {
 
     const fetchListings = async () => {
         try {
-            const res = await axios.get("http://localhost:5001/api/marketplace/all");
+            const res = await axios.get(`${host}/api/marketplace/all`);
             console.log("API Listings Response:", res.data); // ✅ Debugging
             setListings(res.data);
             setFilteredListings(res.data);
@@ -112,7 +112,7 @@ const Marketplace = () => {
 
     const openProfile = async (userId) => {
         try {
-            const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+            const res = await axios.get(`${host}/api/users/profile/${userId}`);
             setProfileUser(res.data);
             setOpenProfileModal(true);
         } catch (error) {
@@ -123,7 +123,7 @@ const Marketplace = () => {
 
     const handleUserMp = async () => {
         try {
-            const res = await axios.get(`http://localhost:5001/api/marketplace/${user?._id}`);
+            const res = await axios.get(`${host}/api/marketplace/${user?._id}`);
             // setProfileUser(res.data);
             // setOpenProfileModal(true);
             console.log("userId", res.data)
@@ -175,7 +175,7 @@ const Marketplace = () => {
                 console.log("Sending Data to Backend:", requestData); // ✅ Log request data
 
                 try {
-                    const response = await axios.post('http://localhost:5001/api/marketplace/add', requestData);
+                    const response = await axios.post(`${host}/api/marketplace/add`, requestData);
                     console.log("Response from server:", response.data);
                     alert("Listing added successfully!");
                     setOpenModal(false);

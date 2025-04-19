@@ -40,7 +40,7 @@ import {
   ListItemIcon,   // ← and this
   ListItemText    // ← and this
 } from '@mui/material';
-
+import { host } from '../components/apinfo';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import RuleIcon from '@mui/icons-material/Rule';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -146,7 +146,7 @@ const CommunityPage = () => {
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/community");
+        const response = await axios.get(`${host}/api/community`);
         console.log("✅ communities fetched:", response.data);
         setCommunities(response.data.filter(c => !!c.name)); // filter invalid ones
       } catch (error) {
@@ -165,8 +165,8 @@ const CommunityPage = () => {
       setLoading(true);
       try {
         const [communityRes, postsRes] = await Promise.all([
-          axios.get(`http://localhost:5001/api/community/${selectedCommunity._id}`),
-          axios.get(`http://localhost:5001/api/community/post/${selectedCommunity._id}`)
+          axios.get(`${host}/api/community/${selectedCommunity._id}`),
+          axios.get(`${host}/api/community/post/${selectedCommunity._id}`)
         ]);
         console.log("fetchDetails communityRes:", communityRes);
         console.log("fetchDetails community data:", communityRes.data);
@@ -218,7 +218,7 @@ const CommunityPage = () => {
         members: [{ userId: user._id, role: "admin" }],
       };
 
-      const res = await axios.post("http://localhost:5001/api/community", payload);
+      const res = await axios.post(`${host}/api/community`, payload);
       setCommunities([res.data, ...communities]);
       setOpenModal(false);
       setName(""); setDescription(""); setCoverImage(null); setRules("");
@@ -258,7 +258,7 @@ const CommunityPage = () => {
 
       console.log("📤 Sending post payload:", postPayload);
 
-      const res = await axios.post(`http://localhost:5001/api/community/post`, postPayload);
+      const res = await axios.post(`${host}/api/community/post`, postPayload);
       setPosts((prev) => [res.data.post, ...prev]);
     } catch (error) {
       console.error("🔥 Error creating post:", error?.response?.data || error.message);
@@ -270,7 +270,7 @@ const CommunityPage = () => {
 
   // const handleLikePost = async (postId) => {
   //     try {
-  //         await axios.post(`http://localhost:5001/api/posts/${postId}/like`, { userId: user._id });
+  //         await axios.post(`${host}/api/posts/${postId}/like`, { userId: user._id });
   //         setPosts(posts.map(p =>
   //             p._id === postId ? { ...p, likes: [...p.likes, user._id] } : p
   //         ));
@@ -281,7 +281,7 @@ const CommunityPage = () => {
 
   const handleMembership = async () => {
     try {
-      await axios.post(`http://localhost:5001/api/community/togglemember`, {
+      await axios.post(`${host}/api/community/togglemember`, {
         communityId: selectedCommunity._id, userId: user._id
       });
       setIsMember(prev => !prev);
@@ -292,7 +292,7 @@ const CommunityPage = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:5001/api/community/${selectedCommunity._id}`);
+      await axios.delete(`${host}/api/community/${selectedCommunity._id}`);
       alert("Deleted successfully");
       setView("home");
     } catch (error) {
@@ -310,7 +310,7 @@ const CommunityPage = () => {
   const handleLikePost = async (postId) => {
     try {
       await axios.post(
-        `http://localhost:5001/api/community/${postId}/like`,
+        `${host}/api/community/${postId}/like`,
         { userId: user._id }
       );
       // Optimistic UI Update
@@ -338,7 +338,7 @@ const CommunityPage = () => {
 
     try {
       const res = await axios.post(
-        `http://localhost:5001/api/community/${postId}/comment`,
+        `${host}/api/community/${postId}/comment`,
         { userId: user._id, text }
       );
 

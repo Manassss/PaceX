@@ -7,7 +7,7 @@ import axios from "axios";
 import StoryViewer from "./StoryViewer";
 import { useAuth } from "../../auth/AuthContext";
 import CameraCapture from "../CameraComponent";
-
+import { host } from '../apinfo';
 const StoryBar = ({
     users,
 
@@ -23,7 +23,7 @@ const StoryBar = ({
 
     const fetchStories = async () => {
         try {
-            const res = await axios.get('http://localhost:5001/api/story/all');
+            const res = await axios.get(`${host}/api/story/all`);
             const todaystories = res.data.map(story => ({
                 storyId: story._id,
                 userId: story.userId,
@@ -73,7 +73,7 @@ const StoryBar = ({
         try {
             const postdata = { storyId, userId };
             console.log("postdata", postdata);
-            await axios.put("http://localhost:5001/api/story/view", postdata);
+            await axios.put(`${host}/api/story/view`, postdata);
             console.log(`👀 User ${user?._id} viewed story ${storyId}`);
         } catch (error) {
             console.error("🔥 Error updating story view:", error);
@@ -82,7 +82,7 @@ const StoryBar = ({
 
     const handleDeleteStory = async (storyId) => {
         try {
-            await axios.delete(`http://localhost:5001/api/story/delete/${storyId}`);
+            await axios.delete(`${host}/api/story/delete/${storyId}`);
             console.log("✅ Story deleted successfully");
 
             // Remove the deleted story from the state
@@ -132,7 +132,7 @@ const StoryBar = ({
                 mediaUrl: downloadURL,
                 mediaType: mediatype
             };
-            await axios.post('http://localhost:5001/api/story/add', postData);
+            await axios.post(`${host}/api/story/add`, postData);
             console.log("✅ Story uploaded successfully");
             setOpenStoryCamera(false);
             await fetchStories(); // 🔁 Refresh stories after upload

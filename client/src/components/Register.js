@@ -5,7 +5,7 @@ import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "
 import { useNavigate } from 'react-router-dom';
 import { motion } from "framer-motion";
 import Logo from "../assets/PACE.png";
-
+import { host } from '../components/apinfo';
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -35,7 +35,7 @@ const Register = () => {
       const idToken = await user.getIdToken();
 
       // Send registration data (and token) to your backend API.
-      await axios.post('http://localhost:5001/api/users/register', {
+      await axios.post(`${host}/api/users/register`, {
         idToken,
         name,
         email,

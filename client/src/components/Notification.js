@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
-
+import { host } from '../components/apinfo';
 // ✅ Initialize Socket.IO connection
-const socket = io("http://localhost:5001", {
+const socket = io(`${host}`, {
     transports: ["websocket"],
 });
 

@@ -22,9 +22,9 @@ import "react-toastify/dist/ReactToastify.css";
 import CommunityHome from "./components/CommunityHome";
 import CommunityDetail from "./components/CommunityDetail";
 import SearchPanel from "./components/Search";
-
+import { host } from '../components/apinfo';
 // ✅ Initialize socket connection
-const socket = io("http://localhost:5001", { transports: ["websocket"] });
+const socket = io(`${host}`, { transports: ["websocket"] });
 
 function AppContent({ userId }) {
   const location = useLocation();

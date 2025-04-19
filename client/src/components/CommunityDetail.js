@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-
+import { host } from '../components/apinfo';
 const CommunityDetail = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // Get community ID from URL
@@ -31,7 +31,7 @@ const CommunityDetail = () => {
     useEffect(() => {
         const fetchCommunity = async () => {
             try {
-                const response = await axios.get(`http://localhost:5001/api/community/${id}`);
+                const response = await axios.get(`${host}/api/community/${id}`);
                 setCommunity(response.data);
                 const memberData = response.data.members.find(member => member.userId === user._id);
                 setIsMember(!!memberData);
@@ -45,7 +45,7 @@ const CommunityDetail = () => {
 
         const fetchPosts = async () => {
             try {
-                const response = await axios.get(`http://localhost:5001/api/community/post/${id}`);
+                const response = await axios.get(`${host}/api/community/post/${id}`);
                 console.log(response.data) // ✅ Pass ID in URL
                 setPosts(response.data);
             } catch (error) {
@@ -59,7 +59,7 @@ const CommunityDetail = () => {
 
     const handleMembership = async () => {
         try {
-            await axios.post(`http://localhost:5001/api/community/togglemember`, { communityId: id, userId: user._id });
+            await axios.post(`${host}/api/community/togglemember`, { communityId: id, userId: user._id });
             setIsMember(prevState => !prevState); // Toggle membership state in UI
         } catch (error) {
             console.error("Error updating membership:", error);
@@ -68,7 +68,7 @@ const CommunityDetail = () => {
 
     const handleDelete = async () => {
         try {
-            await axios.delete(`http://localhost:5001/api/community/${id}`);
+            await axios.delete(`${host}/api/community/${id}`);
             alert("Community deleted successfully!");
             navigate("/community"); // Redirect to home or another page
         } catch (error) {
@@ -79,7 +79,7 @@ const CommunityDetail = () => {
     const handleCreatePost = async () => {
         if (!newPost.trim()) return;
         try {
-            const response = await axios.post(`http://localhost:5001/api/community/post`, {
+            const response = await axios.post(`${host}/api/community/post`, {
                 communityId: id,
                 userId: user._id,
                 content: newPost,
@@ -95,7 +95,7 @@ const CommunityDetail = () => {
 
     const handleLikePost = async (postId) => {
         try {
-            await axios.post(`http://localhost:5001/api/posts/${postId}/like`, { userId: user._id });
+            await axios.post(`${host}/api/posts/${postId}/like`, { userId: user._id });
             setPosts(posts.map(post =>
                 post._id === postId
                     ? { ...post, likes: [...post.likes, user._id] }

@@ -5,8 +5,8 @@ import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
 import { Send, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
-const socket = io("http://localhost:5001", {
+import { host } from '../components/apinfo';
+const socket = io(`${host}`, {
     transports: ["websocket", "polling"],
     withCredentials: true
 });
@@ -66,7 +66,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
         try {
 
             console.log("user whom connecting", userId);
-            const response = await axios.get('http://localhost:5001/api/chat/get', {
+            const response = await axios.get(`${host}/api/chat/get`, {
                 params: { user1: userId, user2: user._id }
             }); console.log("manasi", userId)
             console.log("resssss", response.data)
@@ -83,7 +83,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                 receiverId: userId,
                 text: message.trim(),
             };
-            const res = await axios.post('http://localhost:5001/api/chat/send', postData);
+            const res = await axios.post(`${host}/api/chat/send`, postData);
             console.log("res", res.chat)
 
 

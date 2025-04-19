@@ -9,8 +9,8 @@ import axios from 'axios';
 import { useTheme } from '@mui/material/styles';
 import io from 'socket.io-client';
 import Chatbox from './Chatbox';
-
-const socket = io("http://localhost:5001", {
+import { host } from '../components/apinfo';
+const socket = io(`${host}`, {
   transports: ["websocket", "polling"],
   withCredentials: true
 });
@@ -33,7 +33,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   // Fetch chat users with defensive API parsing
   const fetchChatUsers = async () => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/chat/getusers/${userId}`);
+      const res = await axios.get(`${host}/api/chat/getusers/${userId}`);
       const data = Array.isArray(res.data) ? res.data : res.data.users; // Check response structure
       setUsers(data.map(user => ({
         id: user._id,
@@ -47,7 +47,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   // Fetch user profile
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+      const res = await axios.get(`${host}/api/users/profile/${userId}`);
       setUserDetails(res.data);
     } catch (err) {
       console.error("Error fetching profile:", err.message);
@@ -70,7 +70,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
       }
       try {
         const res = await axios.get(
-          'http://localhost:5001/api/users/search',
+          `${host}/api/users/search`,
           { params: { query: search } }
         );
         setUsers(res.data);
@@ -116,7 +116,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   const getMessages = async () => {
     try {
       console.log("selccccc", selectedUser)
-      const response = await axios.get('http://localhost:5001/api/chat/get', {
+      const response = await axios.get(`${host}/api/chat/get`, {
         params: { user1: selectedUser.id, user2: user._id }
       });
       setChatHistory(response.data);
@@ -128,7 +128,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
 
   const postMessage = async (data) => {
     try {
-      await axios.post('http://localhost:5001/api/chat/send', data);
+      await axios.post(`${host}/api/chat/send`, data);
       console.log("✅ Message posted to DB:", data);
     } catch (err) {
       console.error('❌ Error sending message:', err.response?.data || err.message);
