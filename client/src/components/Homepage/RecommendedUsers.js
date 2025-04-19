@@ -1,14 +1,30 @@
 // components/RecommendedUsers.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Paper, Typography, List, ListItem, Avatar, ListItemText, Button, useMediaQuery } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import axios from "axios";
 
 const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowToggle, following }) => {
     const { user } = useAuth();
     const [recommendedProfiles, setRecommendedProfiles] = useState([]);
+    const [windowSize, setWindowSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight
+    });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+            console.log("📏 Window resized:", window.innerWidth, window.innerHeight);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const fetchFollowing = async () => {
@@ -60,7 +76,7 @@ const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowTo
                 top: 40,
                 right: "5%",
                 height: "90vh",
-                display: { xs: 'none', md: 'none', lg: 'block' },
+                display: windowSize.width <= 1700 ? 'none' : { xs: 'none', md: 'none', lg: 'block' },
                 zIndex: 1,
             }}
         >

@@ -1,5 +1,8 @@
 const express = require("express");
-const { registerUser, loginUser, getUserProfile, updateUserProfile, getAllUsers, toggleFollow, searchbyname, updateBlock, unblock } = require("../controllers/userController");  // ✅ Make sure loginUser is imported
+const { registerUser, loginUser, getUserProfile,
+    updateUserProfile, getAllUsers, toggleFollow,
+    searchbyname, updateBlock, unblock
+    , followrequest, approvereject } = require("../controllers/userController");  // ✅ Make sure loginUser is imported
 
 const router = express.Router();
 
@@ -11,6 +14,8 @@ router.get("/profile/:id", getUserProfile);
 
 //  Route to update user profile
 router.put("/profile/:id", updateUserProfile);
+router.put("/followrequest", followrequest)
+router.put("/approvereject", approvereject)
 
 //  Route to get all users
 router.get("/all", getAllUsers);

@@ -51,11 +51,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import { GiShare } from "react-icons/gi";
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-
-
-
-
-
+import FollowRequest from '../components/Profile/FollowRequest';
 
 
 
@@ -85,6 +81,7 @@ const ProfilePage = () => {
   const auth = getAuth();
   const userId = id ? id : user?._id;
   const [isConnected, setIsConnected] = useState(false);
+  const [isRequested, setIsRequested] = useState(false);
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState({});
@@ -110,8 +107,8 @@ const ProfilePage = () => {
   const [openChat, setOpenChat] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
-
-
+  const [openFollowRequestModal, setOpenFollowRequestModal] = useState(false);
+  const [requestProfiles, setRequestProfiles] = useState([]);
 
   //User Profile Details
   const fetchUserProfile = async () => {
@@ -136,14 +133,47 @@ const ProfilePage = () => {
         joinedAt: new Date(res.data.joinedAt).toLocaleDateString(),
         private: res.data.private,
         followers: res.data.followers,
-        followings: res.data.followings
+        followings: res.data.followings,
+        requests: res.data.requests
       };
 
       console.log("Transformed Data:", transformedData); // Debugging output
 
       setIsConnected(res.data.followers?.includes(user?._id) ? true : false);
+      setIsRequested(res.data.requests?.includes(user?._id));
       setUserDetails(transformedData);
       setFormData(transformedData);
+
+      // 🔥 Fetch profiles for each request user
+      if (Array.isArray(res.data.requests) && res.data.requests.length > 0) {
+        const profiles = await Promise.all(
+          res.data.requests.map(async (reqUserId) => {
+            try {
+              const userRes = await axios.get(`http://localhost:5001/api/users/profile/${reqUserId}`);
+
+              return {
+                _id: userRes.data._id,
+                name: userRes.data.name,
+                username: userRes.data.username,
+                profileImage: userRes.data.profileImage,
+              };
+
+            } catch (err) {
+              console.error(`Error fetching profile for request user ${reqUserId}:`, err.message);
+              return null; // Skip user on error
+            }
+          })
+        );
+
+        // Remove any failed/null results
+        const validProfiles = profiles.filter(p => p !== null);
+        console.log("vvalid", validProfiles)
+        setRequestProfiles(validProfiles);
+      } else {
+        setRequestProfiles([]); // Clear if no requests
+      }
+
+
     } catch (err) {
       console.error("Error fetching profile:", err.message);
     }
@@ -173,7 +203,7 @@ const ProfilePage = () => {
       const ids = userDetails.followers || [];
       const list = await Promise.all(
         ids.map(fid =>
-          axios.get(`http://localhost:5001/api/users/${fid}`)   // ← no “profile” here
+          axios.get(`http://localhost:5001/api/users/profile/${fid}`)   // ← no “profile” here
             .then(res => ({
               _id: res.data._id,
               name: res.data.name,
@@ -276,7 +306,39 @@ const ProfilePage = () => {
     }
   };
 
+  const handleRequestToggle = async () => {
+    try {
 
+      const response = await axios.put("http://localhost:5001/api/users/followrequest", {
+        requesterId: user?._id,
+        targetUserId: userDetails.id,
+      });
+
+      console.log("rrrr", response.data);
+
+      // Update local state to reflect request status
+      setIsRequested(!isRequested);
+    } catch (err) {
+      console.error("Error sending/canceling follow request:", err);
+    }
+  };
+
+  const handleRespondRequest = async (requesterId, action) => {
+    try {
+      const res = await axios.put("http://localhost:5001/api/users/approvereject", {
+        targetUserId: user?._id,
+        requesterId,
+        action
+      });
+
+      console.log("tdfhfbf", res.data.message);
+      setRequestProfiles(prev => prev.filter(r => r._id !== requesterId));
+      fetchUserProfile(); // Refresh profile info
+      setOpenFollowRequestModal(false)
+    } catch (err) {
+      console.error("Error approving/rejecting request:", err);
+    }
+  };
 
 
   // Function to fetch comments on posts
@@ -795,6 +857,9 @@ const ProfilePage = () => {
                     </MenuItem>,
                     <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
                       {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+                    </MenuItem>,
+                    <MenuItem key="requests" onClick={() => { setOpenFollowRequestModal(true); handleMenuClose(); }}>
+                      Follow Requests
                     </MenuItem>
                   ]
                   : [
@@ -806,6 +871,7 @@ const ProfilePage = () => {
                 <MenuItem key="share" onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
                   Share Profile
                 </MenuItem>
+
               </Menu>
             </Box>
 
@@ -868,16 +934,16 @@ const ProfilePage = () => {
                 {/* Connect / Follow */}
                 <Button
                   variant="contained"
-                  onClick={handleConnectToggle}
+                  onClick={handleRequestToggle}
                   disabled={loading}
                   sx={{
                     borderRadius: 2,
                     px: 2,
                     textTransform: 'none',
-                    backgroundColor: isConnected ? '#f0f0f0' : '#007bff',
-                    color: isConnected ? '#000' : '#fff',
+                    backgroundColor: isConnected || isRequested ? '#f0f0f0' : '#007bff',
+                    color: isConnected || isRequested ? '#000' : '#fff',
                     '&:hover': {
-                      backgroundColor: isConnected ? '#e0e0e0' : '#0056b3',
+                      backgroundColor: isConnected || isRequested ? '#e0e0e0' : '#0056b3',
                     },
                   }}
                 >
@@ -885,7 +951,9 @@ const ProfilePage = () => {
                     ? <CircularProgress size={20} sx={{ color: 'inherit' }} />
                     : isConnected
                       ? <>Following ▼</>
-                      : 'Connect'
+                      : isRequested
+                        ? "Requested"
+                        : 'Connect'
                   }
                 </Button>
 
@@ -1472,7 +1540,12 @@ const ProfilePage = () => {
             <CameraCapture onMediaUpload={handleCameraImageUpload} />
           </Box>
         </Modal>
-
+        <FollowRequest
+          open={openFollowRequestModal}
+          onClose={() => setOpenFollowRequestModal(false)}
+          requestProfiles={requestProfiles}
+          handleRespondRequest={handleRespondRequest}
+        />
       </Container>
     </>
   );

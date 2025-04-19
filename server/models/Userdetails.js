@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema({
     posts: { type: Number, default: 0 },
     private: { type: Boolean, default: false },
     blockedby: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    blockeduser: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    blockeduser: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    requests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     // URL for profile ima
 });
 
