@@ -1,269 +1,147 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Link } from '@mui/material';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import backgroundImage from "../assets/background.jpg"; // ✅ Import background image
-import logoImage from "../assets/logo.jpg"; // Import logo image
-import { styled } from '@mui/material/styles';
-
-// Custom styled components
-const StyledTextField = styled(TextField)({
-  '& .MuiOutlinedInput-root': {
-    height: '53px',
-    width: '313px',
-    background: 'rgba(41, 0, 0, 0.46)',
-    borderRadius: '16px',
-    color: 'rgba(255, 255, 255, 0.74)',
-    '& fieldset': {
-      borderColor: 'transparent',
-    },
-    '&:hover fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.5)',
-    },
-  },
-  '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.74)',
-    fontFamily: 'Inter',
-    fontStyle: 'normal',
-    fontWeight: 400,
-    fontSize: '16px',
-  },
-});
-
-const StyledButton = styled(Button)({
-  width: '187px',
-  height: '53px',
-  background: 'rgba(41, 0, 0, 0.46)',
-  borderRadius: '16px',
-  color: 'rgba(255, 255, 255, 0.74)',
-  fontFamily: 'Inter',
-  fontStyle: 'normal',
-  fontWeight: 700,
-  fontSize: '16px',
-  textTransform: 'uppercase',
-  '&:hover': {
-    background: 'rgba(41, 0, 0, 0.6)',
-  },
-});
-
+import { useNavigate } from 'react-router-dom';
+import { motion } from "framer-motion";
+import Logo from "../assets/PACE.png";
+import { host } from '../components/apinfo';
 const Register = () => {
-    const [formData, setFormData] = useState({
-        firstName: '',
-        email: '',
-        password: ''
-    });
-    const [message, setMessage] = useState('');
-    const navigate = useNavigate();
-    const auth = getAuth();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    username: ''
+  });
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+  const auth = getAuth();
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        try {
-            const { firstName, email, password } = formData;
+    try {
+      const { name, email, password, username } = formData;
 
-            // Register the user with Firebase
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            const idToken = await user.getIdToken(); // Get Firebase ID Token
+      // Create user using Firebase Authentication.
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-            // Send necessary user data (excluding password) and Firebase ID token to backend
-            await axios.post('http://localhost:5001/api/users/register', {
-                idToken,
-                firstName,
-                email
-            });
+      // Get an ID token to send to your backend.
+      const idToken = await user.getIdToken();
 
-            setMessage('🎉 Registration Successful!');
+      // Send registration data (and token) to your backend API.
+      await axios.post(`${host}/api/users/register`, {
+        idToken,
+        name,
+        email,
+        password,
+        username
+      });
 
-            // Send verification email
-            await sendEmailVerification(user);
-            console.log("📧 Verification Email Sent!");
+      setMessage('🎉 Registration Successful!');
+      await sendEmailVerification(user);
+      setMessage("📩 Please check your email and verify your account before logging in.");
+      navigate('/login');
+    } catch (err) {
+      // Enhanced error logging: display detailed error information from Firebase.
+      if (err.code && err.message) {
+        console.error("Registration Error:", err.code, err.message);
+        setMessage(`❌ Registration Failed: ${err.message}`);
+      } else {
+        console.error("Registration Error:", err.response?.data?.message || "Server Error");
+        setMessage('❌ Registration Failed: Server Error');
+      }
+    }
+  };
 
-            setMessage("📩 Please check your email and verify your account before logging in.");
-            navigate('/login'); // Redirect to login
+  return (
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        padding: "20px",
+        position: "relative",
+        overflow: "hidden",
+        background: "linear-gradient(135deg, #faf8f5 , #f0ebe4 )",
+      }}
+    >
+      <motion.img
+        src={Logo}
+        alt="PaceX Logo"
+        initial={{ y: 0, scale: 1.3, opacity: 1 }}
+        animate={{ y: "-100px", scale: 1, opacity: 1 }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+        style={{
+          width: "200px",
+          height: "180px",
+          marginBottom: "10px",
+          position: "relative",
+        }}
+      />
 
-        } catch (err) {
-            setMessage('❌ Registration Failed');
-            console.error("Registration Error:", err.response?.data?.message || "Server Error");
-        }
-    };
-
-    return (
-        <Box
-            sx={{
-                minHeight: "100vh",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                position: "relative",
-            }}
+      <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+      >
+        <Container
+          sx={{
+            width: { xs: "90%", sm: "450px" },
+            height: "auto",
+            borderRadius: "30px",
+            background: "linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.2) 100%)",
+            backdropFilter: "blur(15px)",
+            padding: "20px",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0px 8px 32px rgba(0, 0, 0, 0.05)",
+          }}
         >
-            {/* Logo in the upper left corner */}
-            <Box
-                component="img"
-                src={logoImage}
-                alt="PaceX Logo"
-                sx={{
-                    position: "absolute",
-                    top: "20px",
-                    left: "20px",
-                    width: "80px",
-                    height: "auto",
-                    borderRadius: "50%", // Make it circular
-                    boxShadow: "0 4px 8px rgba(0,0,0,0.3)", // Add shadow for better visibility
-                    zIndex: 10, // Ensure it's above other elements
-                }}
-            />
-            
-            {/* Home link in the upper right corner */}
-            <RouterLink to="/" style={{ textDecoration: 'none' }}>
-                <Box
-                    sx={{
-                        position: "absolute",
-                        top: "20px",
-                        right: "20px",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        fontSize: "18px",
-                        padding: "8px 16px",
-                        borderRadius: "4px",
-                        backgroundColor: "rgba(0,0,0,0.3)",
-                        transition: "background-color 0.3s",
-                        '&:hover': {
-                            backgroundColor: "rgba(0,0,0,0.5)",
-                        },
-                        zIndex: 10,
-                    }}
-                >
-                    Home
-                </Box>
-            </RouterLink>
-            
-            <Box
-                sx={{
-                    width: '447px',
-                    height: '612px',
-                    background: 'linear-gradient(180deg, rgba(105, 100, 100, 0.46) 1.5%, rgba(255, 255, 255, 0.01) 100%)',
-                    borderRadius: '33px',
-                    position: 'relative',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '40px 20px',
-                }}
-            >
-                <Typography 
-                    variant="h4" 
-                    component="h1" 
-                    sx={{
-                        fontFamily: 'Inter',
-                        fontWeight: 700,
-                        fontSize: '24px',
-                        color: '#FFFFFF',
-                        textShadow: '0px 5px 2px rgba(0, 0, 0, 0.25)',
-                        mb: 4,
-                        textAlign: 'center',
-                    }}
-                >
-                    SIGN UP
-                </Typography>
-                
-                <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 3, alignItems: 'center' }}>
-                    <StyledTextField
-                        placeholder="FIRST NAME"
-                        variant="outlined"
-                        name="firstName"
-                        onChange={handleChange}
-                        required
-                        InputProps={{
-                            style: { color: 'rgba(255, 255, 255, 0.74)' }
-                        }}
-                    />
-                    <StyledTextField
-                        placeholder="EMAIL ID (.edu)"
-                        variant="outlined"
-                        name="email"
-                        type="email"
-                        onChange={handleChange}
-                        required
-                        InputProps={{
-                            style: { color: 'rgba(255, 255, 255, 0.74)' }
-                        }}
-                    />
-                    <StyledTextField
-                        placeholder="PASSWORD"
-                        variant="outlined"
-                        name="password"
-                        type="password"
-                        onChange={handleChange}
-                        required
-                        InputProps={{
-                            style: { color: 'rgba(255, 255, 255, 0.74)' }
-                        }}
-                    />
-                    
-                    <StyledButton type="submit">
-                        Register
-                    </StyledButton>
-                    
-                    <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', width: '313px', justifyContent: 'center' }}>
-                        <Box sx={{ width: '135px', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }} />
-                        <Typography sx={{ 
-                            mx: 2, 
-                            fontFamily: 'Inter',
-                            fontStyle: 'normal',
-                            fontWeight: 300,
-                            fontSize: '12px',
-                            color: '#FFFFFF',
-                        }}>
-                            or
-                        </Typography>
-                        <Box sx={{ width: '135px', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }} />
-                    </Box>
-                    
-                    <Typography sx={{ 
-                        mt: 1,
-                        fontFamily: 'Inter',
-                        fontStyle: 'normal',
-                        fontWeight: 300,
-                        fontSize: '14px',
-                        color: '#FFFFFF',
-                    }}>
-                    </Typography>
-                    
-                    
-                    <Typography sx={{ 
-                        fontFamily: 'Inter',
-                        fontStyle: 'normal',
-                        fontWeight: 400,
-                        fontSize: '12px',
-                        color: 'rgba(255, 255, 255, 0.7)',
-                    }}>
-                        Already a member? <Link href="/login" sx={{ color: 'rgba(255, 255, 255, 0.9)', textDecoration: 'none' }}>Sign in</Link>
-                    </Typography>
-                </Box>
-                
-                {message && (
-                    <Typography variant="body1" sx={{ mt: 2, color: message.includes('❌') ? '#ff6b6b' : '#4ecca3' }}>
-                        {message}
-                    </Typography>
-                )}
-            </Box>
-        </Box>
-    );
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              color: "#333",
+              marginBottom: "20px",
+              fontWeight: "bold",
+              fontSize: { xs: "1.5rem", sm: "2rem" },
+            }}
+          >
+            Sign Up
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+            Create an account to get started!
+            <p>Please use your Pace Id to create an account!</p>
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField label="Username" variant="outlined" name="username" onChange={handleChange} required fullWidth />
+            <TextField label="First Name" variant="outlined" name="name" onChange={handleChange} required fullWidth />
+            <TextField label="Email (.edu)" variant="outlined" name="email" type="email" onChange={handleChange} required fullWidth />
+            <TextField label="Password" variant="outlined" name="password" type="password" onChange={handleChange} required fullWidth />
+            <Button variant="contained" color="primary" type="submit" sx={{ mt: 2, borderRadius: 2, width: { xs: "100%", sm: "auto" } }}>
+              Register
+            </Button>
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              Already have an account? <Link href="/login">Login</Link>
+            </Typography>
+          </Box>
+          {message && <Typography variant="body1" color="success.main" sx={{ mt: 2 }}>{message}</Typography>}
+        </Container>
+      </motion.div>
+    </div>
+  );
 };
 
 export default Register;

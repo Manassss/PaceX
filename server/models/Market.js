@@ -5,12 +5,12 @@ const marketplaceSchema = new mongoose.Schema({
     itemName: { type: String, required: true },
     description: { type: String, required: true },
     price: { type: Number, required: true },
-    imageUrl: { type: String, required: true }, // ✅ Image uploaded to Firebase/Cloudinary
-
+    imageUrl: { type: String, required: true },
     address: { type: String, required: true },
-
-
-    createdAt: { type: Date, default: Date.now }
+    category: { type: String, required: true },  // ✅ New Field
+    subcategory: { type: String, required: true }, // ✅ New Field
+    createdAt: { type: Date, default: Date.now },
+    views: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model("Marketplace", marketplaceSchema);
