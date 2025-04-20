@@ -703,39 +703,15 @@ const Marketplace = () => {
 
         {/* ChatBox Model */}
         <Modal open={openChatbox} onClose={() => setOpenChatbox(false)}>
-          <Container width="50%">
-            <Paper
-              elevation={5}
-              sx={{
-                p: 4,
-                borderRadius: 3,
-                boxShadow: "0px 10px 30px rgba(0,0,0,0.2)",
-                backgroundColor: "transparent", // Removed white background
-                height: "50%",
+          <Box width="50%" height="50%" position="absolute" left='28%' top='25%' >
 
-              }}
-            >
-              {chatUser && (
-                <>
-                  {/* ✅ Seller Info */}
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <Avatar
-                      src={chatUser?.profileImage || "/default-avatar.png"}
-                      sx={{ width: 50, height: 50, border: "2px solid #ff6f61", mr: 2 }}
-                    >
-                      {chatUser?.profileImage ? "" : chatUser?.name?.charAt(0)}
-                    </Avatar>
-                    <Typography variant="h6" fontWeight="bold">
-                      {chatUser?.name}
-                    </Typography>
-                  </Box>
+            {chatUser && (
+              <>
+                <Chatbox userId={chatUser._id} username={chatUser.name} />
+              </>
+            )}
 
-                  {/* ✅ Load Chatbox Component with Selected Seller */}
-                  <Chatbox userId={chatUser._id} username={chatUser.name} />
-                </>
-              )}
-            </Paper>
-          </Container>
+          </Box>
         </Modal>
 
 
