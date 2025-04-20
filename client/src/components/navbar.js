@@ -63,7 +63,7 @@ const Navbar = () => {
       // Close search panel
       setShowSearchPanel(false);
       // Expand on Home, collapse on any other screen
-      if (item.path === "/userhome" || item.label === "Add Post") {
+      if (item.path === "/userhome" || item.label === "Add Post" ) {
         setIsCollapsed(false);
       } else {
         setIsCollapsed(true);

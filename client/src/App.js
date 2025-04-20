@@ -47,13 +47,13 @@ function AppContent({ userId }) {
 
     socket.on(eventName, handleNotification);
 
-    return () => {
+    return () => {  
       socket.off(eventName, handleNotification);
     };
   }, [userId]);
 
   return (
-    <>
+    <> 
       <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
         {/* Navbar Section */}
         {showNavbar && (
