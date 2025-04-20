@@ -306,7 +306,7 @@ const StoryBar = ({
                         p: 2,
                     }}
                 >
-                    <CameraCapture onMediaUpload={handleImageUpload} />
+                    <CameraCapture userId={user._id} onMediaUpload={handleImageUpload} />
                 </Box>
             </Modal>
         </Box>

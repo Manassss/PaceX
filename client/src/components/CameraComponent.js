@@ -65,18 +65,24 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
         try {
             let file, fileType, fileName;
             const currentDateTime = new Date().toISOString().replace(/:/g, "-");
+            const uid = userId || user?._id;
+            if (!uid) {
+                alert("User ID not found. Please login again.");
+                setUploading(false);
+                return;
+            }
             const media_type = capturedImage ? "image" : "video";
             if (capturedImage) {
                 //  Upload Photo
                 file = await fetch(capturedImage).then((res) => res.blob());
                 fileType = "image/jpeg";
-                fileName = `media/${userId}/photo_${currentDateTime}.jpg`;
+                fileName = `media/${uid}/photo_${currentDateTime}.jpg`;
 
             } else if (videoBlob) {
                 //  Upload Video
                 file = videoBlob;
                 fileType = "video/webm";
-                fileName = `media/${userId}/video_${currentDateTime}.webm`;
+                fileName = `media/${uid}/video_${currentDateTime}.webm`;
 
             }
 
