@@ -268,17 +268,6 @@ const CommunityPage = () => {
 
 
 
-  // const handleLikePost = async (postId) => {
-  //     try {
-  //         await axios.post(`http://localhost:5001/api/posts/${postId}/like`, { userId: user._id });
-  //         setPosts(posts.map(p =>
-  //             p._id === postId ? { ...p, likes: [...p.likes, user._id] } : p
-  //         ));
-  //     } catch (error) {
-  //         console.error("Error liking post:", error);
-  //     }
-  // };
-
   const handleMembership = async () => {
     try {
       await axios.post(`http://localhost:5001/api/community/togglemember`, {
@@ -1086,7 +1075,6 @@ const CommunityPage = () => {
             }}
           />
 
-          {/* 📸 Image Upload with Preview */}
           {/* 📸 Image Upload with Preview (800x600 Crop) */}
           <Box
             sx={{

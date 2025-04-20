@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-    Container, Typography, Card, CardMedia, CardContent, Grid, Button, Avatar, Box, CardHeader, Chip, Modal, Paper, TextField, FormControl, InputLabel, Select, MenuItem
+    Container, Typography, Card, CardMedia, CardContent, Grid, Button, Avatar, Box, CardHeader, Chip, Modal, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Menu, Dialog, DialogTitle, DialogContent, DialogActions, IconButton
 } from '@mui/material';
+import { Tabs, Tab } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseIcon from '@mui/icons-material/Close';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from '../firebase'; // ✅ Firebase storage import
 import Navbar from './navbar';
@@ -12,8 +15,13 @@ import { GoogleMap, LoadScript, Autocomplete } from '@react-google-maps/api';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import ChatIcon from "@mui/icons-material/Chat"; // ✅ Correct import for Material UI icons
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { useNavigate } from 'react-router-dom';  // Import useNavigate at the top
 import Chatbox from './Chatbox';
+import { FaUpload } from 'react-icons/fa';
+import { useRef } from 'react';
+import Webcam from 'react-webcam';
+
 
 
 
@@ -24,12 +32,16 @@ const Marketplace = () => {
     const [openModal, setOpenModal] = useState(false);
     const [formData, setFormData] = useState({ itemName: '', description: '', price: '', address: '' });
     const [selectedFile, setSelectedFile] = useState(null);
+    const [cameraOpen, setCameraOpen] = useState(false);
+    const webcamRef = useRef(null);
     const { user } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedItem, setSelectedItem] = useState(null);
     const [openDetailModal, setOpenDetailModal] = useState(false);
+    const [tabIndex, setTabIndex] = useState(0);
     const [openMessenger, setOpenMessenger] = useState(false);
+    const handleTabChange = (event, newValue) => setTabIndex(newValue);
     const [chatSeller, setChatSeller] = useState(null);
     const [openProfileModal, setOpenProfileModal] = useState(false);
     const [profileUser, setProfileUser] = useState(null);
@@ -37,6 +49,20 @@ const Marketplace = () => {
     const [openChatbox, setOpenChatbox] = useState(false);
     const [chatUser, setChatUser] = useState(null);
     const [selectedSubcategory, setSelectedSubcategory] = useState("");
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [menuItem, setMenuItem] = useState(null);
+
+    const handleMenuOpen = (e, item) => {
+      e.stopPropagation();
+      setAnchorEl(e.currentTarget);
+      setMenuItem(item);
+    };
+
+    const handleMenuClose = () => {
+      setAnchorEl(null);
+      setMenuItem(null);
+    };
+    
 
 
 
@@ -52,6 +78,10 @@ const Marketplace = () => {
     useEffect(() => {
         handleFilter();
     }, [searchQuery, selectedCategory, listings]);
+    
+    const displayedListings = tabIndex === 1
+      ? listings.filter(item => item.userId?._id === user?._id)
+      : filteredListings;
 
 
     const fetchListings = async () => {
@@ -99,7 +129,21 @@ const Marketplace = () => {
 
     // Handle File Upload Selection
     const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+        const file = e.target.files[0];
+        console.log("handleFileChange - selected file:", file);
+        setSelectedFile(file);
+    };
+    
+    const handleCapture = () => {
+        const imageSrc = webcamRef.current.getScreenshot();
+        fetch(imageSrc)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            console.log("handleCapture - captured file:", file);
+            setSelectedFile(file);
+            setCameraOpen(false);
+          });
     };
 
     const openChat = (seller) => {
@@ -122,29 +166,71 @@ const Marketplace = () => {
 
 
     const handleUserMp = async () => {
+        console.log("handleUserMp invoked for user:", user?._id);
         try {
-            const res = await axios.get(`http://localhost:5001/api/marketplace/${user?._id}`);
-            // setProfileUser(res.data);
-            // setOpenProfileModal(true);
-            console.log("userId", res.data)
+            const res = await axios.get(`http://localhost:5001/api/users/profile/${user?._id}`);
+            console.log("User profile data:", res.data);
+            // If you need to display or use this data, do so here
         } catch (error) {
-            console.error("Error fetching user profile:", error);
+            console.error("Error fetching user profile in handleUserMp:", error);
         }
     };
 
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Delete this listing?")) return;
+        try {
+        await axios.delete(`http://localhost:5001/api/marketplace/${id}`);
+          setListings((prev) => prev.filter(item => item._id !== id));
+          console.log(`Listing ${id} deleted successfully`);
+        } catch (err) {
+          console.error("Error deleting listing:", err);
+          alert("Could not delete listing.");
+        }
+      };
+      
+      const handleToggleSold = async (id, currentlySold) => {
+        try {
+          const { data } = await axios.patch(`http://localhost:5001/api/marketplace/${id}/status`, {
+            sold: !currentlySold
+          });
+          // update that one item in state
+          setListings((prev) =>
+            prev.map(item =>
+              item._id === id ? data.item : item
+            )
+          );
+          console.log(`Listing ${id} status updated to ${!currentlySold}`);
+        } catch (err) {
+          console.error("Error updating status:", err);
+          alert("Could not update status.");
+        }
+      };
+
+      const visible = listings.filter(item => {
+        if (!item.sold) return true;
+        // if sold, only owner sees it
+        return user && item.userId._id === user._id;
+      });
+    
+    
 
 
     // Handle Upload & Form Submission
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("handleSubmit invoked with:", {
+            userId: user?._id,
+            formData,
+            selectedFile,
+            selectedCategory
+        });
 
-        // ✅ Log formData before sending the request
         console.log("Form Data before submission:", formData);
         console.log("Selected File:", selectedFile);
         console.log("Selected Category:", selectedCategory);
         console.log("User ID:", user?._id);
 
-        // ✅ Ensure all fields are present
         if (!user?._id || !formData.itemName || !formData.description || !formData.price || !formData.address || !selectedFile || !selectedCategory) {
             alert("Please fill all required fields before submitting.");
             return;
@@ -155,8 +241,13 @@ const Marketplace = () => {
 
         uploadTask.on(
             "state_changed",
-            null,
-            (error) => console.error("Upload error:", error),
+            (snapshot) => {
+                const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                console.log(`Upload progress: ${progress}%`);
+            },
+            (error) => {
+                console.error("Upload error callback:", error);
+            },
             async () => {
                 const imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
 
@@ -168,11 +259,10 @@ const Marketplace = () => {
                     imageUrl,
                     address: formData.address,
                     category: selectedCategory,
-                    subcategory: selectedSubcategory, // ✅ Include subcategory
-
+                    subcategory: selectedSubcategory,
                 };
 
-                console.log("Sending Data to Backend:", requestData); // ✅ Log request data
+                console.log("Sending Data to Backend:", requestData);
 
                 try {
                     const response = await axios.post('http://localhost:5001/api/marketplace/add', requestData);
@@ -182,11 +272,15 @@ const Marketplace = () => {
                     fetchListings();
                 } catch (err) {
                     console.error("Error submitting data:", err.response?.data || err.message);
+                    console.error("Axios POST error response:", err.response);
+                    console.error("Axios POST error message:", err.message);
                     alert(`Submission failed: ${err.response?.data?.message || "Server Error"}`);
                 }
             }
         );
     };
+
+    
 
     return (
         <>
@@ -196,12 +290,12 @@ const Marketplace = () => {
             {/* Main Content */}
             <Container
                 maxWidth={false}
-                sx={{
-                    minHeight: '100vh',
-                    background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
-                    padding: 4,
-                    paddingTop: '110px',
-                }}
+            sx={{
+                minHeight: '100vh',
+                background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
+                p: { xs: 2, sm: 4 },
+                pt: { xs: '80px', sm: '110px' },
+            }}
             >
                 {/* Search & Filter Row */}
                 <Box display="flex" justifyContent="center" alignItems="center" mb={4}>
@@ -209,14 +303,14 @@ const Marketplace = () => {
                     <Typography variant="h3" fontWeight="bold" color="#333">Marketplace</Typography>
                 </Box>
 
-                <Box display="flex" justifyContent="center" gap={2} mb={4} flexWrap="wrap">
+                <Box display="flex" justifyContent="center" alignItems="center" gap={2} mb={4} flexWrap="wrap">
                     <TextField
                         label="Search Username or Product"
                         variant="outlined"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         sx={{
-                            width: 900,
+                            width: { xs: '100%', sm: 600, md: 900 },
                             bgcolor: "white",
                             borderRadius: "25px",  // Curved edges
                             boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.2)", // Soft shadow
@@ -234,13 +328,6 @@ const Marketplace = () => {
                             }
                         }}
                     />
-                </Box>
-
-
-
-
-                {/* Add Item Button */}
-                <Box display="flex" justifyContent="center" mb={4}>
                     <Button
                         onClick={() => setOpenModal(true)}
                         sx={{
@@ -251,11 +338,23 @@ const Marketplace = () => {
                             fontSize: '16px',
                             borderRadius: 3,
                             boxShadow: '0px 5px 15px rgba(255, 111, 97, 0.3)',
-
+                            width: { xs: '100%', sm: 'auto' },
+                            mb: { xs: 2, sm: 0 },
                         }}
                     >
-                        + Add Item
+                        + Sell Item
                     </Button>
+                </Box>
+
+
+
+
+                {/* Tabs for All vs My Listings */}
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                  <Tabs value={tabIndex} onChange={handleTabChange} textColor="primary" indicatorColor="primary" variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
+                    <Tab label="All Listings" />
+                    <Tab label="My Listings" />
+                  </Tabs>
                 </Box>
 
                 {/* Upload Item Modal */}
@@ -265,6 +364,7 @@ const Marketplace = () => {
                             elevation={5}
                             sx={{
                                 p: 4,
+                                mt: 8,
                                 borderRadius: 3,
                                 bgcolor: "white",
                                 boxShadow: "0px 10px 30px rgba(0,0,0,0.2)",
@@ -368,86 +468,118 @@ const Marketplace = () => {
                                             </Select>
                                         </FormControl>
                                     )}
-                                </Box>
-
-                                {/* File Upload Input with Image Preview */}
+                                </Box> {/* Close the Box wrapping category & subcategory */}
+                                {/* Sticky Submit Button */}
                                 <Box
                                     sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "center",
-                                        gap: 2,
-                                        mt: 2
+                                        position: "sticky",
+                                        bottom: 0,
+                                        bgcolor: "white",
+                                        py: 2,
+                                        mt: 2,
+                                        textAlign: "center",
+                                        boxShadow: "0px -2px 10px rgba(0,0,0,0.1)"
                                     }}
                                 >
-                                    <Button
-                                        variant="contained"
-                                        component="label"
-                                        sx={{
-                                            width: "100%",
-                                            color: "white",
-                                            backgroundColor: "#073574",
-                                            borderRadius: 2,
-                                            fontSize: "16px",
-                                            fontWeight: "bold",
-                                            "&:hover": { backgroundColor: "#05204d" }
-                                        }}
-                                    >
-                                        Upload Image
-                                        <input
-                                            type="file"
-                                            onChange={handleFileChange}
-                                            hidden
-                                            accept="image/*"
-                                            required
-                                        />
-                                    </Button>
-
-                                    {/* Image Preview */}
-                                    {selectedFile && (
-                                        <img
-                                            src={URL.createObjectURL(selectedFile)}
-                                            alt="Preview"
-                                            style={{
-                                                width: "100%",
-                                                maxHeight: "250px",
-                                                objectFit: "cover",
-                                                borderRadius: "10px",
-                                                boxShadow: "0px 4px 15px rgba(0,0,0,0.2)"
-                                            }}
-                                        />
-                                    )}
                                 </Box>
-                            </Box>
+                                </Box>
 
-                            {/* Sticky Submit Button */}
-                            <Box
-                                sx={{
-                                    position: "sticky",
-                                    bottom: 0,
-                                    bgcolor: "white",
-                                    py: 2,
-                                    mt: 2,
-                                    textAlign: "center",
-                                    boxShadow: "0px -2px 10px rgba(0,0,0,0.1)"
-                                }}
-                            >
-                                <Button
-                                    variant="contained"
-                                    type="submit"
-                                    fullWidth
-                                    sx={{
-                                        borderRadius: 2,
-                                        backgroundColor: "#e65a50",
-                                        fontSize: "18px",
-                                        fontWeight: "bold",
-                                        padding: "12px 20px",
-                                        "&:hover": { backgroundColor: "#c44a3d" }
-                                    }}
-                                >
-                                    Upload & Submit
-                                </Button>
-                            </Box>
+                                {/* File Upload Input */}
+<>
+  {/* Wrap Upload + Camera in a flex row */}
+  {!selectedFile && (
+    <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+      {/* Upload dropzone */}
+      <Box
+        sx={{
+          flex: 1,
+          width:200,
+          p: 3,
+          border: "2px dashed #1976d2",
+          borderRadius: 3,
+          backgroundColor: "#f5f9ff",
+          textAlign: "center",
+          color: "#444",
+          transition: "0.3s",
+          "&:hover": { backgroundColor: "#e3f2fd" },
+          cursor: "pointer",
+        }}
+        component="label"
+      >
+        <Box sx={{ fontSize: 40, color: "#1976d2", mb: 1 }}>
+          <FaUpload />
+        </Box>
+        <Typography variant="subtitle1" fontWeight={600}>
+          Click to upload item image
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Supported formats: JPG, PNG
+        </Typography>
+        <input
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={handleFileChange}
+        />
+      </Box>
+
+      {/* Camera button */}
+      <Button
+        variant="outlined"
+        sx={{ alignSelf: "center", minWidth: 140 }}
+        onClick={() => setCameraOpen(true)}
+      >
+        Use Camera
+      </Button>
+    </Box>
+  )}
+
+  {/* Preview + Discard */}
+  {selectedFile && (
+    <Box sx={{ mb: 2 }}>
+      <Typography variant="body2">Selected file: {selectedFile.name}</Typography>
+      <Box
+        component="img"
+        src={URL.createObjectURL(selectedFile)}
+        alt="Preview"
+        sx={{
+          width: '100%',
+          maxHeight: 400,
+          objectFit: 'contain',
+          mt: 1,
+          borderRadius: 2,
+          overflow: 'auto'
+        }}
+      />
+      <Button
+        variant="text"
+        color="error"
+        sx={{ mt: 1 }}
+        onClick={() => setSelectedFile(null)}
+      >
+        Discard
+      </Button>
+    </Box>
+  )}
+
+  {/* Submit button at the bottom */}
+  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+    <Button
+      variant="outlined"
+      color="error"
+      onClick={() => setOpenModal(false)}
+    >
+      Cancel
+    </Button>
+    <Button
+      variant="contained"
+      onClick={handleSubmit}
+      disabled={!selectedFile}
+    >
+      Submit
+    </Button>
+  </Box>
+</>
                         </Paper>
                     </Container>
                 </Modal>
@@ -455,126 +587,117 @@ const Marketplace = () => {
 
                 {/* Grid Layout for Listings */}
                 <Grid container spacing={3} justifyContent="center">
-                    {filteredListings.map((item) => (
-                        <Grid item xs={12} sm={6} md={3} key={item._id}> {/* Changed md={3} to fit 4 per row */}
-                            <Card
-                                sx={{
-                                    borderRadius: '16px',
-                                    transition: '0.3s',
-                                    overflow: 'hidden',
-                                    backgroundColor: "#fff",
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    height: "100%",
-                                    boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.15)",
-                                    '&:hover': {
-                                        transform: 'scale(1.03)',
-                                        boxShadow: '0px 10px 25px rgba(0, 0, 0, 0.3)',
-                                    }
-                                }}
-                                onClick={(e) => {
-                                    if (!e.target.closest('.chat-button')) {
-                                        setSelectedItem(item);
-                                        setOpenDetailModal(true);
-                                    }
-                                }}
-                            >
-                                {/* Enlarged Image */}
-                                <CardMedia
-                                    component="img"
-                                    image={item.imageUrl}
-                                    alt={item.itemName}
-                                    sx={{
-                                        height: 220, /* Adjusted to fit 4 per row layout */
-                                        objectFit: "cover",
-                                        width: "100%",
-                                        borderTopLeftRadius: "16px",
-                                        borderTopRightRadius: "16px"
-                                    }}
-                                />
+  {displayedListings.map((item) => (
+    <Grid item xs={12} sm={6} md={3} key={item._id} sx={{ display: 'flex' }}>
+      <Card
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 300,                   // uniform card height
+          width: '100%',
+          borderRadius: 2,
+          transition: 'transform 0.3s, box-shadow 0.3s',
+          overflow: 'hidden',
+          backgroundColor: '#f8f2ec',
+          boxShadow: '0px 5px 15px rgba(0,0,0,0.15)',
+          '&:hover': {
+            transform: 'scale(1.03)',
+            boxShadow: '0px 10px 25px rgba(0,0,0,0.3)',
+          },
+        }}
+        onClick={(e) => {
+          if (!e.target.closest('.chat-button')) {
+            setSelectedItem(item);
+            setOpenDetailModal(true);
+          }
+        }}
+      >
+        {/* Three‑dots menu */}
+        {user && item.userId?._id === user._id && (
+          <IconButton
+            aria-label="options"
+            onClick={(e) => handleMenuOpen(e, item)}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1,
+              backgroundColor: 'rgba(255,255,255,0.8)',
+              '&:hover': { backgroundColor: 'rgba(255,255,255,1)' },
+            }}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        )}
 
-                                <CardContent sx={{ padding: "16px", textAlign: 'left' }}>
+        {/* Image fixed at top */}
+        <CardMedia
+          component="img"
+          image={item.imageUrl}
+          alt={item.itemName}
+          sx={{
+            height: { xs: 150, sm: 200, md: 220 },
+            objectFit: 'cover',
+            width: '100%',
+            flexShrink: 0,
+          }}
+        />
 
-                                    {/* Product Name */}
-                                    <Typography variant="h6" fontWeight="bold" color="text.primary" gutterBottom>
-                                        {item.itemName}
-                                    </Typography>
+        {/* Content block */}
+        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+          {/* Product Name */}
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            {item.itemName}
+          </Typography>
 
-                                    {/* Price & Address (Side by Side) */}
-                                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                                        <Chip
-                                            label={`$${item.price}`}
-                                            sx={{
-                                                fontSize: "16px",
-                                                fontWeight: "bold",
-                                                backgroundColor: "#073574",
-                                                color: "#fff",
-                                                padding: "5px 10px",
-                                                borderRadius: "8px"
-                                            }}
-                                        />
-                                        <Typography variant="body2" color="gray">
-                                            📍 {item.address}
-                                        </Typography>
-                                    </Box>
+         
+          {/* Address */}
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            📍 {item.address}
+          </Typography>
+           {/* Price */}
+           <Box mb={2}>
+            <Chip
+              label={`$${item.price}`}
+              sx={{
+                fontSize: '16px',
+                fontWeight: 700,
+                color: 'black',
+                borderRadius: '8px',
+                px: 1.5,
+                py: 0.5,
+                boxShadow: '0px 2px 5px rgba(0,0,0,0.2)',
+              }}
+            />
+          </Box>
 
-                                    {/* Description */}
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{
-                                            display: '-webkit-box',
-                                            WebkitBoxOrient: 'vertical',
-                                            WebkitLineClamp: 2,
-                                            overflow: 'hidden'
-                                        }}
-                                    >
-                                        {item.description}
-                                    </Typography>
-
-                                    {/* User Info */}
-                                    <Box display="flex" alignItems="center" mt={2}>
-                                        <Avatar
-                                            src={item.userId?.profileImage || "/default-avatar.png"}
-                                            sx={{ width: 40, height: 40, border: "2px solid #ff6f61", cursor: "pointer", mr: 1 }}
-                                            onClick={() => navigate(`/profile/${item.userId?._id}`)}
-                                        />
-                                        <Typography
-                                            variant="h6"
-                                            fontWeight="bold"
-                                            color="primary"
-                                            sx={{ cursor: "pointer", fontSize: "18px" }} /* Adjusted font size */
-                                            onClick={() => navigate(`/profile/${item.userId?._id}`)}
-                                        >
-                                            {item.userId?.name}
-                                        </Typography>
-                                    </Box>
-
-                                    {/* Chat Button */}
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<ChatIcon />}
-                                        sx={{
-                                            mt: 2,
-                                            width: "100%",
-                                            borderRadius: "8px",
-                                            backgroundColor: "#073574",
-                                            color: "white",
-                                            "&:hover": { backgroundColor: "#05204d" }
-                                        }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openChat(item.userId);
-                                        }}
-                                    >
-                                        Chat with Seller
-                                    </Button>
-
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+          {/* Push the button to the bottom of the card */}
+          <Box mt="auto">
+            <Button
+              className="chat-button"
+              variant="contained"
+              startIcon={<ChatIcon />}
+              fullWidth
+              sx={{
+                borderRadius: '8px',
+                backgroundColor: '#073574',
+                color: '#fff',
+                '&:hover': { backgroundColor: '#05204d' },
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openChat(item.userId);
+              }}
+            >
+              Chat with Seller
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Grid>
+  ))}
+</Grid>
 
 
 
@@ -619,116 +742,87 @@ const Marketplace = () => {
 
 
 
-                {/** Open Item */}
-                <Modal open={openDetailModal} onClose={() => setOpenDetailModal(false)}>
-                    <Container maxWidth="md"> {/* Made it wider for a better layout */}
-                        <Paper
-                            elevation={5}
-                            sx={{
-                                p: 4,
-                                borderRadius: 4,
-                                backgroundColor: "#f8f2ec", // Dark blue background for a sleek look
-                                color: "black", // Ensures text is readable
-                                boxShadow: "0px 10px 30px rgba(0,0,0,0.3)",
-                                maxWidth: "700px",
-                                margin: "auto",
-                            }}
-                        >
-                            {selectedItem && (
-                                <>
-                                    {/* ✅ User Info (Avatar + Username) */}
-                                    <Box display="flex" alignItems="center" mb={3}>
-                                        <Avatar
-                                            src={selectedItem.userId?.profileImage || "/default-avatar.png"}
-                                            sx={{ width: 50, height: 50, border: "2px solid #ff6f61", mr: 2 }}
-                                        >
-                                            {selectedItem.userId?.profileImage ? "" : selectedItem.userId?.name?.charAt(0)}
-                                        </Avatar>
-                                        <Typography
-                                            variant="h6"
-                                            fontWeight="bold"
-                                            sx={{ fontSize: "20px" }}
-                                        >
-                                            {selectedItem.userId?.name}
-                                        </Typography>
-                                    </Box>
+                {/* Open Item Dialog */}
 
-                                    {/* ✅ Item Name - Larger Text */}
-                                    <Typography variant="h4" fontWeight="bold" textAlign="center" gutterBottom>
-                                        {selectedItem.itemName}
-                                    </Typography>
-
-                                    {/* ✅ Product Image - Bigger with Shadow */}
-                                    <Box display="flex" justifyContent="center" my={2}>
-                                        <CardMedia
-                                            component="img"
-                                            image={selectedItem.imageUrl}
-                                            alt={selectedItem.itemName}
-                                            sx={{
-                                                height: "350px", // Increased height
-                                                objectFit: "cover",
-                                                width: "100%",
-                                                maxWidth: "500px",
-                                                borderRadius: "10px",
-                                                boxShadow: "0px 5px 15px rgba(0,0,0,0.3)" // Soft shadow effect
-                                            }}
-                                        />
-                                    </Box>
-
-                                    {/* ✅ Item Details - Clean and Structured */}
-                                    <Box
-                                        sx={{
-                                            backgroundColor: "rgba(255, 255, 255, 0.15)",
-                                            borderRadius: 3,
-                                            padding: 2,
-                                            my: 3
-                                        }}
-                                    >
-                                        <Typography variant="body1" fontWeight="bold" mb={1}>
-                                            📖 Description: {selectedItem.description}
-                                        </Typography>
-                                        <Typography variant="body1" fontWeight="bold" mb={1}>
-                                            📍 Address: {selectedItem.address}
-                                        </Typography>
-                                    </Box>
-
-                                    {/* ✅ Price Highlight */}
-                                    <Box display="flex" justifyContent="center" my={2}>
-                                        <Typography
-                                            variant="h5"
-                                            fontWeight="bold"
-                                            sx={{
-                                                background: "linear-gradient(to bottom, #f7f4ef, #e6ddd1)",
-                                                padding: "8px 20px",
-                                                borderRadius: "10px",
-                                                color: "#073574",
-                                                fontWeight: "bold"
-                                            }}
-                                        >
-                                            💰 Price: ${selectedItem.price}
-                                        </Typography>
-                                    </Box>
-
-                                    {/* ✅ Close Button */}
-                                    <Button
-                                        fullWidth
-                                        variant="contained"
-                                        sx={{
-                                            mt: 2,
-                                            backgroundColor: "linear-gradient(to bottom, #f7f4ef, #e6ddd1)",
-                                            color: "#073574",
-                                            fontWeight: "bold",
-                                            "&:hover": { backgroundColor: "#c44a3d", color: "white" }
-                                        }}
-                                        onClick={() => setOpenDetailModal(false)}
-                                    >
-                                        Close
-                                    </Button>
-                                </>
-                            )}
-                        </Paper>
-                    </Container>
-                </Modal>
+  <Dialog
+    open={openDetailModal}
+    onClose={() => setOpenDetailModal(false)}
+    maxWidth="md"
+    fullWidth
+    PaperProps={{
+      sx: {
+        borderRadius: 3,
+        overflow: 'hidden',
+        boxShadow: '0px 10px 30px rgba(0,0,0,0.3)',
+        background: 'linear-gradient(135deg, #f7f4ef 0%, #e6ddd1 100%)',
+      }
+    }}
+  >
+  <DialogTitle sx={{ backgroundColor: '#073574', color: '#fff', m: 0, p: 2 }}>
+  <Box
+    onClick={() => navigate(`/profile/${selectedItem.userId?._id}`)}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      cursor: 'pointer'
+    }}
+  > Sold by :  
+      <Avatar
+        src={selectedItem?.userId?.profileImage || '/default-avatar.png'}
+        sx={{ width: 40, height: 40, border: '2px solid #fff' }}
+      />
+      <Typography variant="h6" fontWeight="bold" color="#fff">
+       {selectedItem?.userId?.name}
+      </Typography>
+    </Box>
+  </DialogTitle>
+<DialogContent>
+  {selectedItem && (
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, p: 3, gap: 3 }}>
+      <Box sx={{ flex: 1 }}>
+        <Box
+          component="img"
+          src={selectedItem.imageUrl}
+          alt={selectedItem.itemName}
+          sx={{ width: '100%', height: '100%', borderRadius: 2, objectFit: 'cover' }}
+        />
+      </Box>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Typography variant="h6" fontWeight="bold">
+          Item Name: {selectedItem.itemName}
+        </Typography>
+        <Typography variant="body2">Category: {selectedItem.category}</Typography>
+        <Typography variant="body2">Subcategory: {selectedItem.subcategory}</Typography>
+        <Typography variant="body2">Description: {selectedItem.description}</Typography>
+        <Typography variant="body2">Price: 💰 ${selectedItem.price}</Typography>
+        <Typography variant="body2">Location: 📍 {selectedItem.address}</Typography>
+      </Box>
+    </Box>
+  )}
+</DialogContent>
+<DialogActions sx={{ p: 2, display: 'flex', justifyContent: 'center', gap: 2, backgroundColor: 'linear-gradient(135deg, #f7f4ef 0%, #e6ddd1 100%)' }}>
+    <Button variant="outlined" onClick={() => setOpenDetailModal(false)}>
+      Close
+    </Button>
+    <Button
+      variant="contained"
+      startIcon={<ChatIcon />}
+      sx={{
+        ml: 2,
+        backgroundColor: '#073574',
+        color: '#fff',
+        '&:hover': { backgroundColor: '#05204d' },
+      }}
+      onClick={() => {
+        openChat(selectedItem.userId);
+        setOpenDetailModal(false);
+      }}
+    >
+      Chat with Seller
+    </Button>
+  </DialogActions>
+                </Dialog>
 
 
                 <Modal open={openProfileModal} onClose={() => setOpenProfileModal(false)}>
@@ -777,6 +871,83 @@ const Marketplace = () => {
 
 
             </Container>
+                <Modal open={cameraOpen} onClose={() => setCameraOpen(false)}>
+                  <Container maxWidth="sm">
+                    <Paper sx={{ p: 3, mt: 10, textAlign: 'center' }}>
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          width: '100%',
+                          borderRadius: 4,
+                          overflow: 'hidden',
+                          '&:hover .hoverOverlay': { opacity: 1 }
+                        }}
+                      >
+                        <Webcam
+                          audio={false}
+                          ref={webcamRef}
+                          screenshotFormat="image/jpeg"
+                          videoConstraints={{ facingMode: 'environment' }}
+                          style={{ width: '100%', borderRadius: 4 }}
+                        />
+                        <Box
+                          className="hoverOverlay"
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            bgcolor: 'rgba(0, 0, 0, 0.4)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            opacity: 0,
+                            transition: 'opacity 0.3s ease'
+                          }}
+                        >
+                          <CameraAltIcon sx={{ fontSize: 50, color: 'white' }} />
+                        </Box>
+                      </Box>
+                      <Button
+                        variant="contained"
+                        sx={{ mt: 2, mr: 1 }}
+                        onClick={handleCapture}
+                      >
+                        Capture
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        sx={{ mt: 2 }}
+                        onClick={() => setCameraOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </Paper>
+                  </Container>
+                </Modal>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      handleToggleSold(menuItem._id, menuItem.sold);
+                      handleMenuClose();
+                    }}
+                  >
+                    {menuItem?.sold ? 'Mark as Unsold' : 'Mark as Sold'}
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleDelete(menuItem._id);
+                      handleMenuClose();
+                    }}
+                  >
+                    Delete
+                  </MenuItem>
+                </Menu>
         </>
     );
 };

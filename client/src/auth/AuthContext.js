@@ -8,17 +8,31 @@ import React, {
 } from 'react';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import axios from 'axios';
+import { updateProfile as fbUpdate } from "firebase/auth";
+
+async function updateProfile(updates) {
+    const auth = getAuth();
+    if (!auth.currentUser) throw new Error("No user");
+    return fbUpdate(auth.currentUser, {
+      displayName: updates.name,
+      photoURL:    updates.profileImage
+    });
+  }
+  
 
 const AuthContext = createContext({
     user: null,
     loading: true,
     login: () => { },
-    logout: () => { }
+    logout: () => { },
+    updateProfile,
+    
 });
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [posts, setPosts] = useState([]);
     const logoutTimer = useRef(null);
 
     const clearTimer = () => {
@@ -38,6 +52,7 @@ export const AuthProvider = ({ children }) => {
     // called by your Login form after backend login succeeds
     const login = (apiUser) => {
         setUser(apiUser);
+        setPosts(apiUser.posts || []);
 
         // stamp a hard expiry 1h from now
         const now = Date.now();
@@ -82,6 +97,7 @@ export const AuthProvider = ({ children }) => {
                             { idToken }
                         );
                         setUser(res.data.user);
+                        setPosts(res.data.user.posts || []);
 
                         // schedule the remaining time
                         scheduleLogout(expiry - now);
@@ -115,8 +131,19 @@ export const AuthProvider = ({ children }) => {
         return unsub;
     }, []);
 
+    useEffect(() => {
+      if (!user || !user._id) {
+        setPosts([]);
+        return;
+      }
+      // Fetch posts for the logged-in user
+      axios.get(`http://localhost:5001/api/posts/${user._id}`)
+        .then(res => setPosts(res.data))
+        .catch(err => console.error('Error fetching user posts:', err));
+    }, [user]);
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, posts, setPosts, login, logout, updateProfile }}>
             {/* don’t render children until we know if we auto‑logged in or out */}
             {!loading && children}
         </AuthContext.Provider>

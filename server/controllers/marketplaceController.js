@@ -66,9 +66,44 @@ const getUserListings = async (req, res) => {
     }
 };
 
+// DELETE /api/marketplace/:id
+const deleteListing = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await Marketplace.findByIdAndDelete(id);
+      if (!deleted) return res.status(404).json({ message: "Listing not found" });
+      res.status(200).json({ message: "Listing deleted successfully" });
+    } catch (error) {
+      console.error("🔥 Error deleting listing:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+  
+  // body: { sold: true } or { sold: false }
+  const updateListingStatus = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { sold } = req.body;
+      if (typeof sold !== "boolean") {
+        return res.status(400).json({ message: "`sold` must be a boolean" });
+      }
+  
+      const listing = await Marketplace.findByIdAndUpdate(
+        id,
+        { sold },
+        { new: true }
+      );
+      if (!listing) return res.status(404).json({ message: "Listing not found" });
+  
+      res.status(200).json({ message: "Status updated", item: listing });
+    } catch (error) {
+      console.error("🔥 Error updating status:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
 
 
 
 
 
-module.exports = { addListing, getListings, getUserListings  };
+module.exports = { addListing, getListings, getUserListings, updateListingStatus, deleteListing   };

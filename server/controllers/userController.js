@@ -127,8 +127,8 @@ const getUserProfile = async (req, res) => {
 const updateUserProfile = async (req, res) => {
     try {
         const { university, major, graduationYear, birthdate, bio, profileImage, username, private } = req.body;
-
-        const user = await User.findById(req.params.id);
+        const {id} =req.params
+        const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }

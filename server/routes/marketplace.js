@@ -1,9 +1,17 @@
 const express = require("express");
-const { addListing, getListings, getbyid } = require("../controllers/marketplaceController");
+const {
+  addListing,
+  getListings,
+  getUserListings,
+  deleteListing,
+  updateListingStatus
+} = require("../controllers/marketplaceController");
+
 const router = express.Router();
 
-router.post("/add", addListing);  // ✅ Route to add new marketplace listing
-router.get("/all", getListings);  // ✅ Route to fetch all listings
-// router.get("/user/:userId", getUserListings);
-
+router.post("/add",    addListing);
+router.get("/all",     getListings);
+router.get("/user/:userId", getUserListings);
+router.delete("/:id", deleteListing);
+router.patch("/:id/status", updateListingStatus);
 module.exports = router;
