@@ -60,9 +60,9 @@ import Chatbox from './Chatbox';
 
 
 
-
-
 const ProfilePage = () => {
+  const auth = getAuth();
+  const firebaseUid = auth.currentUser.uid;
   const [userDetails, setUserDetails] = useState({});
   const [blockedUsers, setblockedUsers] = useState({});
   const [posts, setPosts] = useState([]); // Posts uploaded by this user
@@ -118,7 +118,7 @@ const ProfilePage = () => {
   const [requestProfiles, setRequestProfiles] = useState([]);
   const [openChatbox, setOpenChatbox] = useState(false);
   //User Profile Details
-
+  const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   const fetchUserProfile = async () => {
     try {
 
@@ -850,6 +850,24 @@ const ProfilePage = () => {
     setDeleteConfirmation(true);
     handleMenuClose();
   };
+  const handledeleteAccount = async () => {
+    try {
+      const payload = {
+        data: {
+          userId: user?._id,
+          firebaseUid: firebaseUid
+        }
+      }
+      console.log("🧨 Deleting Firebase user with UID:", firebaseUid);
+      console.log("Type of firebaseUid:", typeof firebaseUid);
+      console.log("Length of UID:", firebaseUid?.length);
+      console.log("payload", payload)
+      const res = await axios.delete(`${host}/api/users/delete`, payload)
+      setOpenDeleteAccountModal(false)
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  }
 
 
   // At the top of your render (or just above your return)
@@ -933,6 +951,9 @@ const ProfilePage = () => {
                     </MenuItem>,
                     <MenuItem key="edit" onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
                       Edit Profile
+                    </MenuItem>,
+                    <MenuItem key="delete" onClick={() => { setOpenDeleteAccountModal(true); handleMenuClose(); }}>
+                      Delete Account
                     </MenuItem>
                   ]
                   : [
@@ -1269,17 +1290,6 @@ const ProfilePage = () => {
           setOpenPostModal={setOpenPostModal}
           currentImageIndex={currentImageIndex}
           user={user}
-        // isLiked={isLiked}
-        // handleLike={handleLike}
-        // comments={comments}
-        // newComment={newComment}
-        // setNewComment={setNewComment}
-        // handleAddComment={handleAddComment}
-        // handlePostMenuOpen={handlePostMenuOpen}
-        // postMenuAnchorEl={postMenuAnchorEl}
-        // handlePostMenuClose={handlePostMenuClose}
-        // handleDeleteclick={handleDeleteclick}
-        // handleArchivePost={handleArchivePost}
         />
 
 
@@ -1523,6 +1533,36 @@ const ProfilePage = () => {
               </>
             )}
 
+          </Box>
+        </Modal>
+
+        {/*delete confirmation modal */}
+        <Modal open={openDeleteAccountModal} onClose={() => setOpenDeleteAccountModal(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: "white",
+              p: 3,
+              borderRadius: 2,
+              textAlign: "center"
+            }}
+          >
+            <Typography variant="h6">Are you sure you want to delete your account?</Typography>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handledeleteAccount}
+              >
+                Yes, Delete My Account
+              </Button>
+              <Button variant="outlined" onClick={() => setOpenDeleteAccountModal(false)}>
+                Cancel
+              </Button>
+            </Box>
           </Box>
         </Modal>
       </Container>

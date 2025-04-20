@@ -3,6 +3,15 @@ const User = require("../models/Userdetails");  // ✅ Importing the User model
 const admin = require("../config/firebaseConfig"); // Import Firebase Admin
 const Notification = require("../models/Notification"); // Import Notification model
 const Comment = require('../models/Comment');
+const mongoose = require('mongoose');
+const Post = require('../models/Post');
+const Like = require('../models/like');
+const Chat = require('../models/Chat');
+const Message = require('../models/Message');
+const Saved = require('../models/Saved');
+const Marketplace = require('../models/Market');
+const Story = require('../models/Story');
+const CommunityPost = require('../models/CommunityPost');
 
 const registerUser = async (req, res) => {
     try {
@@ -127,7 +136,7 @@ const getUserProfile = async (req, res) => {
 const updateUserProfile = async (req, res) => {
     try {
         const { university, major, graduationYear, birthdate, bio, profileImage, username, private } = req.body;
-        const {id} =req.params
+        const { id } = req.params
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -376,7 +385,72 @@ const approvereject = async (req, res) => {
     }
 }
 
+const deleteUser = async (req, res) => {
+    try {
+        const { userId, firebaseUid } = req.body
+        console.log("rreeeq", req.body)
+        console.log("delete started")
+        // 1. Delete all posts by the user
+        await Post.deleteMany({ userId });
+        console.log("Posts deleted");
+        // 2. Delete all comments made by user
+        await Comment.deleteMany({ userId });
+        console.log("Comments deleted");
+        // 3. Remove user from other comments (e.g., their comments on other posts)
+        await CommunityPost.updateMany(
+            {},
+            { $pull: { comments: { userId } } }
+        );
+        console.log("Community Posts deleted");
+        // 4. Delete all likes by user
+        await Like.deleteMany({ userId });
+        console.log("Like deleted");
+        // 5. Delete all chats/messages where user is sender or receiver
+        await Chat.deleteMany({ $or: [{ senderId: userId }, { receiverId: userId }] });
+        console.log("Chat deleted");
+        await Message.deleteMany({ $or: [{ senderId: userId }, { recipientId: userId }] });
+        console.log("message deleted");
+        // 6. Delete notifications triggered by or for user
+        await Notification.deleteMany({ $or: [{ userId }, { senderId: userId }] });
+        console.log("Notifications deleted");
+        // 7. Delete user’s saved posts
+        await Saved.deleteMany({ userId });
+        console.log("Saved deleted");
+        // 8. Delete user’s marketplace listings
+        await Marketplace.deleteMany({ userId });
+        console.log("Listings deleted");
+        // 9. Delete user’s stories
+        await Story.deleteMany({ userId });
+        console.log("Stories deleted");
+        // 10. Delete community posts
+        // await CommunityPost.deleteMany({ userId });
+        // console.log("Posts deleted");
+        // 11. Remove user from followers/following of others
+        await User.updateMany({}, {
+            $pull: {
+                followings: userId,
+                followers: userId,
+                blockedby: userId,
+                blockeduser: userId,
+                requests: userId
+            }
+        });
 
+        // 12. Finally, delete the user document itself
+        await User.findByIdAndDelete(userId);
+        console.log("User deleted");
+        // 13. Delete from Firebase Auth
+        if (typeof firebaseUid !== 'string' || !firebaseUid.trim() || firebaseUid.length > 128) {
+            throw new Error("❌ Invalid Firebase UID");
+        }
+        await admin.auth().deleteUser(firebaseUid);
+        console.log("Firebase deleted");
+        console.log("✅ User and all related data deleted successfully.");
+        return res.status(200).json({ message: "User Deleted." });
+    } catch (err) {
+        console.error("❌ Error deleting user:", err);
+    }
+}
 
 module.exports = {
     registerUser,
@@ -389,5 +463,5 @@ module.exports = {
     updateBlock, // ✅ New API for updating blockedBy
     unblock,
     followrequest,
-    approvereject
+    approvereject, deleteUser
 };

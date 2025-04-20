@@ -2,7 +2,7 @@ const express = require("express");
 const { registerUser, loginUser, getUserProfile,
     updateUserProfile, getAllUsers, toggleFollow,
     searchbyname, updateBlock, unblock
-    , followrequest, approvereject } = require("../controllers/userController");  // ✅ Make sure loginUser is imported
+    , followrequest, approvereject, deleteUser } = require("../controllers/userController");  // ✅ Make sure loginUser is imported
 
 const router = express.Router();
 
@@ -24,4 +24,5 @@ router.post('/follow', toggleFollow);
 router.post('/block', updateBlock);
 router.post('/unblock', unblock)
 
+router.delete('/delete', deleteUser)
 module.exports = router;
