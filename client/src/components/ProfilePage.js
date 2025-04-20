@@ -43,6 +43,7 @@ import { CiMenuKebab } from "react-icons/ci";
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { AiFillLike, AiOutlineLike } from 'react-icons/ai';
+import { FaUpload } from 'react-icons/fa';
 import { FaRegComment, FaShare } from "react-icons/fa6";
 import { Divider } from "@mui/material";
 import PersonOffIcon from '@mui/icons-material/PersonOff';
@@ -53,6 +54,12 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FollowRequest from '../components/Profile/FollowRequest';
 import { host } from '../components/apinfo';
+import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
+
+
+
+
+
 
 
 const ProfilePage = () => {
@@ -74,12 +81,11 @@ const ProfilePage = () => {
   const handleMenuClose = () => { setAnchorEl(null); };
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { id } = useParams();
-  const vistinguser = id === user?._id ? false : true;
-  const auth = getAuth();
-  const userId = id ? id : user?._id;
+  const { id: userId } = useParams();
+  const authUserId = user?._id;
+  const vistinguser = userId !== authUserId;
   const [isConnected, setIsConnected] = useState(false);
   const [isRequested, setIsRequested] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -92,6 +98,7 @@ const ProfilePage = () => {
   const [selectedTab, setSelectedTab] = useState("all"); // "all" | "archived"
   const [deletetype, setDeletetype] = useState("")
   const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
+  const [openEditProfile, setOpenEditProfile] = useState(false);
   const [openShareModal, setOpenShareModal] = useState(false);
   const [postMenuAnchorEl, setPostMenuAnchorEl] = useState(null);
   const [openFollowersModal, setOpenFollowersModal] = useState(false);
@@ -179,13 +186,13 @@ const ProfilePage = () => {
     }
   };
   useEffect(() => {
-    console.log("id", id);
+    console.log("userId", userId);
     if (!userId) return;
 
     fetchUserProfile();
     fetchblockedusers();
 
-  }, [userId]);
+  }, [userId, user]);
 
 
 
@@ -471,10 +478,11 @@ const ProfilePage = () => {
 
   // Fetch posts for this user
   useEffect(() => {
-    if (!userId) return;
+    if (!userId && !user?._id) return;
     const fetchPosts = async () => {
+      const profileUserId = userId || user?._id;
       try {
-        const res = await axios.get(`${host}/api/posts/${id}`);
+        const res = await axios.get(`${host}/api/posts/${profileUserId}`);
         console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
 
@@ -514,7 +522,7 @@ const ProfilePage = () => {
     };
 
     fetchPosts();
-  }, [userId]);
+  }, [userId, user]);
 
   // Fetch all stories then filter those belonging to this user
   useEffect(() => {
@@ -571,8 +579,6 @@ const ProfilePage = () => {
     });
   };
 
-  // Callback for camera capture upload
-  // helper: converts a proper dataURL to a Blob
   function dataURLtoBlob(dataURL) {
     const parts = dataURL.split(',');
     if (parts.length !== 2) {
@@ -600,34 +606,45 @@ const ProfilePage = () => {
 
     if (typeof media === 'string') {
       if (media.startsWith('data:')) {
-        // true data URL
         previewUrl = media;
         fileForUpload = dataURLtoBlob(media);
-
       } else if (media.startsWith('blob:')) {
-        // blob URL: fetch the blob behind it
         previewUrl = media;
         fileForUpload = await fetch(media).then(res => res.blob());
-
-      } else {
-        // some other URL (e.g. remote image)—we’ll preview but not upload
-        previewUrl = media;
-        console.warn('Camera returned a non-blob URL; skipping upload.');
-        setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+      } else if (media.startsWith('https://firebasestorage.googleapis.com')) {
+        setFormData(prev => ({ ...prev, profileImage: media }));
         setOpenCamera(false);
         return;
+      } else {
+        try {
+          const response = await fetch(media);
+          const blob = await response.blob();
+          previewUrl = URL.createObjectURL(blob);
+          setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+          setSelectedFile(blob);
+          setOpenCamera(false);
+          return;
+        } catch (err) {
+          console.error("Error fetching image for upload:", err);
+          alert("Failed to process the camera image.");
+          return;
+        }
       }
-
     } else {
-      // already a Blob/File
       previewUrl = URL.createObjectURL(media);
       fileForUpload = media;
     }
 
-    // store for both preview and upload
     setFormData(prev => ({ ...prev, profileImage: previewUrl }));
     setSelectedFile(fileForUpload);
     setOpenCamera(false);
+  };
+
+  // Handle file selection from device
+  const handleFileSelect = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setFormData(prev => ({ ...prev, profileImage: previewUrl }));
   };
 
 
@@ -726,6 +743,60 @@ const ProfilePage = () => {
       console.error("Error unblocking user:", err);
     }
   };
+
+
+  const handleUpdateProfile = async () => {
+    console.log("handleUpdateProfile called with formData", formData);
+    try {
+      // 1. Update Firebase Auth profile
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn("handleUpdateProfile: no currentUser");
+        setOpenEditProfile(false);
+        return;
+      }
+      console.log("handleUpdateProfile: updating Firebase Auth profile");
+      await firebaseUpdateProfile(currentUser, {
+        displayName: formData.name,
+        photoURL: formData.profileImage
+      });
+      console.log("handleUpdateProfile: firebaseUpdateProfile succeeded");
+
+      // 2. Persist to backend
+      console.log("handleUpdateProfile: updating backend database");
+      const response = await axios.put(
+        `${host}/api/users/profile/${formData.id}`,
+        {
+          name: formData.name,
+          username: formData.username,
+          bio: formData.bio,
+          profileImage: formData.profileImage
+        }
+      );
+      console.log("handleUpdateProfile: backend updated", response.data);
+      console.log("handleUpdateProfile: applying new values locally");
+      // Update local state immediately
+      const updatedDetails = {
+        ...userDetails,
+        name: formData.name,
+        username: formData.username,
+        bio: formData.bio,
+        profileImage: formData.profileImage
+      };
+      setUserDetails(updatedDetails);
+      setFormData(updatedDetails);
+      console.log("handleUpdateProfile: local state updated", updatedDetails);
+
+      // 4. Close dialog
+      setOpenEditProfile(false);
+      console.log("handleUpdateProfile: dialog closed");
+    } catch (err) {
+      console.error("handleUpdateProfile error:", err);
+      alert("Failed to update profile.");
+    }
+  };
+
   const handleBlock = async () => {
     try {
       const payload = {
@@ -816,14 +887,10 @@ const ProfilePage = () => {
         }}
       >
 
-        <Grid container spacing={4} direction={isPhone ? 'column' : 'row'}>
+        <Grid container spacing={4}>
           {/* =========================== Main Layout Container Left Side ============================ */}
-          <Grid
-            item
-            xs={12}
-            md={3}
-            sx={{ pb: 3 }}
-          >
+          <Grid item xs={12} md={3}>
+
             {/* 1. Username + menu */}
             <Box
               sx={{
@@ -855,11 +922,14 @@ const ProfilePage = () => {
                     <MenuItem key="blocked" onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
                       Blocked Contacts
                     </MenuItem>,
-                    <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
-                      {editMode ? "Cancel Edit Profile" : "Edit Profile"}
-                    </MenuItem>,
+                    // <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
+                    //   {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+                    // </MenuItem>,
                     <MenuItem key="requests" onClick={() => { setOpenFollowRequestModal(true); handleMenuClose(); }}>
                       Follow Requests
+                    </MenuItem>,
+                    <MenuItem key="edit" onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
+                      Edit Profile
                     </MenuItem>
                   ]
                   : [
@@ -876,7 +946,7 @@ const ProfilePage = () => {
             </Box>
 
             {/* 2. Avatar */}
-            <Box sx={{ width: 250, height: 250, ml: 'auto', mt: 2 }}>
+            <Box sx={{ width: 250, height: 250, ml: 'auto', mt: 2, }}>
               <Avatar
                 src={userDetails.profileImage}
                 sx={{
@@ -985,16 +1055,7 @@ const ProfilePage = () => {
 
 
           {/* RIGHT COLUMN */}
-          <Grid
-            item
-            xs={12}
-            md={8.5}            // 3 + 9 = 12 columns
-            sx={{
-              borderLeft: { xs: 'none', md: '1px solid' },
-              // match the left column’s padding on the inner edge
-              ml: { xs: 2, md: 3 },
-            }}
-          >
+          <Grid item xs={12} md={9}>
             <Box sx={{ mt: 1 }}>
               {/* Tab Bar */}
               <Box mt={4} display="flex" justifyContent="center" gap={6}>
@@ -1063,12 +1124,17 @@ const ProfilePage = () => {
                       <Grid item xs={4} key={idx}>
                         <Box
                           onClick={() => handlePostClick(post)}
-                          sx={{ width: '100%', aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden' }}
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1/1',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                          }}
                         >
                           <img
                             src={post.images?.[0] || post.postimg}
                             alt="post"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                           />
                         </Box>
                       </Grid>
@@ -1105,8 +1171,8 @@ const ProfilePage = () => {
               )}
             </Box>
           </Grid>
-
         </Grid>
+
 
         {/* Post Modal */}
         {selectedPost && (
@@ -1285,13 +1351,16 @@ const ProfilePage = () => {
                       Post
                     </Button>
                   </Box>
+
                 </Grid>
               </Grid>
+
             </Box>
           </Modal>
 
 
         )}
+
 
         {/* Followers Modal */}
         <Modal open={openFollowersModal} onClose={() => setOpenFollowersModal(false)}>
@@ -1405,105 +1474,168 @@ const ProfilePage = () => {
           </Box>
         </Modal>
 
-
-        {/* Modal for Story View */}
-        <Modal open={openStory} onClose={() => setOpenStory(false)}>
-          <Box
-            sx={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 430,
-              height: 800,
-              bgcolor: "black",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: 2,
-              overflow: "hidden",
-              mt: 6,
-              position: "relative",
-            }}
-          >
-            {userStories.length > 0 && (
-              <img
-                src={userStories[currentIndexStory].mediaUrl}
-                alt={`Story ${currentIndexStory + 1}`}
-                style={{
-                  width: 430,
-                  height: 800,
-                  objectFit: "cover",
-                  borderRadius: 10,
-                }}
-              />
-            )}
+        <Dialog
+          open={openBlockedContacts}
+          onClose={() => setOpenBlockedContacts(false)}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', position: 'relative', textAlign: 'center', pb: 1 }}>
+            Blocked Contacts
             <IconButton
-              onClick={() => setOpenStory(false)}
-              sx={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                bgcolor: "white",
-                p: 3,
-                borderRadius: 2,
-                textAlign: "center",
-                width: "400px",
-                maxHeight: "500px",
-                overflowY: "auto",
-              }}
-            ></IconButton>
-            <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
-            <List>
-              {blockedUsers?.length > 0 ? (
-                blockedUsers.map((blockedUser, index) => (
-                  <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar src={blockedUser.profileImage} />
-                      <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
-                    </Box>
+              aria-label="close"
+              onClick={() => setOpenBlockedContacts(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {blockedUsers && blockedUsers.length > 0 ? (
+              <List disablePadding>
+                {blockedUsers.map((b) => (
+                  <ListItem
+                    key={b.id}
+                    sx={{
+                      mb: 1,
+                      borderRadius: 1,
+                      '&:hover': { backgroundColor: 'action.hover' },
+                      alignItems: 'center'
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar src={b.profileImage} />
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={b.name}
+                      secondary={`@${b.username}`}
+                    />
                     <Button
                       variant="outlined"
-                      color="error"
                       size="small"
-                      onClick={() => handleUnblock(blockedUser.id)}
+                      onClick={() => handleUnblock(b.id)}
+                      sx={{ textTransform: 'none' }}
                     >
                       Unblock
                     </Button>
                   </ListItem>
-                ))
-              ) : (
-                <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
-              )}
-            </List>
-          </Box>
-        </Modal>
-
-        {/* sharemodal*/}
-
-        <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
-        <List>
-          {blockedUsers?.length > 0 ? (
-            blockedUsers.map((blockedUser, index) => (
-              <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar src={blockedUser.profileImage} />
-                  <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
-                </Box>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body2" color="text.secondary" align="center">
+                You have no blocked contacts.
+              </Typography>
+            )}
+          </DialogContent>
+        </Dialog>
+        <Dialog
+          open={openEditProfile}
+          onClose={() => setOpenEditProfile(false)}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle sx={{ fontWeight: 'bold' }}>Edit Profile</DialogTitle>
+          <DialogContent dividers>
+            {!selectedFile && (
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, justifyContent: 'center' }}>
                 <Button
                   variant="outlined"
-                  color="error"
-                  size="small"
-                  onClick={() => handleUnblock(blockedUser.id)}
+                  startIcon={<PhotoCamera />}
+                  onClick={() => setOpenCamera(true)}
+                  sx={{ textTransform: 'none' }}
                 >
-                  Unblock
+                  Use Camera
                 </Button>
-              </ListItem>
-            ))
-          ) : (
-            <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
-          )}
-        </List>
+                <Button
+                  variant="outlined"
+                  startIcon={<CloudUploadIcon />}
+                  component="label"
+                  sx={{ textTransform: 'none' }}
+                >
+                  Upload from Device
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileSelect(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </Button>
+              </Box>
+            )}
+
+            {/* Preview + Discard + Accept */}
+            {selectedFile && (
+              <Box sx={{ mb: 2, textAlign: 'center' }}>
+                <Typography variant="body2">Selected file: {selectedFile.name}</Typography>
+                <Box
+                  component="img"
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="Preview"
+                  sx={{
+                    width: '100%',
+                    maxHeight: 200,
+                    objectFit: 'contain',
+                    mt: 1,
+                    borderRadius: 2,
+                  }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
+                  <Button
+                    variant="text"
+                    color="error"
+                    onClick={() => setSelectedFile(null)}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={async () => {
+                      await handleImageUpload();
+                    }}
+                  >
+                    Accept
+                  </Button>
+                </Box>
+              </Box>
+            )}
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Name"
+                name="name"
+                fullWidth
+                value={formData.name || ''}
+                onChange={handleChange}
+              />
+              <TextField
+                label="Username"
+                name="username"
+                fullWidth
+                value={formData.username || ''}
+                onChange={handleChange}
+              />
+              <TextField
+                label="Bio"
+                name="bio"
+                fullWidth
+                multiline
+                rows={3}
+                value={formData.bio || ''}
+                onChange={handleChange}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenEditProfile(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleUpdateProfile}>
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
 
 
         {/* sharemodal*/}
