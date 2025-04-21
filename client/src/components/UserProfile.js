@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Box, Avatar, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-
+import { host } from '../components/apinfo';
 const UserProfile = () => {
     const { userId } = useParams();
     const [user, setUser] = useState(null);
@@ -14,7 +14,7 @@ const UserProfile = () => {
         // Fetch user profile data
         const fetchUserProfile = async () => {
             try {
-                const res = await axios.get(`http://localhost:5001/api/users/${userId}`);
+                const res = await axios.get(`${host}/api/users/${userId}`);
                 console.log('Fetched User Profile:', res.data);
                 setUser(res.data);
             } catch (err) {
@@ -25,7 +25,7 @@ const UserProfile = () => {
         // Fetch posts for the user and transform the data
         const fetchUserPosts = async () => {
             try {
-                const res = await axios.get(`http://localhost:5001/api/posts/${postId}`); // Endpoint for fetching posts
+                const res = await axios.get(`${host}/api/posts/${postId}`); // Endpoint for fetching posts
                 const transformedPosts = res.data.map(post => ({
                     content: post.content,
                     createdAt: new Date(post.createdAt).toLocaleString(), // Format the date

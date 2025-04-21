@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 
 // 🔹 External Libraries
 import axios from 'axios';
-
+import { host } from '../components/apinfo';
 // 🔹 Material UI Components & Icons
 import {
   Typography, Button, Container, Paper, TextField, Avatar, Box, IconButton,
@@ -39,7 +39,7 @@ const UserHome = () => {
   const [isMessengerOpen, setMessengerOpen] = useState(false); // Messenger Toggle State
   const [userProfile, setUserProfile] = useState(null);
   const [recommendedProfiles, setRecommendedProfiles] = useState([]);
-  const isTablet = useMediaQuery("(max-width: 960px)");
+  const isTablet = useMediaQuery("(max-width: 1000px)");
   const [open, setOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -58,7 +58,7 @@ const UserHome = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get(`http://localhost:5001/api/posts/feed/${user?._id}`);
+        const res = await axios.get(`${host}/api/posts/feed/${user?._id}`);
         const postsData = res.data;
         console.log("length", postsData.length)
         // Get the list of blocked users
@@ -67,7 +67,7 @@ const UserHome = () => {
         // Fetch comments and filter out blocked users
         const postsWithComments = await Promise.all(
           postsData.map(async (post) => {
-            const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post._id}`);
+            const commentsRes = await axios.get(`${host}/api/comment/${post._id}`);
 
 
             return {
@@ -97,7 +97,7 @@ const UserHome = () => {
 
     const fetchUsers = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/users/all');
+        const res = await axios.get(`${host}/api/users/all`);
         const transformedUsers = res.data.map(user => ({
           id: user._id,
           name: user.name,
@@ -131,7 +131,7 @@ const UserHome = () => {
 
         console.log(`🔍 Fetching user stats for ID: ${user._id}`);
 
-        const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+        const res = await axios.get(`${host}/api/users/profile/${user._id}`);
 
         console.log("✅ User stats response:", res.data); // Debugging: Check API response
 
@@ -224,7 +224,7 @@ const UserHome = () => {
   const fetchComments = async (postId) => {
     try {
       console.log("Fetching comments for post", postId);
-      const res = await axios.get(`http://localhost:5001/api/comment/${postId}`);
+      const res = await axios.get(`${host}/api/comment/${postId}`);
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
           post.postId === postId ? { ...post, comments: res.data } : post
@@ -242,7 +242,7 @@ const UserHome = () => {
 
     try {
       console.log(user);
-      const res = await axios.post("http://localhost:5001/api/comment/add", {
+      const res = await axios.post(`${host}/api/comment/add`, {
         userId: user._id,
         postId: postId,
         text: newComment[postId],
@@ -272,7 +272,7 @@ const UserHome = () => {
     const fetchFollowing = async () => {
       try {
         if (!user?._id) return;
-        const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+        const res = await axios.get(`${host}/api/users/profile/${user._id}`);
 
         console.log("🔄 Fetching Following List:", res.data.followings);
         setFollowing(res.data.followings || []); // ✅ Ensure array format
@@ -290,7 +290,7 @@ const UserHome = () => {
       console.log(`🔄 Toggling follow status for ${targetUserId} | Currently following: ${isFollowing}`);
 
       // Make the follow/unfollow API call
-      const response = await axios.post('http://localhost:5001/api/users/follow', {
+      const response = await axios.post(`${host}/api/users/follow`, {
         userId: user?._id,
         targetUserId,
       });
@@ -318,7 +318,7 @@ const UserHome = () => {
 
       console.log(`🔍 Fetching user stats for ID: ${user._id}`);
 
-      const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+      const res = await axios.get(`${host}/api/users/profile/${user._id}`);
 
       console.log("✅ User stats response:", res.data); // Debugging: Check API response
 
@@ -368,10 +368,10 @@ const UserHome = () => {
       const alreadyLiked = post.likes.includes(user._id);
 
       const response = alreadyLiked
-        ? await axios.delete("http://localhost:5001/api/likes/remove", {
+        ? await axios.delete(`${host}/api/likes/remove`, {
           data: { userId: user._id, postId },
         })
-        : await axios.post("http://localhost:5001/api/likes/add", { userId: user._id, postId });
+        : await axios.post(`${host}/api/likes/add`, { userId: user._id, postId });
 
       console.log("✅ Like toggled:", response.data);
 
@@ -409,7 +409,7 @@ const UserHome = () => {
 
         console.log(`🔍 Fetching user stats for ID: ${user._id}`);
 
-        const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+        const res = await axios.get(`${host}/api/users/profile/${user._id}`);
 
         if (!res.data) {
           console.warn("🚨 No user data received!");
@@ -449,7 +449,7 @@ const UserHome = () => {
   const handleOpenLikeModal = async (postId) => {
     try {
       // Assuming your endpoint returns { likes: [user details...] }
-      const res = await axios.get(`http://localhost:5001/api/likes/post/${postId}`);
+      const res = await axios.get(`${host}/api/likes/post/${postId}`);
       setLikedUsers(res.data.likes);
       setOpenLikeModal(true);
     } catch (error) {
@@ -466,27 +466,29 @@ const UserHome = () => {
       sx={{
         background: "#f8f2ec",
         minHeight: "100vh",
-        pr: 0,
+        width: '100%',
         overflowX: "hidden",
-        transition: "margin-left 0.3s ease",
+        //transition: "margin-left 0.3s ease",
         display: "flex",
         flexDirection: "row",
-        alignItems: "center",
-
-        backgroundColor: "#e5e5e5"
+        // alignItems: "center",
+        left: 0,
+        backgroundColor: "#e5e5e5",
+        //position: 'sticky'
       }}
     >
       <Box
         sx={{
-          position: "relative",
+          // position: "relative",
           width: "100%",
           maxWidth: "1000px",
-          margin: "0 auto",
+
           py: 2,
           mt: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center", // ✅ center the post box horizontally
+          ml: { xs: "0", sm: "0", md: "5%", lg: "15%" },
         }}
       >
         <Box
@@ -498,7 +500,7 @@ const UserHome = () => {
             gap: 2,
             overflowY: "hidden",
 
-            marginRight: '10%'
+            alignItems: "center", // ✅ center the post box horizontally
 
           }}
         >
@@ -532,13 +534,16 @@ const UserHome = () => {
         </Box>
       </Box>
 
-      <RecommendedUsers
-        users={users}
-        visibleCount={visibleCount}
-        setVisibleCount={setVisibleCount}
-        following={following}
-        handleFollowToggle={handleFollowToggle}
-      />
+
+      {(!isMobile || !isTablet) ?
+        <RecommendedUsers
+          users={users}
+          visibleCount={visibleCount}
+          setVisibleCount={setVisibleCount}
+          following={following}
+          handleFollowToggle={handleFollowToggle}
+        /> : <></>}
+
 
 
       {/* Modal for Viewed Story View */}

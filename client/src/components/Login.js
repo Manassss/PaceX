@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword } from "firebase/auth";
 import Logo from "../assets/PACE.png";
 import { motion } from "framer-motion";
-
+import { host } from '../components/apinfo';
 const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [message, setMessage] = useState('');
@@ -41,7 +41,7 @@ const Login = () => {
             }
 
             const idToken = await user.getIdToken();
-            const res = await axios.post('http://localhost:5001/api/users/login', { idToken });
+            const res = await axios.post(`${host}/api/users/login`, { idToken });
             const now = Date.now();
             localStorage.setItem("loginTime", `${now}`); setMessage('🎉 Login Successful!');
             login(res.data.user);

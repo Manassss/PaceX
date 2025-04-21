@@ -23,6 +23,7 @@ const PostFeed = ({
     expandedPosts,
     showCommentBox,
     newComment,
+    setNewComment,
     handleProfile,
     handleAddComment,
     toggleCommentBox,
@@ -41,24 +42,21 @@ const PostFeed = ({
         <Box
             sx={{
                 width: "100%",
-                maxWidth: isMobile ? "100%" : isTablet ? "90%" : "830px",
+                maxWidth: { xs: "70%", sm: "75%", md: "80%", lg: "95%" },
                 display: "flex",
                 flexDirection: "column",
                 gap: 2,
                 overflowY: "hidden",
-                mx: "auto",
+
                 alignItems: 'center',
                 mt: '20%'
             }}
         >
             {[...posts]
-                // 1) copy the array so we don’t mutate state
                 .sort((a, b) =>
-                    // 2) sort descending by rawCreatedAt
                     new Date(b.rawCreatedAt).getTime() - new Date(a.rawCreatedAt).getTime()
                 ).map((post, index) => {
                     const postUser = users.find((user) => user.id === post.userId);
-                    //console.log("i want to ckec th e poscv date", post)
                     if (!postUser) return null;
 
                     return (
@@ -67,7 +65,7 @@ const PostFeed = ({
                             sx={{
                                 mb: 2,
                                 width: "100%",
-                                backgroundColor: "#cccccc",
+                                backgroundColor: "transparent",
                                 boxShadow: "none",
                                 py: 2,
                                 borderRadius: "12px",
@@ -204,48 +202,79 @@ const PostFeed = ({
                                 </Box>
                             </Box>
 
-                            {/* Comment Bar */}
+                            {/* Comment Box */}
                             {showCommentBox[post.postId] && (
-                                <Box
-                                    sx={{
-                                        mt: 2,
+                                <>
+                                    {/* Scrollable comment list */}
+                                    <Box sx={{
+                                        maxHeight: "150px",
+                                        overflowY: "auto",
+                                        px: 2,
+                                        mt: 1,
                                         display: "flex",
-                                        alignItems: "center",
-                                        gap: 1,
-                                        width: "100%",
-                                    }}
-                                >
-                                    <TextField
-                                        fullWidth
-                                        variant="outlined"
-                                        size="small"
-                                        placeholder="Write a comment..."
-                                        value={newComment[post.postId] || ""}
-                                        onChange={(e) =>
-                                            newComment[post.postId] = e.target.value
-                                        }
+                                        flexDirection: "column",
+                                        gap: 1
+                                    }}>
+                                        {post.comments?.comments?.length > 0 ? (
+                                            post.comments.comments.map((c, i) => (
+                                                <Box key={i} sx={{ display: "flex", alignItems: "flex-start" }}>
+                                                    <Avatar src={c.userimg} sx={{ width: 30, height: 30, mr: 1 }} />
+                                                    <Box>
+                                                        <Typography variant="subtitle2">{c.username}</Typography>
+                                                        <Typography variant="body2" color="text.secondary">{c.text}</Typography>
+                                                    </Box>
+                                                </Box>
+                                            ))
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mt: 1 }}>
+                                                No comments yet.
+                                            </Typography>
+                                        )}
+                                    </Box>
+
+                                    {/* Add comment input */}
+                                    <Box
                                         sx={{
-                                            borderRadius: "20px",
-                                            backgroundColor: "#fff",
-                                            "& .MuiOutlinedInput-root": {
-                                                borderRadius: "20px",
-                                            },
-                                        }}
-                                    />
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        sx={{
-                                            borderRadius: "20px",
-                                            textTransform: "none",
+                                            mt: 1,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                            width: "95%",
                                             px: 2,
-                                            fontSize: "13px",
                                         }}
-                                        onClick={() => handleAddComment(post.postId, post.userId)}
                                     >
-                                        Post
-                                    </Button>
-                                </Box>
+                                        <TextField
+                                            fullWidth
+                                            variant="outlined"
+                                            size="small"
+                                            placeholder="Write a comment..."
+                                            value={newComment[post.postId] || ""}
+                                            onChange={(e) =>
+                                                setNewComment((prev) => ({ ...prev, [post.postId]: e.target.value }))
+                                            }
+                                            sx={{
+                                                borderRadius: "20px",
+                                                backgroundColor: "#fff",
+                                                "& .MuiOutlinedInput-root": {
+                                                    borderRadius: "20px",
+                                                },
+                                            }}
+                                        />
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            sx={{
+                                                borderRadius: "20px",
+                                                textTransform: "none",
+                                                px: 1,
+                                                fontSize: "13px",
+                                            }}
+                                            onClick={() => handleAddComment(post.postId, post.userId)}
+                                        >
+                                            Post
+                                        </Button>
+                                    </Box>
+                                </>
                             )}
                         </Paper>
                     );

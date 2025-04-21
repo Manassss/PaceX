@@ -1,4 +1,4 @@
-import { Box, IconButton, Avatar, Typography, Modal } from "@mui/material";
+import { Box, IconButton, Avatar, Typography, Modal, useMediaQuery } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -7,7 +7,7 @@ import axios from "axios";
 import StoryViewer from "./StoryViewer";
 import { useAuth } from "../../auth/AuthContext";
 import CameraCapture from "../CameraComponent";
-
+import { host } from '../apinfo';
 const StoryBar = ({
     users,
 
@@ -23,7 +23,7 @@ const StoryBar = ({
 
     const fetchStories = async () => {
         try {
-            const res = await axios.get('http://localhost:5001/api/story/all');
+            const res = await axios.get(`${host}/api/story/all`);
             const todaystories = res.data.map(story => ({
                 storyId: story._id,
                 userId: story.userId,
@@ -73,7 +73,7 @@ const StoryBar = ({
         try {
             const postdata = { storyId, userId };
             console.log("postdata", postdata);
-            await axios.put("http://localhost:5001/api/story/view", postdata);
+            await axios.put(`${host}/api/story/view`, postdata);
             console.log(`👀 User ${user?._id} viewed story ${storyId}`);
         } catch (error) {
             console.error("🔥 Error updating story view:", error);
@@ -82,7 +82,7 @@ const StoryBar = ({
 
     const handleDeleteStory = async (storyId) => {
         try {
-            await axios.delete(`http://localhost:5001/api/story/delete/${storyId}`);
+            await axios.delete(`${host}/api/story/delete/${storyId}`);
             console.log("✅ Story deleted successfully");
 
             // Remove the deleted story from the state
@@ -132,7 +132,7 @@ const StoryBar = ({
                 mediaUrl: downloadURL,
                 mediaType: mediatype
             };
-            await axios.post('http://localhost:5001/api/story/add', postData);
+            await axios.post(`${host}/api/story/add`, postData);
             console.log("✅ Story uploaded successfully");
             setOpenStoryCamera(false);
             await fetchStories(); // 🔁 Refresh stories after upload
@@ -141,15 +141,17 @@ const StoryBar = ({
         }
     };
     const myStories = sortedUniqueUserStories.find(group => group.userId === user?._id);
+
+
     return (
         <Box
             sx={{
                 width: "100%",
-                maxWidth: "860px",
+                maxWidth: { xs: "95%", sm: "85%", md: "60%", lg: "45%" },
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                mx: "auto",
+                // justifyContent: "center",6
+
                 py: 2,
                 position: 'fixed',
                 zIndex: 1
@@ -183,7 +185,8 @@ const StoryBar = ({
                     borderRadius: 10,
                     mr: 2,
                     backgroundColor: "#073574",
-                    ml: 1.5
+                    ml: 1.5,
+
                 }}
             >
                 {(() => {
@@ -194,7 +197,7 @@ const StoryBar = ({
                                 sx={{ position: "relative", cursor: "pointer" }}
                                 onClick={() => handleStoryClick(user, myStories.stories)}
                             >
-                                <Avatar src={user?.profileImage} sx={{ width: 65, height: 65, border: "2px solid #ff4500", mb: 2 }} />
+                                <Avatar src={user?.profileImage} sx={{ width: { xs: 50, sm: 65, md: 65, lg: 65 }, height: { xs: 50, sm: 65, md: 65, lg: 65 }, border: "2px solid #ff4500", mb: 2 }} />
                                 <AddIcon
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -215,15 +218,15 @@ const StoryBar = ({
                     } else {
                         return (
                             <Box sx={{ position: "relative", cursor: "pointer" }} onClick={() => setOpenStoryCamera(true)}>
-                                <Avatar src={user?.profileImage} sx={{ width: 65, height: 65, border: "2px solid #ff4500" }} />
+                                <Avatar src={user?.profileImage} sx={{ width: { xs: 50, sm: 65, md: 65, lg: 65 }, height: { xs: 50, sm: 65, md: 65, lg: 65 }, border: "2px solid #ff4500", mb: 2 }} />
                                 <AddIcon
                                     sx={{
                                         position: "absolute",
-                                        top: 55,
+                                        top: 75,
                                         right: 25,
                                         backgroundColor: "white",
                                         borderRadius: "50%",
-                                        fontSize: 18,
+                                        fontSize: { xs: 15, sm: 18, md: 18, lg: 18 },
                                         color: "#ff4500",
                                     }}
                                 />
@@ -247,8 +250,8 @@ const StoryBar = ({
                             <Avatar
                                 src={storyUser.profileImage}
                                 sx={{
-                                    width: 65,
-                                    height: 65,
+                                    width: { xs: 50, sm: 65, md: 65, lg: 65 },
+                                    height: { xs: 50, sm: 65, md: 65, lg: 65 },
                                     border: `3px solid ${hasSeenAll ? "gray" : "#ff4500"}`,
                                     margin: "0 auto",
                                 }}
@@ -303,7 +306,7 @@ const StoryBar = ({
                         p: 2,
                     }}
                 >
-                    <CameraCapture onMediaUpload={handleImageUpload} />
+                    <CameraCapture userId={user._id} onMediaUpload={handleImageUpload} />
                 </Box>
             </Modal>
         </Box>

@@ -9,7 +9,7 @@ import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { storage } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-
+import { host } from '../components/apinfo';
 const CreateCommunity = ({ onClose, userId }) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -61,7 +61,7 @@ const CreateCommunity = ({ onClose, userId }) => {
                 members: [{ userId, role: "admin" }],
             }
             console.log("payload", payload)
-            const response = await axios.post("http://localhost:5001/api/community", payload);
+            const response = await axios.post(`${host}/api/community`, payload);
             console.log("Community Created:", response.data);
             onClose();
         } catch (error) {

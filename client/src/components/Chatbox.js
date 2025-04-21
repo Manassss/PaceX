@@ -1,20 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { Box, TextField, Button, Typography, List, ListItem, ListItemText, Container, Avatar } from '@mui/material';
+import React, { useEffect, useState, useRef } from 'react';
+import { Box, TextField, Button, Typography, List, ListItem, ListItemText, Container, Avatar, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import io from 'socket.io-client';
 import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
-import { Send } from '@mui/icons-material';
+import { Send, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
-const socket = io("http://localhost:5001", {
+import { host } from '../components/apinfo';
+const socket = io(`${host}`, {
     transports: ["websocket", "polling"],
     withCredentials: true
 });
 
-const Chatbox = ({ userId, username }) => {
+const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
     const { user } = useAuth();
+    const theme = useTheme();
+    const isXs = useMediaQuery(theme.breakpoints.down('sm'));
     const [message, setMessage] = useState("");
     const [chatHistory, setChatHistory] = useState([]);
+    const listRef = useRef(null);
+    const bottomRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -64,7 +68,7 @@ const Chatbox = ({ userId, username }) => {
         try {
 
             console.log("user whom connecting", userId);
-            const response = await axios.get('http://localhost:5001/api/chat/get', {
+            const response = await axios.get(`${host}/api/chat/get`, {
                 params: { user1: userId, user2: user._id }
             }); console.log("manasi", userId)
             console.log("resssss", response.data)
@@ -81,7 +85,7 @@ const Chatbox = ({ userId, username }) => {
                 receiverId: userId,
                 text: message.trim(),
             };
-            const res = await axios.post('http://localhost:5001/api/chat/send', postData);
+            const res = await axios.post(`${host}/api/chat/send`, postData);
             console.log("res", res.chat)
 
 
@@ -90,29 +94,59 @@ const Chatbox = ({ userId, username }) => {
         }
     };
 
+    useEffect(() => {
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'auto' });
+        }
+    }, [chatHistory]);
+
     return (
-        <Container
-            maxWidth="lg"
+        <Box
             sx={{
-                width: 450,
-                height: "97vh",
+                flex: 1,
+                width: { xs: "99%", sm: "85%", md: "85%", lg: '92%' },
+                height: '100%',
                 background: "#f8f2ec",
                 display: "flex",
                 flexDirection: "column",
-                padding: "20px",
-                borderLeft: "1px solid #ccc",
+                padding: { xs: "10px", sm: "20px" },
                 overflow: 'hidden',
-                marginleft: "500",
-
+                boxSizing: 'border-box',
+                minWidth: 0,
+                mt:0,
             }}
         >
+            {/* Chat Header */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 2,
+                    paddingBottom: "10px",
+                    borderBottom: "1px solid #ccc",
+
+                }}
+            >
+                {isXs && (
+                    <IconButton onClick={() => setSelectedUser(null)}>
+                        <ArrowBack />
+                    </IconButton>
+                )}
+                <Avatar sx={{ width: 50, height: 50 }} />
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    {username}
+                </Typography>
+            </Box>
             {/* Chat History List */}
             <List
+                ref={listRef}
                 sx={{
                     flexGrow: 1,
                     overflowY: 'auto',
                     maxHeight: "calc(100% - 60px)", // Leaves space for input
-                    "&::-webkit-scrollbar": { display: "none" }
+                    "&::-webkit-scrollbar": { display: "none" },
+                    width: '100%'
                 }}
             >
                 {chatHistory.map((msg, index) => (
@@ -124,6 +158,7 @@ const Chatbox = ({ userId, username }) => {
                             alignItems: msg.senderId === user._id ? "flex-end" : "flex-start",
                             width: "100%",
                             mb: 1,
+
                         }}
                     >
                         {/* If the message contains shared profile */}
@@ -177,7 +212,7 @@ const Chatbox = ({ userId, username }) => {
                                 sx={{
                                     backgroundColor: msg.senderId === user._id ? "#fff" : "#073574",
                                     color: msg.senderId === user._id ? "black" : "white",
-                                    borderRadius: "12px",
+                                    borderRadius: 3,
                                     padding: "10px 15px",
                                     maxWidth: "65%",
                                     boxShadow: 1,
@@ -189,6 +224,7 @@ const Chatbox = ({ userId, username }) => {
                         )}
                     </ListItem>
                 ))}
+                <div ref={bottomRef} />
             </List>
 
             {/* ✅ SINGLE FIXED MESSAGE INPUT AT BOTTOM */}
@@ -231,7 +267,7 @@ const Chatbox = ({ userId, username }) => {
                     <Send />
                 </Button>
             </Box>
-        </Container>
+        </Box>
     );
 };
 

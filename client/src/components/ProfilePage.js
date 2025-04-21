@@ -52,6 +52,8 @@ import BlockIcon from '@mui/icons-material/Block';
 import { GiShare } from "react-icons/gi";
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import FollowRequest from '../components/Profile/FollowRequest';
+import { host } from '../components/apinfo';
 import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
 
 
@@ -79,12 +81,13 @@ const ProfilePage = () => {
   const handleMenuClose = () => { setAnchorEl(null); };
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-const { user } = useAuth();
-const navigate = useNavigate();
-const { id: userId } = useParams();
-const authUserId = user?._id;
-const vistinguser = userId !== authUserId;
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { id: userId } = useParams();
+  const authUserId = user?._id;
+  const vistinguser = userId !== authUserId;
   const [isConnected, setIsConnected] = useState(false);
+  const [isRequested, setIsRequested] = useState(false);
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState({});
@@ -111,14 +114,14 @@ const vistinguser = userId !== authUserId;
   const [openChat, setOpenChat] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
-
-
+  const [openFollowRequestModal, setOpenFollowRequestModal] = useState(false);
+  const [requestProfiles, setRequestProfiles] = useState([]);
 
   //User Profile Details
   const fetchUserProfile = async () => {
     try {
 
-      const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+      const res = await axios.get(`${host}/api/users/profile/${userId}`);
       console.log("Fetched User Data:", res.data); // Debugging output
 
       // Transform the data
@@ -137,14 +140,47 @@ const vistinguser = userId !== authUserId;
         joinedAt: new Date(res.data.joinedAt).toLocaleDateString(),
         private: res.data.private,
         followers: res.data.followers,
-        followings: res.data.followings
+        followings: res.data.followings,
+        requests: res.data.requests
       };
 
       console.log("Transformed Data:", transformedData); // Debugging output
 
       setIsConnected(res.data.followers?.includes(user?._id) ? true : false);
+      setIsRequested(res.data.requests?.includes(user?._id));
       setUserDetails(transformedData);
       setFormData(transformedData);
+
+      // 🔥 Fetch profiles for each request user
+      if (Array.isArray(res.data.requests) && res.data.requests.length > 0) {
+        const profiles = await Promise.all(
+          res.data.requests.map(async (reqUserId) => {
+            try {
+              const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
+
+              return {
+                _id: userRes.data._id,
+                name: userRes.data.name,
+                username: userRes.data.username,
+                profileImage: userRes.data.profileImage,
+              };
+
+            } catch (err) {
+              console.error(`Error fetching profile for request user ${reqUserId}:`, err.message);
+              return null; // Skip user on error
+            }
+          })
+        );
+
+        // Remove any failed/null results
+        const validProfiles = profiles.filter(p => p !== null);
+        console.log("vvalid", validProfiles)
+        setRequestProfiles(validProfiles);
+      } else {
+        setRequestProfiles([]); // Clear if no requests
+      }
+
+
     } catch (err) {
       console.error("Error fetching profile:", err.message);
     }
@@ -174,7 +210,7 @@ const vistinguser = userId !== authUserId;
       const ids = userDetails.followers || [];
       const list = await Promise.all(
         ids.map(fid =>
-          axios.get(`http://localhost:5001/api/users/profile/${fid}`)   
+          axios.get(`${host}/api/users/profile/${fid}`)   // ← no “profile” here
             .then(res => ({
               _id: res.data._id,
               name: res.data.name,
@@ -199,7 +235,7 @@ const vistinguser = userId !== authUserId;
       const ids = userDetails.followings || []
       const list = await Promise.all(
         ids.map(async (fid) => {
-          const res = await axios.get(`http://localhost:5001/api/users/profile/${fid}`)
+          const res = await axios.get(`${host}/api/users/profile/${fid}`)
           const u = res.data
           return {
             _id: u._id,
@@ -225,7 +261,7 @@ const vistinguser = userId !== authUserId;
     try {
       console.log("🗑️  Permanently deleting post:", postToDelete);
       const res = await axios.post(
-        `http://localhost:5001/api/posts/delete/${postToDelete}`
+        `${host}/api/posts/delete/${postToDelete}`
       );
       console.log("🗑️  delete response:", res.data);
 
@@ -249,7 +285,7 @@ const vistinguser = userId !== authUserId;
     try {
       console.log("⏱️  Toggling temp-delete for post:", postToDelete);
       const res = await axios.post(
-        `http://localhost:5001/api/posts/tempdelete/${postToDelete}`
+        `${host}/api/posts/tempdelete/${postToDelete}`
       );
       console.log("⏱️  temp-delete response:", res.data);
 
@@ -277,14 +313,46 @@ const vistinguser = userId !== authUserId;
     }
   };
 
+  const handleRequestToggle = async () => {
+    try {
 
+      const response = await axios.put(`${host}/api/users/followrequest`, {
+        requesterId: user?._id,
+        targetUserId: userDetails.id,
+      });
+
+      console.log("rrrr", response.data);
+
+      // Update local state to reflect request status
+      setIsRequested(!isRequested);
+    } catch (err) {
+      console.error("Error sending/canceling follow request:", err);
+    }
+  };
+
+  const handleRespondRequest = async (requesterId, action) => {
+    try {
+      const res = await axios.put(`${host}/api/users/approvereject`, {
+        targetUserId: user?._id,
+        requesterId,
+        action
+      });
+
+      console.log("tdfhfbf", res.data.message);
+      setRequestProfiles(prev => prev.filter(r => r._id !== requesterId));
+      fetchUserProfile(); // Refresh profile info
+      setOpenFollowRequestModal(false)
+    } catch (err) {
+      console.error("Error approving/rejecting request:", err);
+    }
+  };
 
 
   // Function to fetch comments on posts
   const fetchComments = async (postId) => {
     try {
       console.log("Fetching comments for post:", postId);
-      const res = await axios.get(`http://localhost:5001/api/comment/${postId}`);
+      const res = await axios.get(`${host}/api/comment/${postId}`);
 
       console.log("Fetched Comments:", res.data);  // Debugging log
 
@@ -313,7 +381,7 @@ const vistinguser = userId !== authUserId;
       }
       console.log(user);
       console.log("payload", payload);
-      const res = await axios.post("http://localhost:5001/api/comment/add", payload);
+      const res = await axios.post(`${host}/api/comment/add`, payload);
 
       console.log("✅ Comment Added:", res.data);
       setNewComment({ ...newComment, [postId]: "" }); // Clear input field
@@ -348,10 +416,10 @@ const vistinguser = userId !== authUserId;
     try {
       // call the correct endpoint
       const res = alreadyLiked
-        ? await axios.delete("http://localhost:5001/api/likes/remove", {
+        ? await axios.delete(`${host}/api/likes/remove`, {
           data: { userId: user._id, postId },
         })
-        : await axios.post("http://localhost:5001/api/likes/add", { userId: user._id, postId });
+        : await axios.post(`${host}/api/likes/add`, { userId: user._id, postId });
 
       console.log("✅ Like toggled:", res.data);
 
@@ -409,12 +477,12 @@ const vistinguser = userId !== authUserId;
 
 
   // Fetch posts for this user
-useEffect(() => {
+  useEffect(() => {
     if (!userId && !user?._id) return;
     const fetchPosts = async () => {
       const profileUserId = userId || user?._id;
       try {
-        const res = await axios.get(`http://localhost:5001/api/posts/${profileUserId}`);
+        const res = await axios.get(`${host}/api/posts/${profileUserId}`);
         console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
 
@@ -438,7 +506,7 @@ useEffect(() => {
         const postsWithComments = await Promise.all(
           transformedPosts.map(async (post) => {
             try {
-              const commentsRes = await axios.get(`http://localhost:5001/api/comment/${post.postId}`);
+              const commentsRes = await axios.get(`${host}/api/comment/${post.postId}`);
               return { ...post, comments: commentsRes.data }; // Attach fetched comments
             } catch (commentErr) {
               console.error(`Error fetching comments for post ${post.postId}:`, commentErr.message);
@@ -460,7 +528,7 @@ useEffect(() => {
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/story/all');
+        const res = await axios.get(`${host}/api/story/all`);
         setStories(res.data);
         const filtered = res.data.filter(story => story.userId.toString() === userId.toString());
         setUserStories(filtered);
@@ -531,53 +599,53 @@ useEffect(() => {
     }
     return new Blob([u8], { type: mime });
   }
-    //handleCameraImageUpload
+  //handleCameraImageUpload
   const handleCameraImageUpload = async (media) => {
-  let fileForUpload;
-  let previewUrl;
-  
-  if (typeof media === 'string') {
-    if (media.startsWith('data:')) {
-      previewUrl = media;
-      fileForUpload = dataURLtoBlob(media);
-    } else if (media.startsWith('blob:')) {
-      previewUrl = media;
-      fileForUpload = await fetch(media).then(res => res.blob());
-    } else if (media.startsWith('https://firebasestorage.googleapis.com')) {
-      setFormData(prev => ({ ...prev, profileImage: media }));
-      setOpenCamera(false);
-      return;
-    } else {
-      try {
-        const response = await fetch(media);
-        const blob = await response.blob();
-        previewUrl = URL.createObjectURL(blob);
-        setFormData(prev => ({ ...prev, profileImage: previewUrl }));
-        setSelectedFile(blob);
+    let fileForUpload;
+    let previewUrl;
+
+    if (typeof media === 'string') {
+      if (media.startsWith('data:')) {
+        previewUrl = media;
+        fileForUpload = dataURLtoBlob(media);
+      } else if (media.startsWith('blob:')) {
+        previewUrl = media;
+        fileForUpload = await fetch(media).then(res => res.blob());
+      } else if (media.startsWith('https://firebasestorage.googleapis.com')) {
+        setFormData(prev => ({ ...prev, profileImage: media }));
         setOpenCamera(false);
         return;
-      } catch (err) {
-        console.error("Error fetching image for upload:", err);
-        alert("Failed to process the camera image.");
-        return;
+      } else {
+        try {
+          const response = await fetch(media);
+          const blob = await response.blob();
+          previewUrl = URL.createObjectURL(blob);
+          setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+          setSelectedFile(blob);
+          setOpenCamera(false);
+          return;
+        } catch (err) {
+          console.error("Error fetching image for upload:", err);
+          alert("Failed to process the camera image.");
+          return;
+        }
       }
+    } else {
+      previewUrl = URL.createObjectURL(media);
+      fileForUpload = media;
     }
-  } else {
-    previewUrl = URL.createObjectURL(media);
-    fileForUpload = media;
-  }
-  
-  setFormData(prev => ({ ...prev, profileImage: previewUrl }));
-  setSelectedFile(fileForUpload);
-  setOpenCamera(false);
-};
 
-// Handle file selection from device
-const handleFileSelect = (file) => {
-  const previewUrl = URL.createObjectURL(file);
-  setSelectedFile(file);
-  setFormData(prev => ({ ...prev, profileImage: previewUrl }));
-};
+    setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+    setSelectedFile(fileForUpload);
+    setOpenCamera(false);
+  };
+
+  // Handle file selection from device
+  const handleFileSelect = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+  };
 
 
   const handlePrevStory = () => {
@@ -617,7 +685,7 @@ const handleFileSelect = (file) => {
   const handleFollowToggle = async (targetUserId) => {
     try {
       console.log(`user id ${user?._id} and targetid ${targetUserId}`);
-      const response = await fetch('http://localhost:5001/api/users/follow', {
+      const response = await fetch(`${host}/api/users/follow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -642,7 +710,7 @@ const handleFileSelect = (file) => {
 
       const blockedUsersDetails = await Promise.all(
         blockedUserIds.map(async (blockedUserId) => {
-          const userRes = await axios.get(`http://localhost:5001/api/users/profile/${blockedUserId}`);
+          const userRes = await axios.get(`${host}/api/users/profile/${blockedUserId}`);
           return {
             id: userRes.data._id,
             name: userRes.data.name,
@@ -663,7 +731,7 @@ const handleFileSelect = (file) => {
         userId: user?._id,
         blocked_userId: blockedUserId
       }
-      const res = await axios.post(`http://localhost:5001/api/users/unblock`, payload);
+      const res = await axios.post(`${host}/api/users/unblock`, payload);
       console.log("Response:", res.data.message);
       setblockedUsers((prevBlockedUsers) =>
         prevBlockedUsers.filter(user => user.id !== blockedUserId)
@@ -675,7 +743,7 @@ const handleFileSelect = (file) => {
       console.error("Error unblocking user:", err);
     }
   };
- 
+
 
   const handleUpdateProfile = async () => {
     console.log("handleUpdateProfile called with formData", formData);
@@ -691,18 +759,18 @@ const handleFileSelect = (file) => {
       console.log("handleUpdateProfile: updating Firebase Auth profile");
       await firebaseUpdateProfile(currentUser, {
         displayName: formData.name,
-        photoURL:    formData.profileImage
+        photoURL: formData.profileImage
       });
       console.log("handleUpdateProfile: firebaseUpdateProfile succeeded");
-  
+
       // 2. Persist to backend
       console.log("handleUpdateProfile: updating backend database");
       const response = await axios.put(
-        `http://localhost:5001/api/users/profile/${formData.id}`,
+        `${host}/api/users/profile/${formData.id}`,
         {
-          name:         formData.name,
-          username:     formData.username,
-          bio:          formData.bio,
+          name: formData.name,
+          username: formData.username,
+          bio: formData.bio,
           profileImage: formData.profileImage
         }
       );
@@ -711,15 +779,15 @@ const handleFileSelect = (file) => {
       // Update local state immediately
       const updatedDetails = {
         ...userDetails,
-        name:         formData.name,
-        username:     formData.username,
-        bio:          formData.bio,
+        name: formData.name,
+        username: formData.username,
+        bio: formData.bio,
         profileImage: formData.profileImage
       };
       setUserDetails(updatedDetails);
       setFormData(updatedDetails);
       console.log("handleUpdateProfile: local state updated", updatedDetails);
-  
+
       // 4. Close dialog
       setOpenEditProfile(false);
       console.log("handleUpdateProfile: dialog closed");
@@ -735,7 +803,7 @@ const handleFileSelect = (file) => {
         userId: user?._id,
         blocked_userId: userDetails.id
       }
-      const res = await axios.post(`http://localhost:5001/api/users/block`, payload);
+      const res = await axios.post(`${host}/api/users/block`, payload);
       console.log("Response:", res.message);
       fetchUserProfile();
       navigate('/userhome')
@@ -755,7 +823,7 @@ const handleFileSelect = (file) => {
         userId: userDetails.id, // Ensure correct user ID is sent
       };
 
-      const res = await axios.post(`http://localhost:5001/api/posts/archive`, payload);
+      const res = await axios.post(`${host}/api/posts/archive`, payload);
 
       console.log("Archive Response:", res.data);
 
@@ -819,12 +887,12 @@ const handleFileSelect = (file) => {
         }}
       >
 
-      <Grid container spacing={4}>
+        <Grid container spacing={4}>
           {/* =========================== Main Layout Container Left Side ============================ */}
           <Grid item xs={12} md={3}>
 
             {/* 1. Username + menu */}
-           <Box
+            <Box
               sx={{
                 mt: 5,
                 ml: -2,
@@ -854,6 +922,12 @@ const handleFileSelect = (file) => {
                     <MenuItem key="blocked" onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
                       Blocked Contacts
                     </MenuItem>,
+                    // <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
+                    //   {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+                    // </MenuItem>,
+                    <MenuItem key="requests" onClick={() => { setOpenFollowRequestModal(true); handleMenuClose(); }}>
+                      Follow Requests
+                    </MenuItem>,
                     <MenuItem key="edit" onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
                       Edit Profile
                     </MenuItem>
@@ -867,6 +941,7 @@ const handleFileSelect = (file) => {
                 <MenuItem key="share" onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
                   Share Profile
                 </MenuItem>
+
               </Menu>
             </Box>
 
@@ -929,16 +1004,16 @@ const handleFileSelect = (file) => {
                 {/* Connect / Follow */}
                 <Button
                   variant="contained"
-                  onClick={handleConnectToggle}
+                  onClick={handleRequestToggle}
                   disabled={loading}
                   sx={{
                     borderRadius: 2,
                     px: 2,
                     textTransform: 'none',
-                    backgroundColor: isConnected ? '#f0f0f0' : '#007bff',
-                    color: isConnected ? '#000' : '#fff',
+                    backgroundColor: isConnected || isRequested ? '#f0f0f0' : '#007bff',
+                    color: isConnected || isRequested ? '#000' : '#fff',
                     '&:hover': {
-                      backgroundColor: isConnected ? '#e0e0e0' : '#0056b3',
+                      backgroundColor: isConnected || isRequested ? '#e0e0e0' : '#0056b3',
                     },
                   }}
                 >
@@ -946,7 +1021,9 @@ const handleFileSelect = (file) => {
                     ? <CircularProgress size={20} sx={{ color: 'inherit' }} />
                     : isConnected
                       ? <>Following ▼</>
-                      : 'Connect'
+                      : isRequested
+                        ? "Requested"
+                        : 'Connect'
                   }
                 </Button>
 
@@ -977,8 +1054,8 @@ const handleFileSelect = (file) => {
 
 
 
-{/* RIGHT COLUMN */}
-<Grid item xs={12} md={9}>
+          {/* RIGHT COLUMN */}
+          <Grid item xs={12} md={9}>
             <Box sx={{ mt: 1 }}>
               {/* Tab Bar */}
               <Box mt={4} display="flex" justifyContent="center" gap={6}>
@@ -1041,28 +1118,28 @@ const handleFileSelect = (file) => {
               {((selectedTab === 'all') ||
                 (!vistinguser && selectedTab === 'archived') ||
                 (!vistinguser && selectedTab === 'recentlyDeleted')) ? (
-                  filteredPosts.length > 0 ? (
-                    <Grid container spacing={1} mt={2}>
-                {filteredPosts.map((post, idx) => (
-                  <Grid item xs={4} key={idx}>
-                    <Box
-                      onClick={() => handlePostClick(post)}
-                      sx={{
-                        width: '100%',
-                        aspectRatio: '1/1',
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <img
-                        src={post.images?.[0] || post.postimg}
-                        alt="post"
-                        style={{ width: '20%', height: '20%', objectFit: 'cover' }}
-                      />
-                    </Box>
+                filteredPosts.length > 0 ? (
+                  <Grid container spacing={1} mt={2}>
+                    {filteredPosts.map((post, idx) => (
+                      <Grid item xs={4} key={idx}>
+                        <Box
+                          onClick={() => handlePostClick(post)}
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1/1',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <img
+                            src={post.images?.[0] || post.postimg}
+                            alt="post"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          />
+                        </Box>
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
                 ) : (
                   <Typography
                     variant="body2"
@@ -1094,195 +1171,195 @@ const handleFileSelect = (file) => {
               )}
             </Box>
           </Grid>
-          </Grid>
-     
+        </Grid>
 
-            {/* Post Modal */}
-            {selectedPost && (
-        <Modal
-        open={openPostModal}
-        onClose={() => setOpenPostModal(false)}
-        BackdropProps={{
-          sx: { backdropFilter: "blur(10px)", backgroundColor: "rgba(0,0,0,0.4)" }
-        }}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 800,
-            height: 600,
-            bgcolor: "#fff",
-            borderRadius: 2,
-            boxShadow: 3,
-            p: 0,
-            display: "flex",
-          }}
-        >
-          <Grid container sx={{ height: "100%" }}>
-            {/* ─── LEFT COLUMN: IMAGE ─── */}
-            <Grid item xs={6} sx={{ backgroundColor: "#000", position: "relative" }}>
-              <Box
-                component="img"
-                src={selectedPost.images?.[currentImageIndex] || selectedPost.postimg}
-                sx={{ width: "100%", height: "100%", objectFit: "contain" }}
-              />
-            </Grid>
-      
-            {/* ─── RIGHT COLUMN: CAPTION, ICONS, COMMENTS ─── */}
-            <Grid
-              item
-              xs={6}
+
+        {/* Post Modal */}
+        {selectedPost && (
+          <Modal
+            open={openPostModal}
+            onClose={() => setOpenPostModal(false)}
+            BackdropProps={{
+              sx: { backdropFilter: "blur(10px)", backgroundColor: "rgba(0,0,0,0.4)" }
+            }}
+          >
+            <Box
               sx={{
+                position: "absolute",
+                top: "50%", left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 800,
+                height: 600,
+                bgcolor: "#fff",
+                borderRadius: 2,
+                boxShadow: 3,
+                p: 0,
                 display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                
               }}
             >
-              {/* Caption */}
-              <Box sx={{ p: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {selectedPost.content}
-                </Typography>
-              </Box>
-      
-              {/* ─── Like / Comment / Share ─── */}
-<Box
-  sx={{
-    px: 2,
-    display: "flex",
-    alignItems: "center",
-    gap: 3,
-  }}
->
-  {/* LIKE */}
-  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-  <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ p: 0 }}>
-    {isLiked
-      ? <AiFillLike size={20} color="#073574" />   // filled + your blue
-      : <AiOutlineLike size={20} />                // outline default
-    }
-  </IconButton>
-  <Typography variant="body2">
-    {Array.isArray(selectedPost.likes)
-      ? selectedPost.likes.length
-      : selectedPost.likes || 0}
-  </Typography>
-</Box>
+              <Grid container sx={{ height: "100%" }}>
+                {/* ─── LEFT COLUMN: IMAGE ─── */}
+                <Grid item xs={6} sx={{ backgroundColor: "#000", position: "relative" }}>
+                  <Box
+                    component="img"
+                    src={selectedPost.images?.[currentImageIndex] || selectedPost.postimg}
+                    sx={{ width: "100%", height: "100%", objectFit: "contain" }}
+                  />
+                </Grid>
 
+                {/* ─── RIGHT COLUMN: CAPTION, ICONS, COMMENTS ─── */}
+                <Grid
+                  item
+                  xs={6}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
 
-  {/* COMMENT */}
-  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-    <FaRegComment size={18} />
-    <Typography variant="body2">
-      {comments[selectedPost.postId]?.length || 0}
-    </Typography>
-  </Box>
-
-  {/* SHARE */}
-  <IconButton sx={{ p: 0 }}>
-    <GiShare size={18} />
-  </IconButton>
-</Box>
- {/* Three-dot menu for owner */}
- {selectedPost?.userId === user?._id && (
-                <IconButton
-                  onClick={handlePostMenuOpen}
-                  sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
-                >
-                  <CiMenuKebab size={24} />
-                </IconButton>
-              )}
-              <Menu
-                anchorEl={postMenuAnchorEl}
-                open={Boolean(postMenuAnchorEl)}
-                onClose={handlePostMenuClose}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              >
-                <MenuItem
-                  onClick={() => {
-                    handleDeleteclick();
-                    handlePostMenuClose();
                   }}
                 >
-                  Delete Post
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleArchivePost();
-                    handlePostMenuClose();
-                  }}
-                >
-                  {selectedPost.archived ? 'Unarchive Post' : 'Archive Post'}
-                </MenuItem>
-              </Menu>
-      
-              <Divider sx={{ my: 1 }} />
-      
-              {/* Scrollable comments list */}
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  overflowY: "auto",
-                  px: 2,
-                }}
-              >
-                {comments[selectedPost.postId]?.map((c, i) => (
-                  <Box key={i} sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                    <Avatar src={c.userimg} sx={{ width: 32, height: 32, mr: 1 }} />
-                    <Box>
-                      <Typography variant="subtitle2">{c.username}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {c.text}
+                  {/* Caption */}
+                  <Box sx={{ p: 2 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {selectedPost.content}
+                    </Typography>
+                  </Box>
+
+                  {/* ─── Like / Comment / Share ─── */}
+                  <Box
+                    sx={{
+                      px: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    {/* LIKE */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ p: 0 }}>
+                        {isLiked
+                          ? <AiFillLike size={20} color="#073574" />   // filled + your blue
+                          : <AiOutlineLike size={20} />                // outline default
+                        }
+                      </IconButton>
+                      <Typography variant="body2">
+                        {Array.isArray(selectedPost.likes)
+                          ? selectedPost.likes.length
+                          : selectedPost.likes || 0}
                       </Typography>
                     </Box>
+
+
+                    {/* COMMENT */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <FaRegComment size={18} />
+                      <Typography variant="body2">
+                        {comments[selectedPost.postId]?.length || 0}
+                      </Typography>
+                    </Box>
+
+                    {/* SHARE */}
+                    <IconButton sx={{ p: 0 }}>
+                      <GiShare size={18} />
+                    </IconButton>
                   </Box>
-                )) || (
-                  <Typography color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
-                    No comments yet.
-                  </Typography>
-                )}
-              </Box>
-      
-              {/* Add comment input */}
-              <Box
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  gap: 1,
-                  borderTop: "1px solid #eee",
-                }}
-              >
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Add a comment…"
-                  value={newComment[selectedPost.postId] || ""}
-                  onChange={e =>
-                    setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
-                  }
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "20px" } }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={() => handleAddComment(selectedPost.postId)}
-                  sx={{ borderRadius: "20px" }}
-                >
-                  Post
-                </Button>
-              </Box>
-              
-            </Grid>
-          </Grid>
-          
-        </Box>
-      </Modal>
-      
-      
-      )}
+                  {/* Three-dot menu for owner */}
+                  {selectedPost?.userId === user?._id && (
+                    <IconButton
+                      onClick={handlePostMenuOpen}
+                      sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
+                    >
+                      <CiMenuKebab size={24} />
+                    </IconButton>
+                  )}
+                  <Menu
+                    anchorEl={postMenuAnchorEl}
+                    open={Boolean(postMenuAnchorEl)}
+                    onClose={handlePostMenuClose}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        handleDeleteclick();
+                        handlePostMenuClose();
+                      }}
+                    >
+                      Delete Post
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleArchivePost();
+                        handlePostMenuClose();
+                      }}
+                    >
+                      {selectedPost.archived ? 'Unarchive Post' : 'Archive Post'}
+                    </MenuItem>
+                  </Menu>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  {/* Scrollable comments list */}
+                  <Box
+                    sx={{
+                      flexGrow: 1,
+                      overflowY: "auto",
+                      px: 2,
+                    }}
+                  >
+                    {comments[selectedPost.postId]?.map((c, i) => (
+                      <Box key={i} sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
+                        <Avatar src={c.userimg} sx={{ width: 32, height: 32, mr: 1 }} />
+                        <Box>
+                          <Typography variant="subtitle2">{c.username}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {c.text}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )) || (
+                        <Typography color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
+                          No comments yet.
+                        </Typography>
+                      )}
+                  </Box>
+
+                  {/* Add comment input */}
+                  <Box
+                    sx={{
+                      p: 2,
+                      display: "flex",
+                      gap: 1,
+                      borderTop: "1px solid #eee",
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Add a comment…"
+                      value={newComment[selectedPost.postId] || ""}
+                      onChange={e =>
+                        setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
+                      }
+                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: "20px" } }}
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={() => handleAddComment(selectedPost.postId)}
+                      sx={{ borderRadius: "20px" }}
+                    >
+                      Post
+                    </Button>
+                  </Box>
+
+                </Grid>
+              </Grid>
+
+            </Box>
+          </Modal>
+
+
+        )}
 
 
         {/* Followers Modal */}
@@ -1397,60 +1474,60 @@ const handleFileSelect = (file) => {
           </Box>
         </Modal>
 
-              <Dialog
-                open={openBlockedContacts}
-                onClose={() => setOpenBlockedContacts(false)}
-                fullWidth
-                maxWidth="xs"
-              >
-                <DialogTitle sx={{ fontWeight: 'bold', position: 'relative', textAlign: 'center', pb: 1 }}>
-                  Blocked Contacts
-                  <IconButton
-                    aria-label="close"
-                    onClick={() => setOpenBlockedContacts(false)}
-                    sx={{ position: 'absolute', right: 8, top: 8 }}
+        <Dialog
+          open={openBlockedContacts}
+          onClose={() => setOpenBlockedContacts(false)}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', position: 'relative', textAlign: 'center', pb: 1 }}>
+            Blocked Contacts
+            <IconButton
+              aria-label="close"
+              onClick={() => setOpenBlockedContacts(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {blockedUsers && blockedUsers.length > 0 ? (
+              <List disablePadding>
+                {blockedUsers.map((b) => (
+                  <ListItem
+                    key={b.id}
+                    sx={{
+                      mb: 1,
+                      borderRadius: 1,
+                      '&:hover': { backgroundColor: 'action.hover' },
+                      alignItems: 'center'
+                    }}
                   >
-                    <CloseIcon />
-                  </IconButton>
-                </DialogTitle>
-                <DialogContent dividers>
-                  {blockedUsers && blockedUsers.length > 0 ? (
-                    <List disablePadding>
-                      {blockedUsers.map((b) => (
-                        <ListItem
-                          key={b.id}
-                          sx={{
-                            mb: 1,
-                            borderRadius: 1,
-                            '&:hover': { backgroundColor: 'action.hover' },
-                            alignItems: 'center'
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar src={b.profileImage} />
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={b.name}
-                            secondary={`@${b.username}`}
-                          />
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => handleUnblock(b.id)}
-                            sx={{ textTransform: 'none' }}
-                          >
-                            Unblock
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" align="center">
-                      You have no blocked contacts.
-                    </Typography>
-                  )}
-                </DialogContent>
-              </Dialog>
+                    <ListItemAvatar>
+                      <Avatar src={b.profileImage} />
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={b.name}
+                      secondary={`@${b.username}`}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => handleUnblock(b.id)}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Unblock
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body2" color="text.secondary" align="center">
+                You have no blocked contacts.
+              </Typography>
+            )}
+          </DialogContent>
+        </Dialog>
         <Dialog
           open={openEditProfile}
           onClose={() => setOpenEditProfile(false)}
@@ -1489,7 +1566,7 @@ const handleFileSelect = (file) => {
                 </Button>
               </Box>
             )}
-            
+
             {/* Preview + Discard + Accept */}
             {selectedFile && (
               <Box sx={{ mb: 2, textAlign: 'center' }}>
@@ -1575,27 +1652,32 @@ const handleFileSelect = (file) => {
           type="profile"
         />
 
-      {/* Modal for Camera Capture */}
-      <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
-<Box
-  sx={{
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '80vw',    // 80% of the viewport width
-    maxWidth: 400,    // but never exceed 400px
-    height: '50vh',   // 60% of the viewport height
-    maxHeight: 300,   // but never exceed 400px
-    boxShadow: 24,
-    borderRadius: 2,
-  }}
->
+        {/* Modal for Camera Capture */}
+        <Modal open={openCamera} onClose={() => setOpenCamera(false)}>
+          <Box
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80vw',    // 80% of the viewport width
+              maxWidth: 400,    // but never exceed 400px
+              height: '50vh',   // 60% of the viewport height
+              maxHeight: 300,   // but never exceed 400px
+              boxShadow: 24,
+              borderRadius: 2,
+            }}
+          >
 
-    {/* tell CameraCapture to hand you back a blob */}
-    <CameraCapture onMediaUpload={handleCameraImageUpload} />
-  </Box>
-</Modal>
-
+            {/* tell CameraCapture to hand you back a blob */}
+            <CameraCapture onMediaUpload={handleCameraImageUpload} />
+          </Box>
+        </Modal>
+        <FollowRequest
+          open={openFollowRequestModal}
+          onClose={() => setOpenFollowRequestModal(false)}
+          requestProfiles={requestProfiles}
+          handleRespondRequest={handleRespondRequest}
+        />
       </Container>
     </>
   );

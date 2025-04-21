@@ -195,7 +195,10 @@ const getuserfeed = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(400).json({ message: "user not found" });
     const followings = user.followings;
-    const posts = await Post.find({ userId: { $in: [userId, ...followings] } }).sort({ createdAt: -1 });
+    const posts = await Post.find({
+      userId: { $in: [userId, ...followings] },
+      archived: { $ne: true }
+    }).sort({ createdAt: -1 });
 
     res.status(200).json(posts);
 

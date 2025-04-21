@@ -51,61 +51,61 @@ const registerUser = async (req, res) => {
 };
 const loginUser = async (req, res) => {
     try {
-      const { idToken } = req.body; // Frontend should send Firebase ID Token
-  
-      // Verify the token with Firebase
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      const email = decodedToken.email;
-  
-      const firebaseUser = await admin.auth().getUser(decodedToken.uid);
-      if (!firebaseUser.emailVerified) {
-        return res
-          .status(400)
-          .json({ message: "❌ Email not verified. Please check your email." });
-      }
-  
-      // Find user in MongoDB and populate follow lists
-      const user = await User.findOne({ email })
-        .populate("followings")
-        .populate("followers");
-  
-      if (!user) {
-        return res.status(400).json({ message: "Invalid email or password" });
-      }
-  
-      // Build the payload with every field from your schema
-      res.status(200).json({
-        message: "Login successful!",
-        user: {
-          _id:             user._id,
-          name:            user.name,
-          username:        user.username,
-          email:           user.email,
-          role:            user.role,
-          joinedAt:        user.joinedAt,
-          profileImage:    user.profileImage,
-          university:      user.university,
-          major:           user.major,
-          graduationYear:  user.graduationYear,
-          birthdate:       user.birthdate,
-          bio:             user.bio,
-          followings:      user.followings,        // populated array
-          followers:       user.followers,         // populated array
-          followingsNumber:user.followingsNumber,
-          followersNumber: user.followersNumber,
-          posts:           user.posts,
-          private:         user.private,
-          blockeduser:     user.blockeduser,       // array of IDs
-          blockedby:       user.blockedby          // array of IDs
+        const { idToken } = req.body; // Frontend should send Firebase ID Token
+
+        // Verify the token with Firebase
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const email = decodedToken.email;
+
+        const firebaseUser = await admin.auth().getUser(decodedToken.uid);
+        if (!firebaseUser.emailVerified) {
+            return res
+                .status(400)
+                .json({ message: "❌ Email not verified. Please check your email." });
         }
-      });
-  
+
+        // Find user in MongoDB and populate follow lists
+        const user = await User.findOne({ email })
+            .populate("followings")
+            .populate("followers");
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
+
+        // Build the payload with every field from your schema
+        res.status(200).json({
+            message: "Login successful!",
+            user: {
+                _id: user._id,
+                name: user.name,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                joinedAt: user.joinedAt,
+                profileImage: user.profileImage,
+                university: user.university,
+                major: user.major,
+                graduationYear: user.graduationYear,
+                birthdate: user.birthdate,
+                bio: user.bio,
+                followings: user.followings,        // populated array
+                followers: user.followers,         // populated array
+                followingsNumber: user.followingsNumber,
+                followersNumber: user.followersNumber,
+                posts: user.posts,
+                private: user.private,
+                blockeduser: user.blockeduser,       // array of IDs
+                blockedby: user.blockedby          // array of IDs
+            }
+        });
+
     } catch (err) {
-      console.error(err);
-      res.status(401).json({ message: "Invalid or expired token" });
+        console.error(err);
+        res.status(401).json({ message: "Invalid or expired token" });
     }
-  };
-  
+};
+
 
 // Get User Profile
 const getUserProfile = async (req, res) => {
@@ -321,6 +321,61 @@ const searchbyname = async (req, res) => {
     }
 };
 
+const followrequest = async (req, res) => {
+    const { targetUserId, requesterId } = req.body;
+
+    try {
+        console.log("follow request started", req.body)
+        const targetUser = await User.findById(targetUserId);
+        const alreadyRequested = targetUser.requests.includes(requesterId);
+
+        if (alreadyRequested) {
+            // Cancel the request
+            targetUser.requests.pull(requesterId);
+            await targetUser.save();
+            return res.status(200).json({ message: "Request cancelled." });
+        } else {
+            // Send new request
+            targetUser.requests.push(requesterId);
+            await targetUser.save();
+            return res.status(200).json({ message: "Request sent." });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+const approvereject = async (req, res) => {
+    const { targetUserId, requesterId, action } = req.body;
+    console.log
+    try {
+        // Always remove request from list
+        await User.findByIdAndUpdate(targetUserId, {
+            $pull: { requests: requesterId }
+        });
+
+        if (action === "approve") {
+            // Add to followers/followings
+            await User.findByIdAndUpdate(targetUserId, {
+                $addToSet: { followers: requesterId },
+                $inc: { followersNumber: 1 }
+            });
+
+            await User.findByIdAndUpdate(requesterId, {
+                $addToSet: { followings: targetUserId },
+                $inc: { followingsNumber: 1 }
+            });
+
+            return res.status(200).json({ message: "Request approved." });
+        } else {
+            // Reject: do nothing else
+            return res.status(200).json({ message: "Request rejected." });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
 
 
 module.exports = {
@@ -332,5 +387,7 @@ module.exports = {
     toggleFollow,
     searchbyname,
     updateBlock, // ✅ New API for updating blockedBy
-    unblock
+    unblock,
+    followrequest,
+    approvereject
 };

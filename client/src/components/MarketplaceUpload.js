@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Container, TextField, Button, Typography, Paper, Box, FormControl, InputLabel, Select, MenuItem} from '@mui/material';
+import { Container, TextField, Button, Typography, Paper, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { storage } from '../firebase'; // ✅ Firebase storage import
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 import { useAuth } from '../auth/AuthContext';
-
+import { host } from '../components/apinfo';
 const mapContainerStyle = { width: '100%', height: '300px' };
 
 const MarketplaceUpload = ({ }) => {
@@ -81,7 +81,7 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
         "Sports & Outdoors": ["Bikes", "Gym Equipment", "Camping Gear"],
         "Miscellaneous": ["Kitchen Appliances", "Musical Instruments", "Other"]
     };
-    
+
 
     // Handle text input changes
     const handleChange = (e) => {
@@ -124,7 +124,7 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
                     imageUrl,
 
                     address: formData.address,
-                    category: formData.category, 
+                    category: formData.category,
                     subcategory: formData.subcategory,
 
 
@@ -133,7 +133,7 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
                 console.log("Final Payload:", requestData);  // ✅ Debugging: Check before sending
 
                 try {
-                    const res = await axios.post('http://localhost:5001/api/marketplace/add', requestData);
+                    const res = await axios.post(`${host}/api/marketplace/add`, requestData);
                     alert("Listing added successfully!");
                 } catch (err) {
                     console.error("Error submitting data:", err.response?.data || err.message);
@@ -175,33 +175,33 @@ const MarketplaceUploadComponent = ({ user, formData, setFormData, selectedFile,
 
                     {/* Show Map */}
                     <FormControl fullWidth required>
-    <InputLabel>Category</InputLabel>
-    <Select
-        name="category"
-        value={formData.category}
-        onChange={(e) => setFormData({ ...formData, category: e.target.value, subcategory: '' })} 
-    >
-        {Object.keys(categories).map((cat) => (
-            <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-        ))}
-    </Select>
-</FormControl>
+                        <InputLabel>Category</InputLabel>
+                        <Select
+                            name="category"
+                            value={formData.category}
+                            onChange={(e) => setFormData({ ...formData, category: e.target.value, subcategory: '' })}
+                        >
+                            {Object.keys(categories).map((cat) => (
+                                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
 
-{/* Subcategory Dropdown */}
-{formData.category && (
-    <FormControl fullWidth required>
-        <InputLabel>Subcategory</InputLabel>
-        <Select
-            name="subcategory"
-            value={formData.subcategory}
-            onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })} 
-        >
-            {categories[formData.category].map((subcat) => (
-                <MenuItem key={subcat} value={subcat}>{subcat}</MenuItem>
-            ))}
-        </Select>
-    </FormControl>
-)}
+                    {/* Subcategory Dropdown */}
+                    {formData.category && (
+                        <FormControl fullWidth required>
+                            <InputLabel>Subcategory</InputLabel>
+                            <Select
+                                name="subcategory"
+                                value={formData.subcategory}
+                                onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                            >
+                                {categories[formData.category].map((subcat) => (
+                                    <MenuItem key={subcat} value={subcat}>{subcat}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
 
 
 

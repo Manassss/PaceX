@@ -28,9 +28,9 @@ const Home = () => {
         justifyContent: "center",
         flexDirection: "column",
         padding: "20px",
-        position: "relative",
+        //position: "relative",
         overflow: "hidden",
-        background: "linear-gradient(135deg, #faf8f5 , #f0ebe4 )", 
+        background: "linear-gradient(135deg, #faf8f5 , #f0ebe4 )",
       }}
     >
       <motion.img

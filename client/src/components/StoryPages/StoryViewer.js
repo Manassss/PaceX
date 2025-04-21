@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { useAuth } from '../../auth/AuthContext';
+import { host } from '../apinfo';
 import axios
     from 'axios';
 const StoryViewer = ({
@@ -48,7 +49,7 @@ const StoryViewer = ({
 
     const fetchViewers = async (storyId) => {
         try {
-            const res = await axios.get(`http://localhost:5001/api/story/views/${storyId}`);
+            const res = await axios.get(`${host}/api/story/views/${storyId}`);
             setViewers(res.data);
             setShowViewers(true);
         } catch (err) {

@@ -6,7 +6,7 @@ import {
   Avatar,
   Typography,
 } from "@mui/material";
-
+import { host } from '../components/apinfo';
 const SearchPanel = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -17,7 +17,7 @@ const SearchPanel = ({ onClose }) => {
     setSearchTerm(value);
     if (!value) return setFilteredUsers([]);
     try {
-      const res = await axios.get("http://localhost:5001/api/users/all");
+      const res = await axios.get(`${host}/api/users/all`);
       const filtered = res.data
         .filter(
           (u) =>

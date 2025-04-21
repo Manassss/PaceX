@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import {
   Typography,
@@ -13,14 +13,19 @@ import {
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
+import { FaUpload } from 'react-icons/fa';
+import Webcam from 'react-webcam';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext'
 import { storage } from '../../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Cropper from 'react-easy-crop';
 import { transform } from 'framer-motion';
-
+import { host } from '../apinfo';
 const AddPost = ({ open: isOpen, onClose }) => {
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const webcamRef = useRef(null);
+  
   const resetForm = () => {
     setContent('');
     setPostImages([]);
@@ -66,6 +71,19 @@ const AddPost = ({ open: isOpen, onClose }) => {
         setOpenCropModal(true);
       });
     }
+  };
+
+  const handleCapture = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    fetch(imageSrc)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setSelectedFiles([file]);
+        setImageSrc(URL.createObjectURL(file));
+        setOpenCropModal(true);
+        setCameraOpen(false);
+      });
   };
 
   // Crop completion
@@ -156,7 +174,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
         content: content || " ",
         images: postImages, // Send multiple images
       };
-      await axios.post('http://localhost:5001/api/posts/add', postData);
+      await axios.post(`${host}/api/posts/add`, postData);
       alert('Post created successfully!');
       setContent('');
       setPostImages([]);
@@ -201,92 +219,141 @@ const AddPost = ({ open: isOpen, onClose }) => {
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                borderRadius: 1,
-                padding: '8px',
-              }}
-            >
-              <TextField
-                placeholder="What's on your mind?"
-                multiline
-                rows={1}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                fullWidth
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '12px',
-                    },
-                    backgroundColor: '#fff',
-                    padding: '4px 8px',
-                  },
-                }}
-              />
+            <TextField
+              placeholder="Write a caption..."
+              multiline
+              rows={2}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              fullWidth
+              variant="outlined"
+            />
+            {/* Wrap Upload + Camera in a flex row */}
+            {!selectedFiles.length && !cameraOpen && (
+              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                {/* Upload dropzone */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    width: 200,
+                    p: 3,
+                    border: "2px dashed #1976d2",
+                    borderRadius: 3,
+                    backgroundColor: "#f5f9ff",
+                    textAlign: "center",
+                    color: "#444",
+                    transition: "0.3s",
+                    "&:hover": { backgroundColor: "#e3f2fd" },
+                    cursor: "pointer",
+                  }}
+                  component="label"
+                >
+                  <Box sx={{ fontSize: 40, color: "#1976d2", mb: 1 }}>
+                    <FaUpload />
+                  </Box>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    Click to upload item image
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Supported formats: JPG, PNG
+                  </Typography>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={handleFileChange}
+                  />
+                </Box>
 
-              <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} id="upload-file" accept="image/*" />
-              <label htmlFor="upload-file">
-                <Tooltip title="Choose Images">
-                  <IconButton component="span" color="primary">
-                    <ImageIcon />
-                  </IconButton>
-                </Tooltip>
-              </label>
+                {/* Camera button */}
+                <Button
+                  variant="outlined"
+                  sx={{ alignSelf: "center", minWidth: 140 }}
+                  onClick={() => setCameraOpen(true)}
+                >
+                  Use Camera
+                </Button>
+              </Box>
+            )}
 
-              <Tooltip title="Post">
-                <IconButton color="primary" onClick={handleSubmit}>
-                  <SendIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
+            {/* Preview + Discard */}
             {selectedFiles.length > 0 && !openCropModal && (
-              <Box mt={2} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {selectedFiles.map((file, idx) => (
-                  <Box key={idx} sx={{ width: 80, height: 80, border: '1px solid #ccc' }}>
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`preview-${idx}`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </Box>
-                ))}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  Selected file: {selectedFiles[0].name}
+                </Typography>
+                <Box
+                  component="img"
+                  src={URL.createObjectURL(selectedFiles[0])}
+                  alt="Preview"
+                  sx={{
+                    width: '100%',
+                    maxHeight: 400,
+                    objectFit: 'contain',
+                    mt: 1,
+                    borderRadius: 2,
+                    overflow: 'auto'
+                  }}
+                />
+                <Button
+                  variant="text"
+                  color="error"
+                  sx={{ mt: 1 }}
+                  onClick={() => setSelectedFiles([])}
+                >
+                  Discard
+                </Button>
               </Box>
             )}
 
-            {postImages.length > 0 && (
-              <Box mt={2} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {postImages.map((img, index) => (
-                  <Box key={index} sx={{ position: 'relative', width: 100, height: 100 }}>
-                    <img
-                      src={img}
-                      alt="Uploaded"
-                      style={{ width: '100%', height: '100%', borderRadius: 8, objectFit: 'cover' }}
-                    />
-                    <IconButton
-                      sx={{
-                        position: 'absolute',
-                        top: 5,
-                        right: 5,
-                        backgroundColor: 'rgba(255,255,255,0.8)',
-                        color: 'red',
-                      }}
-                      onClick={() => {
-                        setPostImages(postImages.filter((_, i) => i !== index));
-                      }}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
-            )}
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={!content && selectedFiles.length === 0}
+              >
+                Post
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+      {/* Camera Modal */}
+      <Modal
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        closeAfterTransition
+        BackdropProps={{ sx: { backdropFilter: 'blur(8px)'} }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            p: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            height: 600,
+            width: 800,
+          }}
+        >
+          <Webcam
+            audio={false}
+            ref={webcamRef}
+            screenshotFormat="image/jpeg"
+            style={{ width: '100%', height: 'auto', borderRadius: 4 }}
+          />
+          <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+            <Button variant="contained" onClick={handleCapture}>
+              Capture Photo
+            </Button>
+            <Button variant="outlined" onClick={() => setCameraOpen(false)}>
+              Cancel
+            </Button>
           </Box>
         </Box>
       </Modal>
@@ -332,13 +399,9 @@ const AddPost = ({ open: isOpen, onClose }) => {
               style={{
                 containerStyle: {
                   display: 'flex',
-
-
-
                 },
                 mediaStyle: {
                   objectFit: 'contain',
-
                   width: '70%',
                   height: '70%',
                 }
@@ -346,8 +409,6 @@ const AddPost = ({ open: isOpen, onClose }) => {
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
-
-
             />
             <Slider
               value={zoom}

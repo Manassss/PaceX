@@ -1,20 +1,36 @@
 // components/RecommendedUsers.js
-import React from 'react';
-import { Box, Paper, Typography, List, ListItem, Avatar, ListItemText, Button } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Paper, Typography, List, ListItem, Avatar, ListItemText, Button, useMediaQuery } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import axios from "axios";
-
+import { host } from '../apinfo';
 const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowToggle, following }) => {
     const { user } = useAuth();
     const [recommendedProfiles, setRecommendedProfiles] = useState([]);
+    const [windowSize, setWindowSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight
+    });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+            console.log("📏 Window resized:", window.innerWidth, window.innerHeight);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const fetchFollowing = async () => {
             try {
                 if (!user?._id) return;
-                const res = await axios.get(`http://localhost:5001/api/users/profile/${user._id}`);
+                const res = await axios.get(`${host}/api/users/profile/${user._id}`);
                 const followingList = res.data.followings || [];
 
                 const rec = users
@@ -50,15 +66,17 @@ const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowTo
         const dummyFrequentlySearched = ["dummyId1", "dummyId2"];
         return dummyFrequentlySearched.includes(candidateId) ? 5 : 0;
     };
+    const isMobile = useMediaQuery('(max-width: 480px)');
+    const isTablet = useMediaQuery('(max-width: 1030px)')
     return (
         <Box
             sx={{
-                width: 350,
+                width: "20%",
                 position: "fixed",
                 top: 40,
                 right: "5%",
                 height: "90vh",
-                display: { xs: "none", md: "block" },
+                display: windowSize.width <= 1700 ? 'none' : { xs: 'none', md: 'none', lg: 'block' },
                 zIndex: 1,
             }}
         >

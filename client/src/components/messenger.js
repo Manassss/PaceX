@@ -8,8 +8,9 @@ import { useAuth } from '../auth/AuthContext';
 import axios from 'axios';
 import { useTheme } from '@mui/material/styles';
 import io from 'socket.io-client';
-
-const socket = io("http://localhost:5001", {
+import Chatbox from './Chatbox';
+import { host } from '../components/apinfo';
+const socket = io(`${host}`, {
   transports: ["websocket", "polling"],
   withCredentials: true
 });
@@ -32,7 +33,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   // Fetch chat users with defensive API parsing
   const fetchChatUsers = async () => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/chat/getusers/${userId}`);
+      const res = await axios.get(`${host}/api/chat/getusers/${userId}`);
       const data = Array.isArray(res.data) ? res.data : res.data.users; // Check response structure
       setUsers(data.map(user => ({
         id: user._id,
@@ -46,7 +47,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   // Fetch user profile
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/users/profile/${userId}`);
+      const res = await axios.get(`${host}/api/users/profile/${userId}`);
       setUserDetails(res.data);
     } catch (err) {
       console.error("Error fetching profile:", err.message);
@@ -69,7 +70,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
       }
       try {
         const res = await axios.get(
-          'http://localhost:5001/api/users/search',
+          `${host}/api/users/search`,
           { params: { query: search } }
         );
         setUsers(res.data);
@@ -115,7 +116,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
   const getMessages = async () => {
     try {
       console.log("selccccc", selectedUser)
-      const response = await axios.get('http://localhost:5001/api/chat/get', {
+      const response = await axios.get(`${host}/api/chat/get`, {
         params: { user1: selectedUser.id, user2: user._id }
       });
       setChatHistory(response.data);
@@ -127,7 +128,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
 
   const postMessage = async (data) => {
     try {
-      await axios.post('http://localhost:5001/api/chat/send', data);
+      await axios.post(`${host}/api/chat/send`, data);
       console.log("✅ Message posted to DB:", data);
     } catch (err) {
       console.error('❌ Error sending message:', err.response?.data || err.message);
@@ -174,18 +175,21 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
         flexDirection: "row",
         position: "fixed",
         top: 0,
-        left: isNavbarCollapsed ? "120px" : "120px", // Dynamically next to navbar
+        left: { xs: "0", sm: "120px", md: "120px", lg: "120px" },
         height: "100vh",
+        width: "100%",
         zIndex: 999,
         transition: "left 0.3s ease",
+        overflow: "hidden",
       }}
     >
       {/* Messenger Sidebar */}
       <Box
         sx={{
           ...styles.container,
-          width: 400,
-          height: "100vh",
+          width: { xs: "100%", sm: "30%", md: "30%", lg: "20%" },
+          height: { xs: selectedUser ? 0 : "100vh", sm: "100vh" },
+          display: { xs: selectedUser ? 'none' : 'block', sm: 'block' },
           background: "#eddecf",
           padding: "20px",
           overflowY: "auto",
@@ -248,148 +252,36 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
         </List>
       </Box>
 
-      {/* Chatbox (only if selectedUser is present) */}
-      {selectedUser && (
+      {selectedUser ? (
         <Box
           sx={{
-            width: 1450,
-            height: "97vh",
-            background: "#f8f2ec",
+            flexGrow: 1,
+            height: "100vh",
+            overflow: "hidden",
             display: "flex",
             flexDirection: "column",
-            padding: "20px",
-            borderLeft: "1px solid #ccc",
-            overflow: 'hidden',
+            width: { xs: "100%", sm: "60%", md: "70%" }
           }}
         >
-          {/* Chat Header */}
-          <Box sx={styles.chatHeader}>
-            <IconButton onClick={handleBack}>
-              <ArrowBack />
-            </IconButton>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Avatar src={selectedUser.profileImage} sx={{ width: 50, height: 50 }} />
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                {selectedUser.name}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Chat History */}
-          <Box sx={{ flexGrow: 1, overflowY: "auto", mt: 2, px: 1 }}>
-            <List>
-              {chatHistory.map((msg, index) => (
-                <ListItem
-                  key={index}
-                  sx={{
-                    justifyContent: msg.senderId === user._id ? "flex-end" : "flex-start",
-                  }}
-                >
-                  {msg.sharedContent ? (
-                    msg.sharedContent.type === "profile" ? (
-                      <Box
-                        sx={{
-                          backgroundColor: "#f1f1f1",
-                          borderRadius: "12px",
-                          padding: "10px",
-                          maxWidth: "65%",
-                          boxShadow: 1,
-                          cursor: "pointer",
-                        }}
-                        onClick={() =>
-                          window.location.href = `/profile/${msg.sharedContent.id}`
-                        }
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Avatar src={msg.sharedContent.profileImage} sx={{ width: 40, height: 40 }} />
-                          <Box>
-                            <Typography sx={{ fontWeight: "bold" }}>
-                              {msg.sharedContent.name}
-                            </Typography>
-                            <Typography sx={{ fontSize: "14px", color: "gray" }}>
-                              @{msg.sharedContent.username}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          backgroundColor: "#f9f9f9",
-                          borderRadius: "12px",
-                          padding: "10px",
-                          maxWidth: "65%",
-                          boxShadow: 1,
-                          cursor: "pointer",
-                        }}
-                      >
-                        <Typography sx={{ fontWeight: "bold" }}>
-                          Shared a Post
-                        </Typography>
-                        <Box sx={{ mt: 1 }}>
-                          <img
-                            src={msg.sharedContent.postimg}
-                            alt="Post"
-                            style={{ width: "100%", borderRadius: "8px" }}
-                          />
-                          <Typography sx={{ fontSize: "14px", color: "gray", mt: 1 }}>
-                            {msg.sharedContent.content.substring(0, 50)}...
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )
-                  ) : (
-                    <Box
-                      sx={{
-                        backgroundColor: msg.senderId === user._id ? "#fff" : "#073574",
-                        color: msg.senderId === user._id ? "black" : "white",
-                        borderRadius: 3,
-                        padding: "10px 15px",
-                        maxWidth: "70%",
-                      }}
-                    >
-                      <Typography sx={{ fontSize: "20px", lineHeight: 1.5 }}>
-                        {msg.text}
-                      </Typography>
-                    </Box>
-                  )}
-                </ListItem>
-              ))}
-              <div ref={bottomRef} />
-            </List>
-          </Box>
-
-          {/* Message Input */}
-          <Box sx={{ display: 'flex', mt: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="Type a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              size="small"
-              variant="outlined"
-              sx={{
-                backgroundColor: 'white',
-                borderRadius: 5,
-                '& fieldset': { border: 'none' },
-              }}
-            />
-            <Button
-              onClick={sendMessage}
-              sx={{
-                ml: 1,
-                minWidth: 0,
-                p: 1.5,
-                borderRadius: '50%',
-                bgcolor: '#073574',
-                color: 'white',
-                ':hover': { bgcolor: '#1976D2' },
-              }}
-            >
-              <Send />
-            </Button>
-          </Box>
+          <Chatbox userId={selectedUser.id} username={selectedUser.name} setSelectedUser={setSelectedUser} />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            flexGrow: 1,
+            height: "100vh",
+            backgroundColor: "#f0f2f5",
+            display: {
+              xs: 'none', sm: 'flex', md: 'flex', lg: 'flex'
+            },
+            justifyContent: "center",
+            alignItems: "center",
+            width: { xs: "100%", sm: "60%", md: "70%" }
+          }}
+        >
+          <Typography variant="h5" color="textSecondary" sx={{ textAlign: "center", px: 3 }}>
+            Select a user to start chatting
+          </Typography>
         </Box>
       )}
     </Box>
@@ -417,6 +309,7 @@ const styles = {
     flexDirection: 'column',
     borderRadius: 3,
     background: "white",
+    width: '100%'
   },
   chatHeader: {
     display: 'flex',
