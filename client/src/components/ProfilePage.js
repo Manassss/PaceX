@@ -157,14 +157,18 @@ const ProfilePage = () => {
         const profiles = await Promise.all(
           res.data.requests.map(async (reqUserId) => {
             try {
-              const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
+              if (!reqUserId) {
+                const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
 
-              return {
-                _id: userRes.data._id,
-                name: userRes.data.name,
-                username: userRes.data.username,
-                profileImage: userRes.data.profileImage,
-              };
+                return {
+                  _id: userRes.data._id,
+                  name: userRes.data.name,
+                  username: userRes.data.username,
+                  profileImage: userRes.data.profileImage,
+                };
+              }
+
+
 
             } catch (err) {
               console.error(`Error fetching profile for request user ${reqUserId}:`, err.message);

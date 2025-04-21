@@ -1,4 +1,4 @@
-import React from "react";
+import { React, useState } from "react";
 import {
     Box,
     Typography,
@@ -32,12 +32,11 @@ const PostFeed = ({
     handleOpenLikeModal,
     setSelectedPost,
     setOpenPostShareModal,
-    currentImageIndex,
-    setCurrentImageIndex
 }) => {
     const isMobile = useMediaQuery('(max-width: 480px)');
     const isTablet = useMediaQuery('(max-width: 960px)');
     console.log("length of posts", posts.length);
+    const [imageIndex, setImageIndex] = useState(0);
     return (
         <Box
             sx={{
@@ -58,6 +57,8 @@ const PostFeed = ({
                 ).map((post, index) => {
                     const postUser = users.find((user) => user.id === post.userId);
                     if (!postUser) return null;
+
+
 
                     return (
                         <Paper
@@ -104,24 +105,24 @@ const PostFeed = ({
                                         px: 4
                                     }}
                                 >
-                                    {post.images?.length > 0 ? (
+                                    {post.images?.length > 1 ? (
                                         <>
-                                            {currentImageIndex > 0 && (
+                                            {imageIndex > 0 && (
                                                 <IconButton
-                                                    onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
+                                                    onClick={() => setImageIndex(imageIndex - 1)}
                                                     sx={arrowButtonStyle}
                                                 >
                                                     <ArrowBackIosNewIcon />
                                                 </IconButton>
                                             )}
                                             <img
-                                                src={post.images[currentImageIndex]}
+                                                src={post.images[imageIndex]}
                                                 alt="Post"
                                                 style={{ width: "100%", borderRadius: "10px" }}
                                             />
-                                            {currentImageIndex < post.images.length - 1 && (
+                                            {imageIndex < post.images.length - 1 && (
                                                 <IconButton
-                                                    onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
+                                                    onClick={() => setImageIndex(imageIndex + 1)}
                                                     sx={arrowButtonStyleRight}
                                                 >
                                                     <ArrowForwardIosIcon />
@@ -130,7 +131,7 @@ const PostFeed = ({
                                         </>
                                     ) : (
                                         <img
-                                            src={post.postimg}
+                                            src={post.images[0]}
                                             alt="Post"
                                             style={{ width: "100%", borderRadius: "10px" }}
                                         />
@@ -186,6 +187,7 @@ const PostFeed = ({
                                 <Box sx={{ display: "flex", alignItems: "center" }}>
                                     <IconButton
                                         onClick={() => {
+                                            console.log("selectedpost", post)
                                             setSelectedPost(post);
                                             setOpenPostShareModal(true);
                                         }}

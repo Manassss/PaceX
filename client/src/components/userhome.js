@@ -563,7 +563,8 @@ const UserHome = () => {
           senderId: user?._id,
           postId: selectedPost?.postId,
           content: selectedPost?.content,
-          postimg: selectedPost?.postimg,
+          postimg: selectedPost?.postimg || "",
+          images: selectedPost?.images || ""
         }}
         type="post"
       />

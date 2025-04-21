@@ -24,6 +24,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        console.log(`Chat with ${userId} -- ${username}`);
         if (!userId || !username) return;
 
         console.log(`Chat with ${userId} -- ${username}`);
@@ -88,7 +89,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                 text: message.trim(),
             };
             const res = await axios.post(`${host}/api/chat/send`, postData);
-            console.log("res", res.chat)
+            console.log("res", res.data.chat)
 
 
         } catch (err) {
@@ -197,7 +198,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                             >
                                 <Typography sx={{ fontWeight: "bold" }}>Shared a Post</Typography>
                                 <Box sx={{ mt: 1 }}>
-                                    <img src={msg.sharedContent.postimg} alt="Post Preview" style={{ width: "100%", borderRadius: "8px" }} />
+                                    <img src={msg.sharedContent.postimg ? msg.sharedContent.postimg : msg.sharedContent.images} alt="Post Preview" style={{ width: "100%", borderRadius: "8px" }} />
                                     <Typography sx={{ fontSize: "14px", color: "gray", mt: 1 }}>
                                         {msg.sharedContent.content.substring(0, 50)}...
                                     </Typography>

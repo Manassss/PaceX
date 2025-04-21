@@ -93,27 +93,10 @@ const StoryViewer = ({
         if (currentStory.mediaType === "video") {
             setProgress(0);
 
-            const checkDurationInterval = setInterval(() => {
+            const checkReadyInterval = setInterval(() => {
                 if (videoRef.current && videoRef.current.duration > 0) {
-
-                    clearInterval(checkDurationInterval);
-                    const videoDuration = videoRef.current.duration;
-                    //console.log("vid", videoDuration);
-                    let progressValue = 0;
-                    const updateInterval = (videoDuration * 1000) / 100; // 100 steps = 10ms each step
-
+                    clearInterval(checkReadyInterval);
                     videoRef.current.play();
-
-                    timer = setInterval(() => {
-                        progressValue += 1;
-                        setProgress(progressValue);
-                        if (progressValue >= 100) {
-                            clearInterval(timer);
-                            setTimeout(() => {
-                                handleNext();
-                            }, 100);
-                        }
-                    }, updateInterval);
                 }
             }, 100);
         }
@@ -177,33 +160,7 @@ const StoryViewer = ({
                             src={currentStories[currentIndexStory].mediaUrl}
                             muted
                             controls={false}
-                            onLoadedMetadata={() => {
-                                const videoEl = videoRef.current;
-                                if (!videoEl) return;
-
-                                setProgress(0);
-
-                                waitForDuration(videoEl, (duration) => {
-                                    let progressValue = 0;
-                                    const updateInterval = (duration * 1000) / 100;
-
-                                    videoEl.play().catch((err) => console.error("Playback error:", err));
-
-                                    const timer = setInterval(() => {
-                                        progressValue += 1;
-                                        setProgress(progressValue);
-                                        if (progressValue >= 100) {
-                                            clearInterval(timer);
-                                            setTimeout(() => {
-                                                handleNext();
-                                            }, 100);
-                                        }
-                                    }, updateInterval);
-                                });
-                            }}
-
                             onEnded={() => {
-                                //  setProgress(0);
                                 setTimeout(() => {
                                     handleNext();
                                 }, 100); // small buffer

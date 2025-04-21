@@ -88,24 +88,24 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
     }
   }, [resetChatbox]);
 
-  useEffect(() => {
-    if (!selectedUser || !userId) return;
+  // useEffect(() => {
+  //   if (!selectedUser || !userId) return;
 
-    getMessages();
+  //   getMessages();
 
-    socket.on("connect", () => console.log("Connected"));
+  //   socket.on("connect", () => console.log("Connected"));
 
-    const roomId = [user._id, selectedUser.id].sort().join("_");
-    socket.emit('join_room', roomId);
+  //   const roomId = [user._id, selectedUser.id].sort().join("_");
+  //   socket.emit('join_room', roomId);
 
-    socket.on('receive_message', (data) => {
-      setChatHistory((prev) => [...prev, data]);
-    });
+  //   socket.on('receive_message', (data) => {
+  //     setChatHistory((prev) => [...prev, data]);
+  //   });
 
-    return () => {
-      socket.off('receive_message');
-    };
-  }, [selectedUser, userId]);
+  //   return () => {
+  //     socket.off('receive_message');
+  //   };
+  // }, [selectedUser, userId]);
 
   useEffect(() => {
     if (bottomRef.current) {
@@ -113,46 +113,46 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
     }
   }, [chatHistory]);
 
-  const getMessages = async () => {
-    try {
-      console.log("selccccc", selectedUser)
-      const response = await axios.get(`${host}/api/chat/get`, {
-        params: { user1: selectedUser.id, user2: user._id }
-      });
-      setChatHistory(response.data);
-      console.log("📜 Chat history loaded:", response.data);
-    } catch (err) {
-      console.error('Error getting messages:', err.response?.data || err.message);
-    }
-  };
+  // const getMessages = async () => {
+  //   try {
+  //     console.log("selccccc", selectedUser)
+  //     const response = await axios.get(`${host}/api/chat/get`, {
+  //       params: { user1: selectedUser.id, user2: user._id }
+  //     });
+  //     setChatHistory(response.data);
+  //     console.log("📜 Chat history loaded:", response.data);
+  //   } catch (err) {
+  //     console.error('Error getting messages:', err.response?.data || err.message);
+  //   }
+  // };
 
-  const postMessage = async (data) => {
-    try {
-      await axios.post(`${host}/api/chat/send`, data);
-      console.log("✅ Message posted to DB:", data);
-    } catch (err) {
-      console.error('❌ Error sending message:', err.response?.data || err.message);
-    }
-  };
+  // const postMessage = async (data) => {
+  //   try {
+  //     await axios.post(`${host}/api/chat/send`, data);
+  //     console.log("✅ Message posted to DB:", data);
+  //   } catch (err) {
+  //     console.error('❌ Error sending message:', err.response?.data || err.message);
+  //   }
+  // };
 
-  const sendMessage = (sharedContent = null) => {
-    if (!message.trim() && !sharedContent) return;
+  // const sendMessage = (sharedContent = null) => {
+  //   if (!message.trim() && !sharedContent) return;
 
-    const roomId = [user._id, selectedUser.id].sort().join("_");
+  //   const roomId = [user._id, selectedUser.id].sort().join("_");
 
-    const messageData = {
-      senderId: user._id,
-      senderName: user.name,
-      receiverId: selectedUser._id,
-      text: sharedContent ? "" : message.trim(),
-      roomId,
-      ...(sharedContent && { sharedContent }),
-    };
-    console.log("ababababab", messageData)
-    socket.emit('send_message', messageData);
-    postMessage(messageData);
-    setMessage('');
-  };
+  //   const messageData = {
+  //     senderId: user._id,
+  //     senderName: user.name,
+  //     receiverId: selectedUser._id,
+  //     text: sharedContent ? "" : message.trim(),
+  //     roomId,
+  //     ...(sharedContent && { sharedContent }),
+  //   };
+  //   console.log("ababababab", messageData)
+  //   socket.emit('send_message', messageData);
+  //   postMessage(messageData);
+  //   setMessage('');
+  // };
 
   const handleSelect = (item) => {
     setSelectedUser(item);
@@ -263,7 +263,7 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
             width: { xs: "100%", sm: "60%", md: "70%" }
           }}
         >
-          <Chatbox userId={selectedUser.id} username={selectedUser.name} setSelectedUser={setSelectedUser} />
+          <Chatbox userId={selectedUser.id || selectedUser._id} username={selectedUser.name} setSelectedUser={setSelectedUser} />
         </Box>
       ) : (
         <Box
