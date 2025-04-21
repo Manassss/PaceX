@@ -55,14 +55,14 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import FollowRequest from '../components/Profile/FollowRequest';
 import { host } from '../components/apinfo';
 import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
-
-
-
-
+import Postmodal from './Post/Postmodal';
+import Chatbox from './Chatbox';
 
 
 
 const ProfilePage = () => {
+  const auth = getAuth();
+  const firebaseUid = auth.currentUser.uid;
   const [userDetails, setUserDetails] = useState({});
   const [blockedUsers, setblockedUsers] = useState({});
   const [posts, setPosts] = useState([]); // Posts uploaded by this user
@@ -116,8 +116,9 @@ const ProfilePage = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [openFollowRequestModal, setOpenFollowRequestModal] = useState(false);
   const [requestProfiles, setRequestProfiles] = useState([]);
-
+  const [openChatbox, setOpenChatbox] = useState(false);
   //User Profile Details
+  const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   const fetchUserProfile = async () => {
     try {
 
@@ -849,6 +850,24 @@ const ProfilePage = () => {
     setDeleteConfirmation(true);
     handleMenuClose();
   };
+  const handledeleteAccount = async () => {
+    try {
+      const payload = {
+        data: {
+          userId: user?._id,
+          firebaseUid: firebaseUid
+        }
+      }
+      console.log("🧨 Deleting Firebase user with UID:", firebaseUid);
+      console.log("Type of firebaseUid:", typeof firebaseUid);
+      console.log("Length of UID:", firebaseUid?.length);
+      console.log("payload", payload)
+      const res = await axios.delete(`${host}/api/users/delete`, payload)
+      setOpenDeleteAccountModal(false)
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  }
 
 
   // At the top of your render (or just above your return)
@@ -875,7 +894,9 @@ const ProfilePage = () => {
     Array.isArray(selectedPost.likes) &&
     selectedPost.likes.includes(user._id);
 
-
+  const handlechatopen = () => {
+    setOpenChat(true);
+  }
 
   return (
     <>
@@ -930,6 +951,9 @@ const ProfilePage = () => {
                     </MenuItem>,
                     <MenuItem key="edit" onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
                       Edit Profile
+                    </MenuItem>,
+                    <MenuItem key="delete" onClick={() => { setOpenDeleteAccountModal(true); handleMenuClose(); }}>
+                      Delete Account
                     </MenuItem>
                   ]
                   : [
@@ -1030,7 +1054,7 @@ const ProfilePage = () => {
                 {/* Message */}
                 <Button
                   variant="outlined"
-                  onClick={() => setOpenChat(true)}
+                  onClick={handlechatopen}
                   sx={{
                     borderRadius: 2,
                     px: 2,
@@ -1172,194 +1196,9 @@ const ProfilePage = () => {
             </Box>
           </Grid>
         </Grid>
+        { /** */}
 
 
-        {/* Post Modal */}
-        {selectedPost && (
-          <Modal
-            open={openPostModal}
-            onClose={() => setOpenPostModal(false)}
-            BackdropProps={{
-              sx: { backdropFilter: "blur(10px)", backgroundColor: "rgba(0,0,0,0.4)" }
-            }}
-          >
-            <Box
-              sx={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: 800,
-                height: 600,
-                bgcolor: "#fff",
-                borderRadius: 2,
-                boxShadow: 3,
-                p: 0,
-                display: "flex",
-              }}
-            >
-              <Grid container sx={{ height: "100%" }}>
-                {/* ─── LEFT COLUMN: IMAGE ─── */}
-                <Grid item xs={6} sx={{ backgroundColor: "#000", position: "relative" }}>
-                  <Box
-                    component="img"
-                    src={selectedPost.images?.[currentImageIndex] || selectedPost.postimg}
-                    sx={{ width: "100%", height: "100%", objectFit: "contain" }}
-                  />
-                </Grid>
-
-                {/* ─── RIGHT COLUMN: CAPTION, ICONS, COMMENTS ─── */}
-                <Grid
-                  item
-                  xs={6}
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-
-                  }}
-                >
-                  {/* Caption */}
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {selectedPost.content}
-                    </Typography>
-                  </Box>
-
-                  {/* ─── Like / Comment / Share ─── */}
-                  <Box
-                    sx={{
-                      px: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 3,
-                    }}
-                  >
-                    {/* LIKE */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ p: 0 }}>
-                        {isLiked
-                          ? <AiFillLike size={20} color="#073574" />   // filled + your blue
-                          : <AiOutlineLike size={20} />                // outline default
-                        }
-                      </IconButton>
-                      <Typography variant="body2">
-                        {Array.isArray(selectedPost.likes)
-                          ? selectedPost.likes.length
-                          : selectedPost.likes || 0}
-                      </Typography>
-                    </Box>
-
-
-                    {/* COMMENT */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <FaRegComment size={18} />
-                      <Typography variant="body2">
-                        {comments[selectedPost.postId]?.length || 0}
-                      </Typography>
-                    </Box>
-
-                    {/* SHARE */}
-                    <IconButton sx={{ p: 0 }}>
-                      <GiShare size={18} />
-                    </IconButton>
-                  </Box>
-                  {/* Three-dot menu for owner */}
-                  {selectedPost?.userId === user?._id && (
-                    <IconButton
-                      onClick={handlePostMenuOpen}
-                      sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
-                    >
-                      <CiMenuKebab size={24} />
-                    </IconButton>
-                  )}
-                  <Menu
-                    anchorEl={postMenuAnchorEl}
-                    open={Boolean(postMenuAnchorEl)}
-                    onClose={handlePostMenuClose}
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        handleDeleteclick();
-                        handlePostMenuClose();
-                      }}
-                    >
-                      Delete Post
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        handleArchivePost();
-                        handlePostMenuClose();
-                      }}
-                    >
-                      {selectedPost.archived ? 'Unarchive Post' : 'Archive Post'}
-                    </MenuItem>
-                  </Menu>
-
-                  <Divider sx={{ my: 1 }} />
-
-                  {/* Scrollable comments list */}
-                  <Box
-                    sx={{
-                      flexGrow: 1,
-                      overflowY: "auto",
-                      px: 2,
-                    }}
-                  >
-                    {comments[selectedPost.postId]?.map((c, i) => (
-                      <Box key={i} sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                        <Avatar src={c.userimg} sx={{ width: 32, height: 32, mr: 1 }} />
-                        <Box>
-                          <Typography variant="subtitle2">{c.username}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {c.text}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )) || (
-                        <Typography color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
-                          No comments yet.
-                        </Typography>
-                      )}
-                  </Box>
-
-                  {/* Add comment input */}
-                  <Box
-                    sx={{
-                      p: 2,
-                      display: "flex",
-                      gap: 1,
-                      borderTop: "1px solid #eee",
-                    }}
-                  >
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Add a comment…"
-                      value={newComment[selectedPost.postId] || ""}
-                      onChange={e =>
-                        setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
-                      }
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: "20px" } }}
-                    />
-                    <Button
-                      variant="contained"
-                      onClick={() => handleAddComment(selectedPost.postId)}
-                      sx={{ borderRadius: "20px" }}
-                    >
-                      Post
-                    </Button>
-                  </Box>
-
-                </Grid>
-              </Grid>
-
-            </Box>
-          </Modal>
-
-
-        )}
 
 
         {/* Followers Modal */}
@@ -1445,7 +1284,13 @@ const ProfilePage = () => {
           </Box>
         </Modal>
 
-
+        <Postmodal
+          selectedPost={selectedPost}
+          openPostModal={openPostModal}
+          setOpenPostModal={setOpenPostModal}
+          currentImageIndex={currentImageIndex}
+          user={user}
+        />
 
 
         {/* Delete Confirmation Modal */}
@@ -1678,6 +1523,48 @@ const ProfilePage = () => {
           requestProfiles={requestProfiles}
           handleRespondRequest={handleRespondRequest}
         />
+        {/* ChatBox Model */}
+        <Modal open={openChat} onClose={() => setOpenChat(false)}>
+          <Box width="50%" height="50%" position="absolute" left='28%' top='25%' >
+
+            {userDetails && (
+              <>
+                <Chatbox userId={userDetails.id} username={userDetails.username} />
+              </>
+            )}
+
+          </Box>
+        </Modal>
+
+        {/*delete confirmation modal */}
+        <Modal open={openDeleteAccountModal} onClose={() => setOpenDeleteAccountModal(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: "white",
+              p: 3,
+              borderRadius: 2,
+              textAlign: "center"
+            }}
+          >
+            <Typography variant="h6">Are you sure you want to delete your account?</Typography>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handledeleteAccount}
+              >
+                Yes, Delete My Account
+              </Button>
+              <Button variant="outlined" onClick={() => setOpenDeleteAccountModal(false)}>
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
       </Container>
     </>
   );

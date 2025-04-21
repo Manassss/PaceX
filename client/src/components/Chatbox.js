@@ -6,6 +6,8 @@ import axios from 'axios';
 import { Send, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { host } from '../components/apinfo';
+import Postmodal from './Post/Postmodal';
+
 const socket = io(`${host}`, {
     transports: ["websocket", "polling"],
     withCredentials: true
@@ -19,6 +21,8 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
     const [chatHistory, setChatHistory] = useState([]);
     const listRef = useRef(null);
     const bottomRef = useRef(null);
+    const [selectedPost, setSelectedPost] = useState(null);
+    const [openPostModal, setOpenPostModal] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -196,7 +200,10 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                                     cursor: "pointer",
 
                                 }}
-
+                                onClick={() => {
+                                    setSelectedPost(msg.sharedContent);
+                                    setOpenPostModal(true);
+                                }}
                             >
                                 <Typography sx={{ fontWeight: "bold" }}>Shared a Post</Typography>
                                 <Box sx={{ mt: 1 }}>
@@ -267,6 +274,13 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                     <Send />
                 </Button>
             </Box>
+            <Postmodal
+                selectedPost={selectedPost}
+                openPostModal={openPostModal}
+                setOpenPostModal={setOpenPostModal}
+                currentImageIndex={0}
+                user={user}
+            />
         </Box>
     );
 };
