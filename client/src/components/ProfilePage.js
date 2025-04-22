@@ -117,8 +117,31 @@ const ProfilePage = () => {
   const [openFollowRequestModal, setOpenFollowRequestModal] = useState(false);
   const [requestProfiles, setRequestProfiles] = useState([]);
   const [openChatbox, setOpenChatbox] = useState(false);
+  const [deleteperm, setdelete] = useState(false);
+  const [deleteptemp, setdeletetemp] = useState(false);
+  const [archive, setarchive] = useState(false);
   //User Profile Details
   const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
+  useEffect(() => {
+    if (deleteperm || deleteptemp || archive) {
+      console.log("Postmodal triggered state change");
+
+      setPosts(prevPosts => {
+        return prevPosts.filter(post => {
+          if (deleteperm) return post.postId !== selectedPost?.postId;
+          if (deleteptemp) return post.postId !== selectedPost?.postId;
+          if (archive) return post.postId !== selectedPost?.postId;
+          return true;
+        });
+      });
+      fetchPosts()
+      // Reset flags after handling
+      setdelete(false);
+      setdeletetemp(false);
+      setarchive(false);
+
+    }
+  }, [deleteperm, deleteptemp, archive]);
   const fetchUserProfile = async () => {
     try {
 
@@ -204,19 +227,19 @@ const ProfilePage = () => {
 
   const [myCommunities, setMyCommunities] = useState([]);
 
-  console.log("ProfilePage rendered — viewing profile:", userId, "logged‑in user:", user?._id);
+  console.log("ProfilePage rendered — viewing profile:", userId, "logged-in user:", user?._id);
   console.log("Current myCommunities state:", myCommunities);
-  
-   useEffect(() => {
-       if (!userId) return;   // userId comes from useParams()
-       console.log("👀 loading communities for profile userId:", userId);
-       axios.get(`${host}/api/communities/user/${userId}`)
-         .then(res => {
-           console.log("← got communities for", userId, ":", res.data);
-           setMyCommunities(res.data);
-         })
-         .catch(err => console.error("Communities fetch error:", err));
-     }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;   // userId comes from useParams()
+    console.log("👀 loading communities for profile userId:", userId);
+    axios.get(`${host}/api/communities/user/${userId}`)
+      .then(res => {
+        console.log("← got communities for", userId, ":", res.data);
+        setMyCommunities(res.data);
+      })
+      .catch(err => console.error("Communities fetch error:", err));
+  }, [userId]);
 
   // Handle delete button click
   const handleDeleteclick = () => {
@@ -495,52 +518,52 @@ const ProfilePage = () => {
     setLoading(false);
   };
 
+  const fetchPosts = async () => {
+    const profileUserId = userId || user?._id;
+    try {
+      const res = await axios.get(`${host}/api/posts/${profileUserId}`);
+      console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
+
+      // Filter posts by the current user
+      const transformedPosts = res.data
+        .map(post => ({
+          content: post.content,
+          createdAt: new Date(post.createdAt).toLocaleString(),
+          dislikes: post.dislikes,
+          likes: post.likes,
+          postimg: post.postimg,
+          userId: post.userId,
+          userName: post.userName,
+          postId: post._id,
+          images: post.images,
+          archived: post.archived,
+          tempdelete: post.tempdelete
+        }));
+
+      // Fetch comments for each post and attach them
+      const postsWithComments = await Promise.all(
+        transformedPosts.map(async (post) => {
+          try {
+            const commentsRes = await axios.get(`${host}/api/comment/${post.postId}`);
+            return { ...post, comments: commentsRes.data }; // Attach fetched comments
+          } catch (commentErr) {
+            console.error(`Error fetching comments for post ${post.postId}:`, commentErr.message);
+            return { ...post, comments: [] }; // Return empty comments if error occurs
+          }
+        })
+      );
+
+      setPosts(postsWithComments);
+    } catch (err) {
+      console.error('Error fetching posts:', err.message);
+    }
+  };
 
   // Fetch posts for this user
   useEffect(() => {
     if (!userId && !user?._id) return;
-    const fetchPosts = async () => {
-      const profileUserId = userId || user?._id;
-      try {
-        const res = await axios.get(`${host}/api/posts/${profileUserId}`);
-        console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
-
-        // Filter posts by the current user
-        const transformedPosts = res.data
-          .map(post => ({
-            content: post.content,
-            createdAt: new Date(post.createdAt).toLocaleString(),
-            dislikes: post.dislikes,
-            likes: post.likes,
-            postimg: post.postimg,
-            userId: post.userId,
-            userName: post.userName,
-            postId: post._id,
-            images: post.images,
-            archived: post.archived,
-            tempdelete: post.tempdelete
-          }));
-
-        // Fetch comments for each post and attach them
-        const postsWithComments = await Promise.all(
-          transformedPosts.map(async (post) => {
-            try {
-              const commentsRes = await axios.get(`${host}/api/comment/${post.postId}`);
-              return { ...post, comments: commentsRes.data }; // Attach fetched comments
-            } catch (commentErr) {
-              console.error(`Error fetching comments for post ${post.postId}:`, commentErr.message);
-              return { ...post, comments: [] }; // Return empty comments if error occurs
-            }
-          })
-        );
-
-        setPosts(postsWithComments);
-      } catch (err) {
-        console.error('Error fetching posts:', err.message);
-      }
-    };
 
     fetchPosts();
   }, [userId, user]);
@@ -892,13 +915,13 @@ const ProfilePage = () => {
 
 
   // At the top of your render (or just above your return)
-// at the top of your render (or above it)
-const filteredPosts =
-  selectedTab === "recentlyDeleted"
-    ? posts.filter(post => post.tempdelete)
-    : selectedTab === "archived"
-      ? posts.filter(post => post.archived && !post.tempdelete)
-      : posts.filter(post => !post.archived && !post.tempdelete);
+  // at the top of your render (or above it)
+  const filteredPosts =
+    selectedTab === "recentlyDeleted"
+      ? posts.filter(post => post.tempdelete)
+      : selectedTab === "archived"
+        ? posts.filter(post => post.archived && !post.tempdelete)
+        : posts.filter(post => !post.archived && !post.tempdelete);
 
 
 
@@ -1031,7 +1054,7 @@ const filteredPosts =
               }}
             >
               {[
-                { label: "Posts", value: filteredPosts.length  },
+                { label: "Posts", value: filteredPosts.length },
                 { label: "Followers", value: userDetails.followersCount },
                 { label: "Following", value: userDetails.followingCount },
               ].map(({ label, value }) => (
@@ -1044,28 +1067,28 @@ const filteredPosts =
                 </Box>
               ))}
             </Box>
-            <Box mt={4}>
-            <Typography variant="subtitle1" fontWeight="bold">Communities</Typography>
-  { console.log("👀 rendering myCommunities:", myCommunities) }
-  {myCommunities.length === 0
-    ? <Typography variant="body2" color="text.secondary">
-        Not part of any communities yet.
-      </Typography>
-    : myCommunities.map((c) => (
-        <ListItem
-          key={c._id}
-          disablePadding
-          onClick={() => navigate(`/community/${c._id}`)}
-          sx={{ cursor: 'pointer' }}
-        >
-          <ListItemAvatar>
-            <Avatar src={c.coverImage} />
-          </ListItemAvatar>
-          <ListItemText primary={c.name} />
-        </ListItem>
-      ))
-  }
-</Box>
+            {/* <Box mt={4}>
+              <Typography variant="subtitle1" fontWeight="bold">Communities</Typography>
+              {console.log("👀 rendering myCommunities:", myCommunities)}
+              {myCommunities.length === 0
+                ? <Typography variant="body2" color="text.secondary">
+                  Not part of any communities yet.
+                </Typography>
+                : myCommunities.map((c) => (
+                  <ListItem
+                    key={c._id}
+                    disablePadding
+                    onClick={() => navigate(`/community/${c._id}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar src={c.coverImage} />
+                    </ListItemAvatar>
+                    <ListItemText primary={c.name} />
+                  </ListItem>
+                ))
+              }
+            </Box> */}
 
 
             {/* 6. Connect / Follow button */}
@@ -1118,7 +1141,7 @@ const filteredPosts =
                 </Button>
               </Box>
 
-              
+
 
             )}
           </Grid>
@@ -1338,6 +1361,9 @@ const filteredPosts =
           setOpenPostModal={setOpenPostModal}
           currentImageIndex={currentImageIndex}
           user={user}
+          setarchive={setarchive}
+          setdelete={setdelete}
+          setdeletetemp={setdeletetemp}
         />
 
 

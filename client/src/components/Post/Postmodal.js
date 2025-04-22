@@ -15,7 +15,10 @@ const Postmodal = ({
     openPostModal,
     setOpenPostModal,
     currentImageIndex,
-    user
+    user,
+    setarchive,
+    setdeletetemp,
+    setdelete,
 }) => {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
@@ -101,20 +104,23 @@ const Postmodal = ({
     const handleDeleteclick = async () => {
         try {
             await axios.post(`${host}/api/posts/tempdelete/${selectedPost.postId}`);
+            setdeletetemp(true)
             setOpenPostModal(false);
+
         } catch (error) {
             console.error("Error deleting post:", error);
         }
     };
 
-        // 🎯 new: permanent delete
+    // 🎯 new: permanent delete
     const handlePermanentDelete = async () => {
-      try {
-        await axios.post(`${host}/api/posts/delete/${selectedPost.postId}`);
-        setOpenPostModal(false);
-      } catch (error) {
-        console.error("Error permanently deleting post:", error);
-      }
+        try {
+            await axios.post(`${host}/api/posts/delete/${selectedPost.postId}`);
+            setdelete(true)
+            setOpenPostModal(false);
+        } catch (error) {
+            console.error("Error permanently deleting post:", error);
+        }
     };
 
     const handleArchivePost = async () => {
@@ -124,6 +130,8 @@ const Postmodal = ({
                 userId: user?._id
             }
             const res = await axios.post(`${host}/api/posts/archive`, payload);
+            setarchive(true)
+            setOpenPostModal(false);
             // fetchComments();
         } catch (error) {
             console.error("Error archiving post:", error);
@@ -219,43 +227,43 @@ const Postmodal = ({
                                 </MenuItem>
                             </Menu> */}
 
-                                                        <Menu
-                              anchorEl={postMenuAnchorEl}
-                              open={Boolean(postMenuAnchorEl)}
-                              onClose={handlePostMenuClose}
+                            <Menu
+                                anchorEl={postMenuAnchorEl}
+                                open={Boolean(postMenuAnchorEl)}
+                                onClose={handlePostMenuClose}
                             >
-                              {/* soft‑delete */}
-                              <MenuItem
-                                onClick={() => {
-                                  handleDeleteclick();
-                                  handlePostMenuClose();
-                                }}
-                              >
-                                {selectedPost.tempdelete ? "Recover" : "Delete Post"}
-                              </MenuItem>
-
-                              {/* hard delete only once it's soft‑deleted */}
-                              {selectedPost.tempdelete && (
+                                {/* soft‑delete */}
                                 <MenuItem
-                                  onClick={() => {
-                                    handlePermanentDelete();
-                                    handlePostMenuClose();
-                                  }}
-                                  sx={{ color: 'error.main' }}
+                                    onClick={() => {
+                                        handleDeleteclick();
+                                        handlePostMenuClose();
+                                    }}
                                 >
-                                  Permanently Delete
+                                    {selectedPost.tempdelete ? "Recover" : "Delete Post"}
                                 </MenuItem>
-                              )}
 
-                              {/* archive toggle */}
-                              <MenuItem
-                                onClick={() => {
-                                  handleArchivePost();
-                                  handlePostMenuClose();
-                                }}
-                              >
-                                {selectedPost.archived ? "Unarchive Post" : "Archive Post"}
-                              </MenuItem>
+                                {/* hard delete only once it's soft‑deleted */}
+                                {selectedPost.tempdelete && (
+                                    <MenuItem
+                                        onClick={() => {
+                                            handlePermanentDelete();
+                                            handlePostMenuClose();
+                                        }}
+                                        sx={{ color: 'error.main' }}
+                                    >
+                                        Permanently Delete
+                                    </MenuItem>
+                                )}
+
+                                {/* archive toggle */}
+                                <MenuItem
+                                    onClick={() => {
+                                        handleArchivePost();
+                                        handlePostMenuClose();
+                                    }}
+                                >
+                                    {selectedPost.archived ? "Unarchive Post" : "Archive Post"}
+                                </MenuItem>
                             </Menu>
 
                             <Divider sx={{ my: 1 }} />
