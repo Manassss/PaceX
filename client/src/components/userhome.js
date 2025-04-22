@@ -1,6 +1,6 @@
 // 🔹 React & Hooks
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 // 🔹 Context
 import { useAuth } from '../auth/AuthContext';
@@ -54,6 +54,8 @@ const UserHome = () => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [openLikeModal, setOpenLikeModal] = useState(false);
   const [likedUsers, setLikedUsers] = useState([]); // This will store the list returned from the API
+  const location = useLocation();
+  const selectedTab = new URLSearchParams(location.search).get('tab') || 'posts';
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -504,11 +506,18 @@ const UserHome = () => {
 
           }}
         >
+        {/* <StoryBar
+          users={users}
+          setOpenStoryCamera={setOpenStoryCamera}
+          handleProfile={handleProfile}
+        /> */}
+        {selectedTab === 'posts' && (
           <StoryBar
             users={users}
             setOpenStoryCamera={setOpenStoryCamera}
             handleProfile={handleProfile}
           />
+        )}
 
           {/**FEED */}
           <PostFeed
@@ -529,6 +538,8 @@ const UserHome = () => {
             setOpenPostShareModal={setOpenPostShareModal}
             currentImageIndex={currentImageIndex}
             setCurrentImageIndex={setCurrentImageIndex}
+            selectedTab={selectedTab}
+            
           />
 
         </Box>

@@ -707,7 +707,12 @@ const Marketplace = () => {
 
             {chatUser && (
               <>
-                <Chatbox userId={chatUser._id} username={chatUser.name} />
+<Chatbox
+  userId={chatUser._id}
+  username={chatUser.name}
+  onBack={() => setOpenChatbox(false)} // ✅ closes modal on back
+/>
+
               </>
             )}
 

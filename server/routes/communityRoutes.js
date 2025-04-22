@@ -8,6 +8,7 @@ router.get("/:communityId", communityController.getCommunityById);
 router.put("/:communityId/edit", communityController.editCommunity);
 router.post("/togglemember", communityController.toggleMembership);
 router.delete("/:communityId", communityController.deleteCommunity);
+router.get("/user/:userId", communityController.getUserCommunities);
 
 
 router.post("/post", communityController.createPost);
