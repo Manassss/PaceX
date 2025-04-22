@@ -157,7 +157,8 @@ const ProfilePage = () => {
         const profiles = await Promise.all(
           res.data.requests.map(async (reqUserId) => {
             try {
-              if (!reqUserId) {
+              if (reqUserId != null) {
+                console.log("requserid", reqUserId)
                 const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
 
                 return {
@@ -166,6 +167,10 @@ const ProfilePage = () => {
                   username: userRes.data.username,
                   profileImage: userRes.data.profileImage,
                 };
+                // Remove any failed/null results
+                const validProfiles = profiles.filter(p => p !== null);
+                console.log("vvalid", validProfiles)
+                setRequestProfiles(validProfiles);
               }
 
 
@@ -177,10 +182,7 @@ const ProfilePage = () => {
           })
         );
 
-        // Remove any failed/null results
-        const validProfiles = profiles.filter(p => p !== null);
-        console.log("vvalid", validProfiles)
-        setRequestProfiles(validProfiles);
+
       } else {
         setRequestProfiles([]); // Clear if no requests
       }

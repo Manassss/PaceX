@@ -11,7 +11,8 @@ import {
   ListItemText,
   Tooltip,
   IconButton,
-  Modal
+  Modal,
+  Button
 } from "@mui/material";
 import {
   Home as HomeIcon,
@@ -26,6 +27,7 @@ import {
   MoreHoriz as MoreIcon
 } from "@mui/icons-material";
 import MenuIcon from "@mui/icons-material/Menu";
+import ExploreIcon from '@mui/icons-material/Explore';
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -70,6 +72,10 @@ const Navbar = () => {
       // } else {
       //   setIsCollapsed(true);
       // }
+      if (item.label === "Events") {
+        item.onClick(); // ✅ Execute any item-specific onClick like "Events"
+        return;
+      }
       if (item.label === "Add Post") {
         setOpenCreateModal(true);
       }
@@ -79,7 +85,14 @@ const Navbar = () => {
 
     }
   };
+  const handleOpenProgressModal = () => {
+    setOpenProgressModal(true);
+  };
 
+
+  const handleCloseProgressModal = () => {
+    setOpenProgressModal(false);
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -88,9 +101,9 @@ const Navbar = () => {
     else return "Good evening";
   };
 
-
+  const [openProgressModal, setOpenProgressModal] = useState(false);
   const navItems = [
-    { icon: <HomeIcon />, label: "Home", path: "/userhome" },
+    { icon: <HomeIcon />, label: "Home", path: "/userhome?tab=posts" },
     {
       icon: <SearchIcon />,
       label: "Search",
@@ -98,9 +111,9 @@ const Navbar = () => {
         setOpenCreateModal(true);
       },
     },
-    { icon: <NotificationsIcon />, label: "Notifications", path: "/notifications" },
+    { icon: <ExploreIcon />, label: "Explore", path: "/userhome?tab=explore" },
     { icon: <ChatIcon />, label: "Messenger", path: "/messenger" },
-    { icon: <EventIcon />, label: "Events", path: "/events" },
+    { icon: <EventIcon />, label: "Events", onClick: () => { setOpenProgressModal(true); } },
     { icon: <CommunityIcon />, label: "Community", path: "/community" },
     { icon: <MarketplaceIcon />, label: "Marketplace", path: "/marketplace" },
     {
@@ -329,6 +342,43 @@ const Navbar = () => {
         <AddPost open={openCreateModal} onClose={() => setOpenCreateModal(false)} />
 
       </Box>
+      <Modal
+        open={openProgressModal}
+        onClose={handleCloseProgressModal}
+        aria-labelledby="Events"
+        aria-describedby="College & Community Events"
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '50%',
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '20%',
+            textAlign: 'center',
+          }}
+        >
+          <Typography id="progress-modal-title" variant="h6" gutterBottom>
+            🚧 Work in Progress 🚧
+          </Typography>
+          <Typography id="progress-modal-description" sx={{ mb: 2 }}>
+            This feature is still under development. Stay tuned!
+          </Typography>
+          <Button variant="contained" onClick={handleCloseProgressModal}>
+            Close
+          </Button>
+        </Box>
+      </Modal>
+
     </>
 
   );

@@ -45,7 +45,7 @@ const Login = () => {
             const now = Date.now();
             localStorage.setItem("loginTime", `${now}`); setMessage('🎉 Login Successful!');
             login(res.data.user);
-            navigate('/userhome');
+            navigate('/userhome?tab=posts');
         } catch (err) {
             setMessage('❌ Login Failed');
             console.error("Login Error:", err.response?.data?.message || "Server Error");

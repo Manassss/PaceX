@@ -9,16 +9,17 @@ import React, {
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import axios from 'axios';
 import { updateProfile as fbUpdate } from "firebase/auth";
-
+//const host = process.env.REACT_APP_PROD_API_BASE_URL;
+const host = process.env.REACT_APP_DEV_API_BASE_URL
 async function updateProfile(updates) {
     const auth = getAuth();
     if (!auth.currentUser) throw new Error("No user");
     return fbUpdate(auth.currentUser, {
-      displayName: updates.name,
-      photoURL:    updates.profileImage
+        displayName: updates.name,
+        photoURL: updates.profileImage
     });
-  }
-  
+}
+
 
 const AuthContext = createContext({
     user: null,
@@ -26,7 +27,7 @@ const AuthContext = createContext({
     login: () => { },
     logout: () => { },
     updateProfile,
-    
+
 });
 
 export const AuthProvider = ({ children }) => {
@@ -93,7 +94,7 @@ export const AuthProvider = ({ children }) => {
                     try {
                         const idToken = await fbUser.getIdToken();
                         const res = await axios.post(
-                            'http://localhost:5001/api/users/login',
+                            `${host}/api/users/login`,
                             { idToken }
                         );
                         setUser(res.data.user);
@@ -132,14 +133,14 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
-      if (!user || !user._id) {
-        setPosts([]);
-        return;
-      }
-      // Fetch posts for the logged-in user
-      axios.get(`http://localhost:5001/api/posts/${user._id}`)
-        .then(res => setPosts(res.data))
-        .catch(err => console.error('Error fetching user posts:', err));
+        if (!user || !user._id) {
+            setPosts([]);
+            return;
+        }
+        // Fetch posts for the logged-in user
+        axios.get(`http://localhost:5001/api/posts/${user._id}`)
+            .then(res => setPosts(res.data))
+            .catch(err => console.error('Error fetching user posts:', err));
     }, [user]);
 
     return (

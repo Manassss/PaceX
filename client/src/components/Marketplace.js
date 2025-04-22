@@ -80,8 +80,8 @@ const Marketplace = () => {
   }, [searchQuery, selectedCategory, listings]);
 
   const displayedListings = tabIndex === 1
-    ? listings.filter(item => item.userId?._id === user?._id)
-    : filteredListings;
+    ? listings.filter(item => item.userId?._id === user?._id && !item.sold)
+    : filteredListings.filter(item => !item.sold);
 
 
   const fetchListings = async () => {

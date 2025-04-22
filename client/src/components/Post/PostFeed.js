@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import { React, useState, useEffect } from "react";
 import {
     Box,
     Typography,
@@ -14,7 +14,10 @@ import { FaRegComment, FaShare } from "react-icons/fa6";
 import { BsFillSaveFill } from "react-icons/bs";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-
+import axios from "axios";
+import { host } from '../apinfo';
+import { useAuth } from "../../auth/AuthContext";
+import { useLocation } from 'react-router-dom';
 const PostFeed = ({
     posts,
     users,
@@ -37,6 +40,55 @@ const PostFeed = ({
     const isTablet = useMediaQuery('(max-width: 960px)');
     console.log("length of posts", posts.length);
     const [imageIndex, setImageIndex] = useState(0);
+    //const { user } = useAuth()
+    const [randomPosts, setRandomPosts] = useState([]);
+    //const [selectedTab, setSelectedTab] = useState(posts?.length === 0 ? 'explore' : 'posts');
+    const initialTab = new URLSearchParams(window.location.search).get('tab') || (posts?.length === 0 ? 'explore' : 'posts');
+    const [selectedTab, setSelectedTab] = useState(initialTab);
+
+    const displayPosts = selectedTab === 'explore' ? randomPosts : posts;
+    const fetchrandomPosts = async () => {
+        try {
+            const payload = { userId: user?._id };
+            const res = await axios.post(`${host}/api/posts/random`, payload);
+            const data = res.data;
+
+            const postsWithComments = await Promise.all(
+                data.map(async (post) => {
+                    const commentsRes = await axios.get(`${host}/api/comment/${post._id}`);
+                    return {
+                        content: post.content,
+                        createdAtFormatted: new Date(post.createdAt).toLocaleString(),
+                        rawCreatedAt: post.createdAt,
+                        dislikes: post.dislikes || [],
+                        likes: Array.isArray(post.likes) ? post.likes : [],
+                        postimg: post.postimg,
+                        userId: post.userId,
+                        userName: post.userName,
+                        postId: post._id,
+                        comments: commentsRes.data,
+                        images: post.images
+                    };
+                })
+            );
+
+            setRandomPosts(postsWithComments);
+            console.log("random posts", postsWithComments);
+        } catch (error) {
+            console.error("❌ Error fetching random posts:", error);
+        }
+    }
+    useEffect(() => {
+        fetchrandomPosts();
+    }, [])
+    const location = useLocation();
+
+    useEffect(() => {
+        const tabFromUrl = new URLSearchParams(location.search).get('tab');
+        if (tabFromUrl && tabFromUrl !== selectedTab) {
+            setSelectedTab(tabFromUrl);
+        }
+    }, [location.search]);
     return (
         <Box
             sx={{
@@ -51,7 +103,52 @@ const PostFeed = ({
                 mt: '20%'
             }}
         >
-            {[...posts]
+            {/* <Box
+                sx={{
+                    display: 'flex',
+                    width: '100%',
+                    maxWidth: { xs: "70%", sm: "75%", md: "80%", lg: "95%" },
+                    mx: "auto",
+                    mb: 2,
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    boxShadow: 2,
+                }}
+            >
+                <Button
+                    onClick={() => setSelectedTab('posts')}
+                    disabled={posts?.length === 0}
+                    sx={{
+                        flex: 1,
+                        borderRadius: 0,
+                        backgroundColor: selectedTab === 'posts' ? '#073574' : '#e0e0e0',
+                        color: selectedTab === 'posts' ? '#fff' : '#000',
+                        fontWeight: 600,
+                        '&:hover': {
+                            backgroundColor: selectedTab === 'posts' ? '#062d5c' : '#d5d5d5',
+                        },
+                    }}
+                >
+                    Posts
+                </Button>
+                <Button
+                    onClick={() => setSelectedTab('explore')}
+                    sx={{
+                        flex: 1,
+                        borderRadius: 0,
+                        backgroundColor: selectedTab === 'explore' ? '#073574' : '#e0e0e0',
+                        color: selectedTab === 'explore' ? '#fff' : '#000',
+                        fontWeight: 600,
+                        '&:hover': {
+                            backgroundColor: selectedTab === 'explore' ? '#062d5c' : '#d5d5d5',
+                        },
+                    }}
+                >
+                    Explore
+                </Button>
+            </Box> */}
+
+            {[...displayPosts]
                 .sort((a, b) =>
                     new Date(b.rawCreatedAt).getTime() - new Date(a.rawCreatedAt).getTime()
                 ).map((post, index) => {
@@ -61,6 +158,7 @@ const PostFeed = ({
 
 
                     return (
+
                         <Paper
                             key={index}
                             sx={{

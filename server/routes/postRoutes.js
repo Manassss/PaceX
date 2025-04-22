@@ -1,7 +1,7 @@
 const express = require('express');
 const { createPost, getPosts, likePost, addComment, deletePost,
     togglearchive, toggletempdelete, toggleSavedPost,
-    getuserfeed, getuserPosts } = require('../controllers/postController');
+    getuserfeed, getuserPosts, getRandomPosts } = require('../controllers/postController');
 
 const router = express.Router();
 
@@ -33,7 +33,9 @@ router.post('/tempdelete/:postId', toggletempdelete);
 //  Route to delete a post permanently (should be after other post actions)
 router.post('/delete/:postId', deletePost);
 
-router.post('/save', toggleSavedPost)
+router.post('/save', toggleSavedPost);
+
+router.post('/random', getRandomPosts)
 
 
 module.exports = router;

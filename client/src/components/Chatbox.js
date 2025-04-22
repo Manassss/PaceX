@@ -57,9 +57,12 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
             socket.emit('join_room', roomId);
         }
 
+        const roomId = [user._id, userId].sort().join("_");
+
         socket.on('receive_message', (data) => {
-            console.log("Message received:", data);
-            setChatHistory((prev) => [...prev, data]);
+            if (data.roomId === roomId) {
+                setChatHistory(prev => [...prev, data]);
+            }
         });
 
         return () => {
@@ -80,8 +83,9 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
             roomId
         };
 
-        postMessage();
+        setChatHistory(prev => [...prev, messageData]); // Add locally for real-time feel
         socket.emit('send_message', messageData);
+        postMessage();
         setMessage('');
     };
 
@@ -134,7 +138,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                 overflow: 'hidden',
                 boxSizing: 'border-box',
                 minWidth: 0,
-                mt:0,
+                mt: 0,
             }}
         >
             {/* Chat Header */}
