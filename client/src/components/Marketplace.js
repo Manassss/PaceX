@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+// Google Maps libraries constant to avoid re-creation on every render
+
 import axios from 'axios';
 import {
   Container, Typography, Card, CardMedia, CardContent, Grid, Button, Avatar, Box, CardHeader, Chip, Modal, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Menu, Dialog, DialogTitle, DialogContent, DialogActions, IconButton
@@ -11,7 +13,7 @@ import { storage } from '../firebase'; // ✅ Firebase storage import
 import Navbar from './navbar';
 import { useAuth } from '../auth/AuthContext';
 import Logo from '../assets/PACE.png';
-import { GoogleMap, LoadScript, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, Autocomplete } from '@react-google-maps/api';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import ChatIcon from "@mui/icons-material/Chat"; // ✅ Correct import for Material UI icons
@@ -51,6 +53,11 @@ const Marketplace = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuItem, setMenuItem] = useState(null);
+  const addressInputRef = useRef(null);
+  const GOOGLE_MAP_LIBRARIES = ['places'];
+  // Attach Google Places Autocomplete to the address input
+
+  const autocompleteRef = useRef(null);
 
   const handleMenuOpen = (e, item) => {
     e.stopPropagation();
@@ -423,15 +430,31 @@ const Marketplace = () => {
                     fullWidth
                     sx={{ flex: 1, borderRadius: 2, bgcolor: "#f7f7f7" }}
                   />
+                  <Autocomplete
+                    onLoad={(autocomplete) => {
+                      autocompleteRef.current = autocomplete;
+                    }}
+                    onPlaceChanged={() => {
+                      const place = autocompleteRef.current.getPlace();
+                      if (place.formatted_address) {
+                        setFormData((prev) => ({ ...prev, address: place.formatted_address }));
+                      }
+                    }}
+                  >
+                    <TextField
+                      label="Address"
+                      name="address"
+                      inputRef={addressInputRef}
+                      value={formData.address}
+                      onChange={handleChange}
+                      required
+                      fullWidth
+                      sx={{ flex: 2, borderRadius: 2, bgcolor: "#f7f7f7" }}
+                    />
+                  </Autocomplete>
 
-                  <TextField
-                    label="Address"
-                    name="address"
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    sx={{ flex: 2, borderRadius: 2, bgcolor: "#f7f7f7" }}
-                  />
+
+
                 </Box>
 
                 {/* Category & Subcategory */}
