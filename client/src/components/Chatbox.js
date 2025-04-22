@@ -13,7 +13,7 @@ const socket = io(`${host}`, {
     withCredentials: true
 });
 
-const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
+const Chatbox = ({ userId, username, isMobile, onBack }) => {
     const { user } = useAuth();
     const theme = useTheme();
     const isXs = useMediaQuery(theme.breakpoints.down('sm'));
@@ -148,7 +148,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
 
                 }}
             >
-                <IconButton onClick={() => setSelectedUser(null)} sx={{ mr: 1 }}>
+                <IconButton onClick={onBack} sx={{ mr: 1 }}>
                     <ArrowBack />
                 </IconButton>
                 <Avatar src={avatarUrl} sx={{ width: 50, height: 50 }} />

@@ -100,7 +100,7 @@ const PostFeed = ({
                 overflowY: "hidden",
 
                 alignItems: 'center',
-                mt: '20%'
+                mt: selectedTab === "posts" ? "20%" : 0,
             }}
         >
             {/* <Box

@@ -263,7 +263,11 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
             width: { xs: "100%", sm: "60%", md: "70%" }
           }}
         >
-          <Chatbox userId={selectedUser.id || selectedUser._id} username={selectedUser.name} setSelectedUser={setSelectedUser} />
+      <Chatbox
+        userId={selectedUser.id || selectedUser._id}
+        username={selectedUser.name}
+        onBack={() => setSelectedUser(null)} // ✅ correctly handles back
+      />
         </Box>
       ) : (
         <Box

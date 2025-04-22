@@ -202,6 +202,21 @@ const ProfilePage = () => {
   }, [userId, user]);
 
 
+  const [myCommunities, setMyCommunities] = useState([]);
+
+  console.log("ProfilePage rendered — viewing profile:", userId, "logged‑in user:", user?._id);
+  console.log("Current myCommunities state:", myCommunities);
+  
+   useEffect(() => {
+       if (!userId) return;   // userId comes from useParams()
+       console.log("👀 loading communities for profile userId:", userId);
+       axios.get(`${host}/api/communities/user/${userId}`)
+         .then(res => {
+           console.log("← got communities for", userId, ":", res.data);
+           setMyCommunities(res.data);
+         })
+         .catch(err => console.error("Communities fetch error:", err));
+     }, [userId]);
 
   // Handle delete button click
   const handleDeleteclick = () => {
@@ -443,7 +458,6 @@ const ProfilePage = () => {
             : p
         )
       );
-
       // update the single‐post modal if it’s open
       setSelectedPost((prev) =>
         prev && prev.postId === postId
@@ -878,12 +892,14 @@ const ProfilePage = () => {
 
 
   // At the top of your render (or just above your return)
-  const filteredPosts =
-    selectedTab === "recentlyDeleted"
-      ? posts.filter(post => post.tempdelete)                              // deleted
-      : selectedTab === "archived"
-        ? posts.filter(post => post.archived && !post.tempdelete)         // archived but not deleted
-        : posts.filter(post => !post.archived && !post.tempdelete);       // normal posts
+// at the top of your render (or above it)
+const filteredPosts =
+  selectedTab === "recentlyDeleted"
+    ? posts.filter(post => post.tempdelete)
+    : selectedTab === "archived"
+      ? posts.filter(post => post.archived && !post.tempdelete)
+      : posts.filter(post => !post.archived && !post.tempdelete);
+
 
 
 
@@ -1015,7 +1031,7 @@ const ProfilePage = () => {
               }}
             >
               {[
-                { label: "Posts", value: userDetails.postsCount },
+                { label: "Posts", value: filteredPosts.length  },
                 { label: "Followers", value: userDetails.followersCount },
                 { label: "Following", value: userDetails.followingCount },
               ].map(({ label, value }) => (
@@ -1028,6 +1044,29 @@ const ProfilePage = () => {
                 </Box>
               ))}
             </Box>
+            <Box mt={4}>
+            <Typography variant="subtitle1" fontWeight="bold">Communities</Typography>
+  { console.log("👀 rendering myCommunities:", myCommunities) }
+  {myCommunities.length === 0
+    ? <Typography variant="body2" color="text.secondary">
+        Not part of any communities yet.
+      </Typography>
+    : myCommunities.map((c) => (
+        <ListItem
+          key={c._id}
+          disablePadding
+          onClick={() => navigate(`/community/${c._id}`)}
+          sx={{ cursor: 'pointer' }}
+        >
+          <ListItemAvatar>
+            <Avatar src={c.coverImage} />
+          </ListItemAvatar>
+          <ListItemText primary={c.name} />
+        </ListItem>
+      ))
+  }
+</Box>
+
 
             {/* 6. Connect / Follow button */}
             {vistinguser && (
@@ -1078,6 +1117,8 @@ const ProfilePage = () => {
                   Message
                 </Button>
               </Box>
+
+              
 
             )}
           </Grid>

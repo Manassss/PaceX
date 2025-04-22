@@ -35,6 +35,10 @@ import Logo from "../assets/PACE.png";
 import axios from "axios";
 import SearchPanel from "./Search";
 import AddPost from '../components/Post/AddPost'; // adjust the path if needed
+import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+
+
 
 
 
@@ -46,8 +50,11 @@ const Navbar = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [showXSNavbar, setShowXSNavbar] = useState(false);
+  // const [showXSNavbar, setShowXSNavbar] = useState(false);
   const location = useLocation();
+  const [moreAnchorEl, setMoreAnchorEl] = useState(null);
+  const isMoreMenuOpen = Boolean(moreAnchorEl);
+
 
   useEffect(() => {
     // Expand only on userhome, collapse on any other route
@@ -108,7 +115,7 @@ const Navbar = () => {
       icon: <SearchIcon />,
       label: "Search",
       onClick: () => {
-        setOpenCreateModal(true);
+        setShowSearchPanel(true);
       },
     },
     { icon: <ExploreIcon />, label: "Explore", path: "/userhome?tab=explore" },
@@ -125,9 +132,17 @@ const Navbar = () => {
     }
   ];
 
+  const primaryNavItems = navItems.filter(item =>
+    ["Home", "Messenger"].includes(item.label)
+  );
+  const moreNavItems = navItems.filter(item =>
+    !["Home", "Messenger"].includes(item.label)
+  );
+  
+
   return (
     <>
-      <Box
+      {/* <Box
         sx={{
           display: { xs: "flex", sm: "none" },
           position: "fixed",
@@ -146,7 +161,7 @@ const Navbar = () => {
         >
           <MenuIcon />
         </IconButton>
-      </Box>
+      </Box> */}
       <Box
         sx={{
           width: isCollapsed ? "120px" : "380px",
@@ -154,7 +169,7 @@ const Navbar = () => {
           height: "100vh",
           bgcolor: "#073574",
           color: "white",
-          display: { xs: showXSNavbar ? "flex" : "none", sm: "flex", md: "flex", lg: "flex" },
+          display: { xs: "none", sm: "flex", md: "flex", lg: "flex" },
           flexDirection: "column",
           justifyContent: "space-between",
           paddingLeft: isCollapsed ? "8px" : "16px",
@@ -263,7 +278,7 @@ const Navbar = () => {
 
           {/* Navigation Items */}
           <List
-            onClick={() => setShowXSNavbar(false)}
+            onClick={() => {}}
             sx={{
               display: "flex", flexDirection: "column", alignItems: "center", gap: isCollapsed ? 2 : 1, // spacing between icons
               mt: isCollapsed ? 3 : 2,
@@ -378,6 +393,68 @@ const Navbar = () => {
           </Button>
         </Box>
       </Modal>
+
+      <Paper
+  sx={{
+    display: { xs: 'block', sm: 'none' },
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1300,
+  }}
+  elevation={3}
+>
+  <BottomNavigation showLabels sx={{ bgcolor: '#073574' }}>
+    {primaryNavItems.map((item, i) => (
+      <BottomNavigationAction
+        key={i}
+        label={item.label}
+        icon={item.icon}
+        sx={{ color: 'white', '&.Mui-selected': { color: '#f8f2ec' } }}
+        onClick={() => handleNavItem(item)}
+      />
+    ))}
+
+    {/* More Button */}
+    <BottomNavigationAction
+      label="More"
+      icon={<MoreHorizIcon />}
+      sx={{ color: 'white' }}
+      onClick={(e) => setMoreAnchorEl(e.currentTarget)}
+    />
+  </BottomNavigation>
+
+  {/* More Menu */}
+  <Menu
+  anchorEl={moreAnchorEl}
+  open={isMoreMenuOpen}
+  onClose={() => setMoreAnchorEl(null)}
+  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+  transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+  PaperProps={{
+    sx: {
+      background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
+    }
+  }}
+>
+    {moreNavItems.map((item, i) => (
+      <MenuItem
+        key={i}
+        onClick={() => {
+          handleNavItem(item);
+          setMoreAnchorEl(null); // close menu
+        }}
+      >
+        <ListItemIcon sx={{ minWidth: 30 }}>{item.icon}</ListItemIcon>
+        <ListItemText>{item.label}</ListItemText>
+      </MenuItem>
+    ))}
+  </Menu>
+</Paper>
+
+
+
 
     </>
 

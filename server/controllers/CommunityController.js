@@ -26,6 +26,27 @@ const createCommunity = async (req, res) => {
     }
 };
 
+
+const getUserCommunities = async (req, res) => {
+  console.log("🚀 [CommunityController.getUserCommunities] params:", req.params);
+  try {
+    const { userId } = req.params;
+    const communities = await Community.find({
+      "members.userId": mongoose.Types.ObjectId(userId)
+    })
+    .select("name coverImage")
+    .lean();
+    console.log("   ↳ found communities:", communities);
+    res.json(communities);
+  } catch (error) {
+    console.error("   ↳ ERROR fetching communities:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+
 //  Edit Community Details
 const editCommunity = async (req, res) => {
     try {
@@ -260,5 +281,6 @@ module.exports = {
     getAllCommunities,
     getCommunityById,
     deleteCommunity,
-    getCommunityPosts // ✅ Export the delete function
+    getCommunityPosts,
+    getUserCommunities,
 };
