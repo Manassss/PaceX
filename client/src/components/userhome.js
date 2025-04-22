@@ -464,7 +464,7 @@ const UserHome = () => {
       disableGutters
       maxWidth={false}
       sx={{
-        background: "#f8f2ec",
+        background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
         minHeight: "100vh",
         width: '100%',
         overflowX: "hidden",
@@ -473,7 +473,7 @@ const UserHome = () => {
         flexDirection: "row",
         // alignItems: "center",
         left: 0,
-        backgroundColor: "#e5e5e5",
+        // backgroundColor: "#e5e5e5",
         //position: 'sticky'
       }}
     >

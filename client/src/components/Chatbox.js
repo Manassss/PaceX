@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Box, TextField, Button, Typography, List, ListItem, ListItemText, Container, Avatar, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import io from 'socket.io-client';
 import { useAuth } from '../auth/AuthContext';
@@ -19,8 +19,11 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
     const isXs = useMediaQuery(theme.breakpoints.down('sm'));
     const [message, setMessage] = useState("");
     const [chatHistory, setChatHistory] = useState([]);
+    const listRef = useRef(null);
+    const bottomRef = useRef(null);
     const [selectedPost, setSelectedPost] = useState(null);
     const [openPostModal, setOpenPostModal] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,6 +32,21 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
 
         console.log(`Chat with ${userId} -- ${username}`);
         getMessages();
+        const fetchUserStats = async () => {
+            try {
+                if (!userId) {
+                    console.warn("⚠️ userId is undefined, skipping fetchStats.");
+                    return;
+                }
+                console.log(`🔍 Fetching profile for chat header user ID: ${userId}`);
+                const res = await axios.get(`${host}/api/users/profile/${userId}`);
+                console.log("✅ Profile API response:", res.data);
+                setAvatarUrl(res.data.profileImage || '');
+            } catch (err) {
+                console.error("❌ Error fetching chat header user profile:", err);
+            }
+        };
+        fetchUserStats();
 
         socket.on("connect", () => {
             console.log("Connected to server");
@@ -97,6 +115,12 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
         }
     };
 
+    useEffect(() => {
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'auto' });
+        }
+    }, [chatHistory]);
+
     return (
         <Box
             sx={{
@@ -109,7 +133,8 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                 padding: { xs: "10px", sm: "20px" },
                 overflow: 'hidden',
                 boxSizing: 'border-box',
-                minWidth: 0
+                minWidth: 0,
+                mt:0,
             }}
         >
             {/* Chat Header */}
@@ -124,18 +149,17 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
 
                 }}
             >
-                {isXs && (
-                    <IconButton onClick={() => setSelectedUser(null)}>
-                        <ArrowBack />
-                    </IconButton>
-                )}
-                <Avatar sx={{ width: 50, height: 50 }} />
+                <IconButton onClick={() => setSelectedUser(null)} sx={{ mr: 1 }}>
+                    <ArrowBack />
+                </IconButton>
+                <Avatar src={avatarUrl} sx={{ width: 50, height: 50 }} />
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                     {username}
                 </Typography>
             </Box>
             {/* Chat History List */}
             <List
+                ref={listRef}
                 sx={{
                     flexGrow: 1,
                     overflowY: 'auto',
@@ -222,6 +246,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                         )}
                     </ListItem>
                 ))}
+                <div ref={bottomRef} />
             </List>
 
             {/* ✅ SINGLE FIXED MESSAGE INPUT AT BOTTOM */}

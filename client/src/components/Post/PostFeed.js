@@ -66,7 +66,7 @@ const PostFeed = ({
                             sx={{
                                 mb: 2,
                                 width: "100%",
-                                backgroundColor: "#cccccc",
+                                backgroundColor: "transparent",
                                 boxShadow: "none",
                                 py: 2,
                                 borderRadius: "12px",
