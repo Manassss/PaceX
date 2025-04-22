@@ -120,6 +120,7 @@ const ProfilePage = () => {
   const [deleteperm, setdelete] = useState(false);
   const [deleteptemp, setdeletetemp] = useState(false);
   const [archive, setarchive] = useState(false);
+  
   //User Profile Details
   const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   useEffect(() => {
@@ -954,9 +955,13 @@ const ProfilePage = () => {
         }}
       >
 
-        <Grid container spacing={4}>
-          {/* =========================== Main Layout Container Left Side ============================ */}
-          <Grid item xs={12} md={3}>
+<Grid
+  container
+  spacing={4}
+  direction={{ xs: 'column', md: 'column', lg: 'row' }}
+  alignItems={{ xs: 'center', md: 'center', lg: 'flex-start' }}
+>       {/* =========================== Main Layout Container Left Side ============================ */}
+          <Grid item xs={12} lg={3}>
 
             {/* 1. Username + menu */}
             <Box
@@ -1150,7 +1155,7 @@ const ProfilePage = () => {
 
 
           {/* RIGHT COLUMN */}
-          <Grid item xs={12} md={9}>
+          <Grid item xs={12} lg={9}>
             <Box sx={{ mt: 1 }}>
               {/* Tab Bar */}
               <Box mt={4} display="flex" justifyContent="center" gap={6}>
