@@ -83,9 +83,8 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
             roomId
         };
 
-        setChatHistory(prev => [...prev, messageData]); // Add locally for real-time feel
-        socket.emit('send_message', messageData);
-        postMessage();
+        socket.emit('send_message', messageData); // 🔹 only emit
+        postMessage(messageData); // 🔹 send to DB
         setMessage('');
     };
 
@@ -103,17 +102,13 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
         }
     };
 
-    const postMessage = async () => {
+    const postMessage = async (messageData) => {
         try {
-            const postData = {
-                senderId: user._id,
-                receiverId: userId,
-                text: message.trim(),
-            };
-            const res = await axios.post(`${host}/api/chat/send`, postData);
-            console.log("res", res.data.chat)
-
-
+            await axios.post(`${host}/api/chat/send`, {
+                senderId: messageData.senderId,
+                receiverId: messageData.receiverId,
+                text: messageData.text,
+            });
         } catch (err) {
             console.error('Error sending message:', err.response?.data || err.message);
         }
@@ -130,7 +125,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
             sx={{
                 flex: 1,
                 width: { xs: "99%", sm: "85%", md: "85%", lg: '92%' },
-                height: '100%',
+                height: '100vh',
                 background: "#f8f2ec",
                 display: "flex",
                 flexDirection: "column",
@@ -138,7 +133,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                 overflow: 'hidden',
                 boxSizing: 'border-box',
                 minWidth: 0,
-                mt: 0,
+                // mt: 10,
             }}
         >
             {/* Chat Header */}

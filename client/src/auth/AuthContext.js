@@ -83,6 +83,11 @@ export const AuthProvider = ({ children }) => {
                 setLoading(false);
                 return;
             }
+            if (!fbUser.emailVerified) {
+                console.warn("Email not verified, skipping rehydration.");
+                setLoading(false);
+                return;
+            }
 
             const now = Date.now();
             const expiryStr = localStorage.getItem('loginExpiry');
@@ -114,12 +119,12 @@ export const AuthProvider = ({ children }) => {
                 // NO expiry found (e.g. you just refreshed mid‑session)
                 // treat as “fresh login”: re‑hydrate + stamp a new hour
                 try {
-                    const idToken = await fbUser.getIdToken();
-                    const res = await axios.post(
-                        'http://localhost:5001/api/users/login',
-                        { idToken }
-                    );
-                    login(res.data.user);
+                    // const idToken = await fbUser.getIdToken();
+                    // const res = await axios.post(
+                    //     'http://localhost:5001/api/users/login',
+                    //     { idToken }
+                    // );
+                    // login(res.data.user);
                 } catch (err) {
                     console.error('Fresh rehydrate failed:', err);
                     doLogout();
@@ -132,16 +137,7 @@ export const AuthProvider = ({ children }) => {
         return unsub;
     }, []);
 
-    useEffect(() => {
-        if (!user || !user._id) {
-            setPosts([]);
-            return;
-        }
-        // Fetch posts for the logged-in user
-        axios.get(`http://localhost:5001/api/posts/${user._id}`)
-            .then(res => setPosts(res.data))
-            .catch(err => console.error('Error fetching user posts:', err));
-    }, [user]);
+
 
     return (
         <AuthContext.Provider value={{ user, loading, posts, setPosts, login, logout, updateProfile }}>

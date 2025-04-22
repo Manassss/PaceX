@@ -870,6 +870,7 @@ const ProfilePage = () => {
       console.log("payload", payload)
       const res = await axios.delete(`${host}/api/users/delete`, payload)
       setOpenDeleteAccountModal(false)
+      navigate(`/home`)
     } catch (error) {
       console.error("Error deleting account:", error);
     }
