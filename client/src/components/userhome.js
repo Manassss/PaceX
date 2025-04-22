@@ -506,18 +506,18 @@ const UserHome = () => {
 
           }}
         >
-        {/* <StoryBar
+          {/* <StoryBar
           users={users}
           setOpenStoryCamera={setOpenStoryCamera}
           handleProfile={handleProfile}
         /> */}
-        {selectedTab === 'posts' && (
-          <StoryBar
-            users={users}
-            setOpenStoryCamera={setOpenStoryCamera}
-            handleProfile={handleProfile}
-          />
-        )}
+          {selectedTab === 'posts' && (
+            <StoryBar
+              users={users}
+              setOpenStoryCamera={setOpenStoryCamera}
+              handleProfile={handleProfile}
+            />
+          )}
 
           {/**FEED */}
           <PostFeed
@@ -528,6 +528,7 @@ const UserHome = () => {
             expandedPosts={expandedPosts}
             showCommentBox={showCommentBox}
             newComment={newComment}
+            setNewComment={setNewComment}
             handleProfile={handleProfile}
             handleAddComment={handleAddComment}
             toggleCommentBox={toggleCommentBox}
@@ -539,7 +540,7 @@ const UserHome = () => {
             currentImageIndex={currentImageIndex}
             setCurrentImageIndex={setCurrentImageIndex}
             selectedTab={selectedTab}
-            
+
           />
 
         </Box>
