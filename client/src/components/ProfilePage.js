@@ -43,6 +43,7 @@ import { CiMenuKebab } from "react-icons/ci";
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { AiFillLike, AiOutlineLike } from 'react-icons/ai';
+import { FaUpload } from 'react-icons/fa';
 import { FaRegComment, FaShare } from "react-icons/fa6";
 import { Divider } from "@mui/material";
 import PersonOffIcon from '@mui/icons-material/PersonOff';
@@ -53,9 +54,15 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FollowRequest from '../components/Profile/FollowRequest';
 import { host } from '../components/apinfo';
+import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
+import Postmodal from './Post/Postmodal';
+import Chatbox from './Chatbox';
+
 
 
 const ProfilePage = () => {
+  const auth = getAuth();
+  const firebaseUid = auth.currentUser.uid;
   const [userDetails, setUserDetails] = useState({});
   const [blockedUsers, setblockedUsers] = useState({});
   const [posts, setPosts] = useState([]); // Posts uploaded by this user
@@ -74,12 +81,11 @@ const ProfilePage = () => {
   const handleMenuClose = () => { setAnchorEl(null); };
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { id } = useParams();
-  const vistinguser = id === user?._id ? false : true;
-  const auth = getAuth();
-  const userId = id ? id : user?._id;
+  const { id: userId } = useParams();
+  const authUserId = user?._id;
+  const vistinguser = userId !== authUserId;
   const [isConnected, setIsConnected] = useState(false);
   const [isRequested, setIsRequested] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -92,6 +98,7 @@ const ProfilePage = () => {
   const [selectedTab, setSelectedTab] = useState("all"); // "all" | "archived"
   const [deletetype, setDeletetype] = useState("")
   const [openBlockedContacts, setOpenBlockedContacts] = useState(false);
+  const [openEditProfile, setOpenEditProfile] = useState(false);
   const [openShareModal, setOpenShareModal] = useState(false);
   const [postMenuAnchorEl, setPostMenuAnchorEl] = useState(null);
   const [openFollowersModal, setOpenFollowersModal] = useState(false);
@@ -109,8 +116,32 @@ const ProfilePage = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [openFollowRequestModal, setOpenFollowRequestModal] = useState(false);
   const [requestProfiles, setRequestProfiles] = useState([]);
-
+  const [openChatbox, setOpenChatbox] = useState(false);
+  const [deleteperm, setdelete] = useState(false);
+  const [deleteptemp, setdeletetemp] = useState(false);
+  const [archive, setarchive] = useState(false);
   //User Profile Details
+  const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
+  useEffect(() => {
+    if (deleteperm || deleteptemp || archive) {
+      console.log("Postmodal triggered state change");
+
+      setPosts(prevPosts => {
+        return prevPosts.filter(post => {
+          if (deleteperm) return post.postId !== selectedPost?.postId;
+          if (deleteptemp) return post.postId !== selectedPost?.postId;
+          if (archive) return post.postId !== selectedPost?.postId;
+          return true;
+        });
+      });
+      fetchPosts()
+      // Reset flags after handling
+      setdelete(false);
+      setdeletetemp(false);
+      setarchive(false);
+
+    }
+  }, [deleteperm, deleteptemp, archive]);
   const fetchUserProfile = async () => {
     try {
 
@@ -149,14 +180,23 @@ const ProfilePage = () => {
         const profiles = await Promise.all(
           res.data.requests.map(async (reqUserId) => {
             try {
-              const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
+              if (reqUserId != null) {
+                console.log("requserid", reqUserId)
+                const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
 
-              return {
-                _id: userRes.data._id,
-                name: userRes.data.name,
-                username: userRes.data.username,
-                profileImage: userRes.data.profileImage,
-              };
+                return {
+                  _id: userRes.data._id,
+                  name: userRes.data.name,
+                  username: userRes.data.username,
+                  profileImage: userRes.data.profileImage,
+                };
+                // Remove any failed/null results
+                const validProfiles = profiles.filter(p => p !== null);
+                console.log("vvalid", validProfiles)
+                setRequestProfiles(validProfiles);
+              }
+
+
 
             } catch (err) {
               console.error(`Error fetching profile for request user ${reqUserId}:`, err.message);
@@ -165,10 +205,7 @@ const ProfilePage = () => {
           })
         );
 
-        // Remove any failed/null results
-        const validProfiles = profiles.filter(p => p !== null);
-        console.log("vvalid", validProfiles)
-        setRequestProfiles(validProfiles);
+
       } else {
         setRequestProfiles([]); // Clear if no requests
       }
@@ -179,15 +216,30 @@ const ProfilePage = () => {
     }
   };
   useEffect(() => {
-    console.log("id", id);
+    console.log("userId", userId);
     if (!userId) return;
 
     fetchUserProfile();
     fetchblockedusers();
 
+  }, [userId, user]);
+
+
+  const [myCommunities, setMyCommunities] = useState([]);
+
+  console.log("ProfilePage rendered — viewing profile:", userId, "logged-in user:", user?._id);
+  console.log("Current myCommunities state:", myCommunities);
+
+  useEffect(() => {
+    if (!userId) return;   // userId comes from useParams()
+    console.log("👀 loading communities for profile userId:", userId);
+    axios.get(`${host}/api/communities/user/${userId}`)
+      .then(res => {
+        console.log("← got communities for", userId, ":", res.data);
+        setMyCommunities(res.data);
+      })
+      .catch(err => console.error("Communities fetch error:", err));
   }, [userId]);
-
-
 
   // Handle delete button click
   const handleDeleteclick = () => {
@@ -429,7 +481,6 @@ const ProfilePage = () => {
             : p
         )
       );
-
       // update the single‐post modal if it’s open
       setSelectedPost((prev) =>
         prev && prev.postId === postId
@@ -467,54 +518,55 @@ const ProfilePage = () => {
     setLoading(false);
   };
 
+  const fetchPosts = async () => {
+    const profileUserId = userId || user?._id;
+    try {
+      const res = await axios.get(`${host}/api/posts/${profileUserId}`);
+      console.log("🔍 API Response:", res.data); // ✅ Debugging log
 
+
+      // Filter posts by the current user
+      const transformedPosts = res.data
+        .map(post => ({
+          content: post.content,
+          createdAt: new Date(post.createdAt).toLocaleString(),
+          dislikes: post.dislikes,
+          likes: post.likes,
+          postimg: post.postimg,
+          userId: post.userId,
+          userName: post.userName,
+          postId: post._id,
+          images: post.images,
+          archived: post.archived,
+          tempdelete: post.tempdelete
+        }));
+
+      // Fetch comments for each post and attach them
+      const postsWithComments = await Promise.all(
+        transformedPosts.map(async (post) => {
+          try {
+            const commentsRes = await axios.get(`${host}/api/comment/${post.postId}`);
+            return { ...post, comments: commentsRes.data }; // Attach fetched comments
+          } catch (commentErr) {
+            console.error(`Error fetching comments for post ${post.postId}:`, commentErr.message);
+            return { ...post, comments: [] }; // Return empty comments if error occurs
+          }
+        })
+      );
+
+      setPosts(postsWithComments);
+    } catch (err) {
+      console.error('Error fetching posts:', err.message);
+    }
+  };
 
   // Fetch posts for this user
   useEffect(() => {
-    if (!userId) return;
-    const fetchPosts = async () => {
-      try {
-        const res = await axios.get(`${host}/api/posts/${id}`);
-        console.log("🔍 API Response:", res.data); // ✅ Debugging log
+    if (!userId && !user?._id) return;
 
-
-        // Filter posts by the current user
-        const transformedPosts = res.data
-          .map(post => ({
-            content: post.content,
-            createdAt: new Date(post.createdAt).toLocaleString(),
-            dislikes: post.dislikes,
-            likes: post.likes,
-            postimg: post.postimg,
-            userId: post.userId,
-            userName: post.userName,
-            postId: post._id,
-            images: post.images,
-            archived: post.archived,
-            tempdelete: post.tempdelete
-          }));
-
-        // Fetch comments for each post and attach them
-        const postsWithComments = await Promise.all(
-          transformedPosts.map(async (post) => {
-            try {
-              const commentsRes = await axios.get(`${host}/api/comment/${post.postId}`);
-              return { ...post, comments: commentsRes.data }; // Attach fetched comments
-            } catch (commentErr) {
-              console.error(`Error fetching comments for post ${post.postId}:`, commentErr.message);
-              return { ...post, comments: [] }; // Return empty comments if error occurs
-            }
-          })
-        );
-
-        setPosts(postsWithComments);
-      } catch (err) {
-        console.error('Error fetching posts:', err.message);
-      }
-    };
 
     fetchPosts();
-  }, [userId]);
+  }, [userId, user]);
 
   // Fetch all stories then filter those belonging to this user
   useEffect(() => {
@@ -571,8 +623,6 @@ const ProfilePage = () => {
     });
   };
 
-  // Callback for camera capture upload
-  // helper: converts a proper dataURL to a Blob
   function dataURLtoBlob(dataURL) {
     const parts = dataURL.split(',');
     if (parts.length !== 2) {
@@ -600,34 +650,45 @@ const ProfilePage = () => {
 
     if (typeof media === 'string') {
       if (media.startsWith('data:')) {
-        // true data URL
         previewUrl = media;
         fileForUpload = dataURLtoBlob(media);
-
       } else if (media.startsWith('blob:')) {
-        // blob URL: fetch the blob behind it
         previewUrl = media;
         fileForUpload = await fetch(media).then(res => res.blob());
-
-      } else {
-        // some other URL (e.g. remote image)—we’ll preview but not upload
-        previewUrl = media;
-        console.warn('Camera returned a non-blob URL; skipping upload.');
-        setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+      } else if (media.startsWith('https://firebasestorage.googleapis.com')) {
+        setFormData(prev => ({ ...prev, profileImage: media }));
         setOpenCamera(false);
         return;
+      } else {
+        try {
+          const response = await fetch(media);
+          const blob = await response.blob();
+          previewUrl = URL.createObjectURL(blob);
+          setFormData(prev => ({ ...prev, profileImage: previewUrl }));
+          setSelectedFile(blob);
+          setOpenCamera(false);
+          return;
+        } catch (err) {
+          console.error("Error fetching image for upload:", err);
+          alert("Failed to process the camera image.");
+          return;
+        }
       }
-
     } else {
-      // already a Blob/File
       previewUrl = URL.createObjectURL(media);
       fileForUpload = media;
     }
 
-    // store for both preview and upload
     setFormData(prev => ({ ...prev, profileImage: previewUrl }));
     setSelectedFile(fileForUpload);
     setOpenCamera(false);
+  };
+
+  // Handle file selection from device
+  const handleFileSelect = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setFormData(prev => ({ ...prev, profileImage: previewUrl }));
   };
 
 
@@ -726,6 +787,60 @@ const ProfilePage = () => {
       console.error("Error unblocking user:", err);
     }
   };
+
+
+  const handleUpdateProfile = async () => {
+    console.log("handleUpdateProfile called with formData", formData);
+    try {
+      // 1. Update Firebase Auth profile
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn("handleUpdateProfile: no currentUser");
+        setOpenEditProfile(false);
+        return;
+      }
+      console.log("handleUpdateProfile: updating Firebase Auth profile");
+      await firebaseUpdateProfile(currentUser, {
+        displayName: formData.name,
+        photoURL: formData.profileImage
+      });
+      console.log("handleUpdateProfile: firebaseUpdateProfile succeeded");
+
+      // 2. Persist to backend
+      console.log("handleUpdateProfile: updating backend database");
+      const response = await axios.put(
+        `${host}/api/users/profile/${formData.id}`,
+        {
+          name: formData.name,
+          username: formData.username,
+          bio: formData.bio,
+          profileImage: formData.profileImage
+        }
+      );
+      console.log("handleUpdateProfile: backend updated", response.data);
+      console.log("handleUpdateProfile: applying new values locally");
+      // Update local state immediately
+      const updatedDetails = {
+        ...userDetails,
+        name: formData.name,
+        username: formData.username,
+        bio: formData.bio,
+        profileImage: formData.profileImage
+      };
+      setUserDetails(updatedDetails);
+      setFormData(updatedDetails);
+      console.log("handleUpdateProfile: local state updated", updatedDetails);
+
+      // 4. Close dialog
+      setOpenEditProfile(false);
+      console.log("handleUpdateProfile: dialog closed");
+    } catch (err) {
+      console.error("handleUpdateProfile error:", err);
+      alert("Failed to update profile.");
+    }
+  };
+
   const handleBlock = async () => {
     try {
       const payload = {
@@ -778,15 +893,36 @@ const ProfilePage = () => {
     setDeleteConfirmation(true);
     handleMenuClose();
   };
+  const handledeleteAccount = async () => {
+    try {
+      const payload = {
+        data: {
+          userId: user?._id,
+          firebaseUid: firebaseUid
+        }
+      }
+      console.log("🧨 Deleting Firebase user with UID:", firebaseUid);
+      console.log("Type of firebaseUid:", typeof firebaseUid);
+      console.log("Length of UID:", firebaseUid?.length);
+      console.log("payload", payload)
+      const res = await axios.delete(`${host}/api/users/delete`, payload)
+      setOpenDeleteAccountModal(false)
+      navigate(`/home`)
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  }
 
 
   // At the top of your render (or just above your return)
+  // at the top of your render (or above it)
   const filteredPosts =
     selectedTab === "recentlyDeleted"
-      ? posts.filter(post => post.tempdelete)                              // deleted
+      ? posts.filter(post => post.tempdelete)
       : selectedTab === "archived"
-        ? posts.filter(post => post.archived && !post.tempdelete)         // archived but not deleted
-        : posts.filter(post => !post.archived && !post.tempdelete);       // normal posts
+        ? posts.filter(post => post.archived && !post.tempdelete)
+        : posts.filter(post => !post.archived && !post.tempdelete);
+
 
 
 
@@ -804,7 +940,9 @@ const ProfilePage = () => {
     Array.isArray(selectedPost.likes) &&
     selectedPost.likes.includes(user._id);
 
-
+  const handlechatopen = () => {
+    setOpenChat(true);
+  }
 
   return (
     <>
@@ -816,14 +954,10 @@ const ProfilePage = () => {
         }}
       >
 
-        <Grid container spacing={4} direction={isPhone ? 'column' : 'row'}>
+        <Grid container spacing={4}>
           {/* =========================== Main Layout Container Left Side ============================ */}
-          <Grid
-            item
-            xs={12}
-            md={3}
-            sx={{ pb: 3 }}
-          >
+          <Grid item xs={12} md={3}>
+
             {/* 1. Username + menu */}
             <Box
               sx={{
@@ -855,11 +989,17 @@ const ProfilePage = () => {
                     <MenuItem key="blocked" onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
                       Blocked Contacts
                     </MenuItem>,
-                    <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
-                      {editMode ? "Cancel Edit Profile" : "Edit Profile"}
-                    </MenuItem>,
+                    // <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
+                    //   {editMode ? "Cancel Edit Profile" : "Edit Profile"}
+                    // </MenuItem>,
                     <MenuItem key="requests" onClick={() => { setOpenFollowRequestModal(true); handleMenuClose(); }}>
                       Follow Requests
+                    </MenuItem>,
+                    <MenuItem key="edit" onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
+                      Edit Profile
+                    </MenuItem>,
+                    <MenuItem key="delete" onClick={() => { setOpenDeleteAccountModal(true); handleMenuClose(); }}>
+                      Delete Account
                     </MenuItem>
                   ]
                   : [
@@ -876,7 +1016,7 @@ const ProfilePage = () => {
             </Box>
 
             {/* 2. Avatar */}
-            <Box sx={{ width: 250, height: 250, ml: 'auto', mt: 2 }}>
+            <Box sx={{ width: 250, height: 250, ml: 'auto', mt: 2, }}>
               <Avatar
                 src={userDetails.profileImage}
                 sx={{
@@ -914,7 +1054,7 @@ const ProfilePage = () => {
               }}
             >
               {[
-                { label: "Posts", value: userDetails.postsCount },
+                { label: "Posts", value: filteredPosts.length },
                 { label: "Followers", value: userDetails.followersCount },
                 { label: "Following", value: userDetails.followingCount },
               ].map(({ label, value }) => (
@@ -927,6 +1067,29 @@ const ProfilePage = () => {
                 </Box>
               ))}
             </Box>
+            {/* <Box mt={4}>
+              <Typography variant="subtitle1" fontWeight="bold">Communities</Typography>
+              {console.log("👀 rendering myCommunities:", myCommunities)}
+              {myCommunities.length === 0
+                ? <Typography variant="body2" color="text.secondary">
+                  Not part of any communities yet.
+                </Typography>
+                : myCommunities.map((c) => (
+                  <ListItem
+                    key={c._id}
+                    disablePadding
+                    onClick={() => navigate(`/community/${c._id}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar src={c.coverImage} />
+                    </ListItemAvatar>
+                    <ListItemText primary={c.name} />
+                  </ListItem>
+                ))
+              }
+            </Box> */}
+
 
             {/* 6. Connect / Follow button */}
             {vistinguser && (
@@ -960,7 +1123,7 @@ const ProfilePage = () => {
                 {/* Message */}
                 <Button
                   variant="outlined"
-                  onClick={() => setOpenChat(true)}
+                  onClick={handlechatopen}
                   sx={{
                     borderRadius: 2,
                     px: 2,
@@ -978,6 +1141,8 @@ const ProfilePage = () => {
                 </Button>
               </Box>
 
+
+
             )}
           </Grid>
 
@@ -985,16 +1150,7 @@ const ProfilePage = () => {
 
 
           {/* RIGHT COLUMN */}
-          <Grid
-            item
-            xs={12}
-            md={8.5}            // 3 + 9 = 12 columns
-            sx={{
-              borderLeft: { xs: 'none', md: '1px solid' },
-              // match the left column’s padding on the inner edge
-              ml: { xs: 2, md: 3 },
-            }}
-          >
+          <Grid item xs={12} md={9}>
             <Box sx={{ mt: 1 }}>
               {/* Tab Bar */}
               <Box mt={4} display="flex" justifyContent="center" gap={6}>
@@ -1063,12 +1219,17 @@ const ProfilePage = () => {
                       <Grid item xs={4} key={idx}>
                         <Box
                           onClick={() => handlePostClick(post)}
-                          sx={{ width: '100%', aspectRatio: '1/1', cursor: 'pointer', overflow: 'hidden' }}
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1/1',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                          }}
                         >
                           <img
                             src={post.images?.[0] || post.postimg}
                             alt="post"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                           />
                         </Box>
                       </Grid>
@@ -1105,193 +1266,11 @@ const ProfilePage = () => {
               )}
             </Box>
           </Grid>
-
         </Grid>
-
-        {/* Post Modal */}
-        {selectedPost && (
-          <Modal
-            open={openPostModal}
-            onClose={() => setOpenPostModal(false)}
-            BackdropProps={{
-              sx: { backdropFilter: "blur(10px)", backgroundColor: "rgba(0,0,0,0.4)" }
-            }}
-          >
-            <Box
-              sx={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: 800,
-                height: 600,
-                bgcolor: "#fff",
-                borderRadius: 2,
-                boxShadow: 3,
-                p: 0,
-                display: "flex",
-              }}
-            >
-              <Grid container sx={{ height: "100%" }}>
-                {/* ─── LEFT COLUMN: IMAGE ─── */}
-                <Grid item xs={6} sx={{ backgroundColor: "#000", position: "relative" }}>
-                  <Box
-                    component="img"
-                    src={selectedPost.images?.[currentImageIndex] || selectedPost.postimg}
-                    sx={{ width: "100%", height: "100%", objectFit: "contain" }}
-                  />
-                </Grid>
-
-                {/* ─── RIGHT COLUMN: CAPTION, ICONS, COMMENTS ─── */}
-                <Grid
-                  item
-                  xs={6}
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-
-                  }}
-                >
-                  {/* Caption */}
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {selectedPost.content}
-                    </Typography>
-                  </Box>
-
-                  {/* ─── Like / Comment / Share ─── */}
-                  <Box
-                    sx={{
-                      px: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 3,
-                    }}
-                  >
-                    {/* LIKE */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <IconButton onClick={() => handleLike(selectedPost.postId)} sx={{ p: 0 }}>
-                        {isLiked
-                          ? <AiFillLike size={20} color="#073574" />   // filled + your blue
-                          : <AiOutlineLike size={20} />                // outline default
-                        }
-                      </IconButton>
-                      <Typography variant="body2">
-                        {Array.isArray(selectedPost.likes)
-                          ? selectedPost.likes.length
-                          : selectedPost.likes || 0}
-                      </Typography>
-                    </Box>
+        { /** */}
 
 
-                    {/* COMMENT */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      <FaRegComment size={18} />
-                      <Typography variant="body2">
-                        {comments[selectedPost.postId]?.length || 0}
-                      </Typography>
-                    </Box>
 
-                    {/* SHARE */}
-                    <IconButton sx={{ p: 0 }}>
-                      <GiShare size={18} />
-                    </IconButton>
-                  </Box>
-                  {/* Three-dot menu for owner */}
-                  {selectedPost?.userId === user?._id && (
-                    <IconButton
-                      onClick={handlePostMenuOpen}
-                      sx={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}
-                    >
-                      <CiMenuKebab size={24} />
-                    </IconButton>
-                  )}
-                  <Menu
-                    anchorEl={postMenuAnchorEl}
-                    open={Boolean(postMenuAnchorEl)}
-                    onClose={handlePostMenuClose}
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        handleDeleteclick();
-                        handlePostMenuClose();
-                      }}
-                    >
-                      Delete Post
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        handleArchivePost();
-                        handlePostMenuClose();
-                      }}
-                    >
-                      {selectedPost.archived ? 'Unarchive Post' : 'Archive Post'}
-                    </MenuItem>
-                  </Menu>
-
-                  <Divider sx={{ my: 1 }} />
-
-                  {/* Scrollable comments list */}
-                  <Box
-                    sx={{
-                      flexGrow: 1,
-                      overflowY: "auto",
-                      px: 2,
-                    }}
-                  >
-                    {comments[selectedPost.postId]?.map((c, i) => (
-                      <Box key={i} sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                        <Avatar src={c.userimg} sx={{ width: 32, height: 32, mr: 1 }} />
-                        <Box>
-                          <Typography variant="subtitle2">{c.username}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {c.text}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )) || (
-                        <Typography color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
-                          No comments yet.
-                        </Typography>
-                      )}
-                  </Box>
-
-                  {/* Add comment input */}
-                  <Box
-                    sx={{
-                      p: 2,
-                      display: "flex",
-                      gap: 1,
-                      borderTop: "1px solid #eee",
-                    }}
-                  >
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Add a comment…"
-                      value={newComment[selectedPost.postId] || ""}
-                      onChange={e =>
-                        setNewComment({ ...newComment, [selectedPost.postId]: e.target.value })
-                      }
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: "20px" } }}
-                    />
-                    <Button
-                      variant="contained"
-                      onClick={() => handleAddComment(selectedPost.postId)}
-                      sx={{ borderRadius: "20px" }}
-                    >
-                      Post
-                    </Button>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
-          </Modal>
-
-
-        )}
 
         {/* Followers Modal */}
         <Modal open={openFollowersModal} onClose={() => setOpenFollowersModal(false)}>
@@ -1376,7 +1355,16 @@ const ProfilePage = () => {
           </Box>
         </Modal>
 
-
+        <Postmodal
+          selectedPost={selectedPost}
+          openPostModal={openPostModal}
+          setOpenPostModal={setOpenPostModal}
+          currentImageIndex={currentImageIndex}
+          user={user}
+          setarchive={setarchive}
+          setdelete={setdelete}
+          setdeletetemp={setdeletetemp}
+        />
 
 
         {/* Delete Confirmation Modal */}
@@ -1405,105 +1393,168 @@ const ProfilePage = () => {
           </Box>
         </Modal>
 
-
-        {/* Modal for Story View */}
-        <Modal open={openStory} onClose={() => setOpenStory(false)}>
-          <Box
-            sx={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 430,
-              height: 800,
-              bgcolor: "black",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: 2,
-              overflow: "hidden",
-              mt: 6,
-              position: "relative",
-            }}
-          >
-            {userStories.length > 0 && (
-              <img
-                src={userStories[currentIndexStory].mediaUrl}
-                alt={`Story ${currentIndexStory + 1}`}
-                style={{
-                  width: 430,
-                  height: 800,
-                  objectFit: "cover",
-                  borderRadius: 10,
-                }}
-              />
-            )}
+        <Dialog
+          open={openBlockedContacts}
+          onClose={() => setOpenBlockedContacts(false)}
+          fullWidth
+          maxWidth="xs"
+        >
+          <DialogTitle sx={{ fontWeight: 'bold', position: 'relative', textAlign: 'center', pb: 1 }}>
+            Blocked Contacts
             <IconButton
-              onClick={() => setOpenStory(false)}
-              sx={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                bgcolor: "white",
-                p: 3,
-                borderRadius: 2,
-                textAlign: "center",
-                width: "400px",
-                maxHeight: "500px",
-                overflowY: "auto",
-              }}
-            ></IconButton>
-            <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
-            <List>
-              {blockedUsers?.length > 0 ? (
-                blockedUsers.map((blockedUser, index) => (
-                  <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar src={blockedUser.profileImage} />
-                      <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
-                    </Box>
+              aria-label="close"
+              onClick={() => setOpenBlockedContacts(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {blockedUsers && blockedUsers.length > 0 ? (
+              <List disablePadding>
+                {blockedUsers.map((b) => (
+                  <ListItem
+                    key={b.id}
+                    sx={{
+                      mb: 1,
+                      borderRadius: 1,
+                      '&:hover': { backgroundColor: 'action.hover' },
+                      alignItems: 'center'
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar src={b.profileImage} />
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={b.name}
+                      secondary={`@${b.username}`}
+                    />
                     <Button
                       variant="outlined"
-                      color="error"
                       size="small"
-                      onClick={() => handleUnblock(blockedUser.id)}
+                      onClick={() => handleUnblock(b.id)}
+                      sx={{ textTransform: 'none' }}
                     >
                       Unblock
                     </Button>
                   </ListItem>
-                ))
-              ) : (
-                <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
-              )}
-            </List>
-          </Box>
-        </Modal>
-
-        {/* sharemodal*/}
-
-        <Typography variant="h6" sx={{ mb: 2 }}>Blocked Contacts</Typography>
-        <List>
-          {blockedUsers?.length > 0 ? (
-            blockedUsers.map((blockedUser, index) => (
-              <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar src={blockedUser.profileImage} />
-                  <ListItemText primary={blockedUser.name} secondary={blockedUser.username} />
-                </Box>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body2" color="text.secondary" align="center">
+                You have no blocked contacts.
+              </Typography>
+            )}
+          </DialogContent>
+        </Dialog>
+        <Dialog
+          open={openEditProfile}
+          onClose={() => setOpenEditProfile(false)}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle sx={{ fontWeight: 'bold' }}>Edit Profile</DialogTitle>
+          <DialogContent dividers>
+            {!selectedFile && (
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, justifyContent: 'center' }}>
                 <Button
                   variant="outlined"
-                  color="error"
-                  size="small"
-                  onClick={() => handleUnblock(blockedUser.id)}
+                  startIcon={<PhotoCamera />}
+                  onClick={() => setOpenCamera(true)}
+                  sx={{ textTransform: 'none' }}
                 >
-                  Unblock
+                  Use Camera
                 </Button>
-              </ListItem>
-            ))
-          ) : (
-            <Typography sx={{ color: "gray", fontStyle: "italic" }}>No blocked users</Typography>
-          )}
-        </List>
+                <Button
+                  variant="outlined"
+                  startIcon={<CloudUploadIcon />}
+                  component="label"
+                  sx={{ textTransform: 'none' }}
+                >
+                  Upload from Device
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileSelect(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </Button>
+              </Box>
+            )}
+
+            {/* Preview + Discard + Accept */}
+            {selectedFile && (
+              <Box sx={{ mb: 2, textAlign: 'center' }}>
+                <Typography variant="body2">Selected file: {selectedFile.name}</Typography>
+                <Box
+                  component="img"
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="Preview"
+                  sx={{
+                    width: '100%',
+                    maxHeight: 200,
+                    objectFit: 'contain',
+                    mt: 1,
+                    borderRadius: 2,
+                  }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
+                  <Button
+                    variant="text"
+                    color="error"
+                    onClick={() => setSelectedFile(null)}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={async () => {
+                      await handleImageUpload();
+                    }}
+                  >
+                    Accept
+                  </Button>
+                </Box>
+              </Box>
+            )}
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Name"
+                name="name"
+                fullWidth
+                value={formData.name || ''}
+                onChange={handleChange}
+              />
+              <TextField
+                label="Username"
+                name="username"
+                fullWidth
+                value={formData.username || ''}
+                onChange={handleChange}
+              />
+              <TextField
+                label="Bio"
+                name="bio"
+                fullWidth
+                multiline
+                rows={3}
+                value={formData.bio || ''}
+                onChange={handleChange}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenEditProfile(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleUpdateProfile}>
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
 
 
         {/* sharemodal*/}
@@ -1546,6 +1597,48 @@ const ProfilePage = () => {
           requestProfiles={requestProfiles}
           handleRespondRequest={handleRespondRequest}
         />
+        {/* ChatBox Model */}
+        <Modal open={openChat} onClose={() => setOpenChat(false)}>
+          <Box width="50%" height="50%" position="absolute" left='28%' top='25%' >
+
+            {userDetails && (
+              <>
+                <Chatbox userId={userDetails.id} username={userDetails.username} />
+              </>
+            )}
+
+          </Box>
+        </Modal>
+
+        {/*delete confirmation modal */}
+        <Modal open={openDeleteAccountModal} onClose={() => setOpenDeleteAccountModal(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: "white",
+              p: 3,
+              borderRadius: 2,
+              textAlign: "center"
+            }}
+          >
+            <Typography variant="h6">Are you sure you want to delete your account?</Typography>
+            <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handledeleteAccount}
+              >
+                Yes, Delete My Account
+              </Button>
+              <Button variant="outlined" onClick={() => setOpenDeleteAccountModal(false)}>
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
       </Container>
     </>
   );

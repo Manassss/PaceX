@@ -8,17 +8,32 @@ import React, {
 } from 'react';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import axios from 'axios';
+import { updateProfile as fbUpdate } from "firebase/auth";
+//const host = process.env.REACT_APP_PROD_API_BASE_URL;
+const host = process.env.REACT_APP_DEV_API_BASE_URL
+async function updateProfile(updates) {
+    const auth = getAuth();
+    if (!auth.currentUser) throw new Error("No user");
+    return fbUpdate(auth.currentUser, {
+        displayName: updates.name,
+        photoURL: updates.profileImage
+    });
+}
+
 
 const AuthContext = createContext({
     user: null,
     loading: true,
     login: () => { },
-    logout: () => { }
+    logout: () => { },
+    updateProfile,
+
 });
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [posts, setPosts] = useState([]);
     const logoutTimer = useRef(null);
 
     const clearTimer = () => {
@@ -38,6 +53,7 @@ export const AuthProvider = ({ children }) => {
     // called by your Login form after backend login succeeds
     const login = (apiUser) => {
         setUser(apiUser);
+        setPosts(apiUser.posts || []);
 
         // stamp a hard expiry 1h from now
         const now = Date.now();
@@ -67,6 +83,11 @@ export const AuthProvider = ({ children }) => {
                 setLoading(false);
                 return;
             }
+            if (!fbUser.emailVerified) {
+                console.warn("Email not verified, skipping rehydration.");
+                setLoading(false);
+                return;
+            }
 
             const now = Date.now();
             const expiryStr = localStorage.getItem('loginExpiry');
@@ -78,10 +99,11 @@ export const AuthProvider = ({ children }) => {
                     try {
                         const idToken = await fbUser.getIdToken();
                         const res = await axios.post(
-                            'http://localhost:5001/api/users/login',
+                            `${host}/api/users/login`,
                             { idToken }
                         );
                         setUser(res.data.user);
+                        setPosts(res.data.user.posts || []);
 
                         // schedule the remaining time
                         scheduleLogout(expiry - now);
@@ -97,12 +119,12 @@ export const AuthProvider = ({ children }) => {
                 // NO expiry found (e.g. you just refreshed mid‑session)
                 // treat as “fresh login”: re‑hydrate + stamp a new hour
                 try {
-                    const idToken = await fbUser.getIdToken();
-                    const res = await axios.post(
-                        'http://localhost:5001/api/users/login',
-                        { idToken }
-                    );
-                    login(res.data.user);
+                    // const idToken = await fbUser.getIdToken();
+                    // const res = await axios.post(
+                    //     'http://localhost:5001/api/users/login',
+                    //     { idToken }
+                    // );
+                    // login(res.data.user);
                 } catch (err) {
                     console.error('Fresh rehydrate failed:', err);
                     doLogout();
@@ -115,8 +137,10 @@ export const AuthProvider = ({ children }) => {
         return unsub;
     }, []);
 
+
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, posts, setPosts, login, logout, updateProfile }}>
             {/* don’t render children until we know if we auto‑logged in or out */}
             {!loading && children}
         </AuthContext.Provider>

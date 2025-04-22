@@ -147,7 +147,7 @@ const StoryBar = ({
         <Box
             sx={{
                 width: "100%",
-                maxWidth: { xs: "95%", sm: "85%", md: "60%", lg: "45%" },
+                maxWidth: { xs: "90%", sm: "65%", md: "60%", lg: "45%" },
                 display: "flex",
                 alignItems: "center",
                 // justifyContent: "center",6
@@ -209,7 +209,7 @@ const StoryBar = ({
                                         right: 25,
                                         backgroundColor: "white",
                                         borderRadius: "50%",
-                                        fontSize: 18,
+                                        fontSize: { xs: 15, sm: 18, md: 18, lg: 18 },
                                         color: "#ff4500",
                                     }}
                                 />
@@ -222,8 +222,8 @@ const StoryBar = ({
                                 <AddIcon
                                     sx={{
                                         position: "absolute",
-                                        top: 55,
-                                        right: 18,
+                                        top: 75,
+                                        right: 25,
                                         backgroundColor: "white",
                                         borderRadius: "50%",
                                         fontSize: { xs: 15, sm: 18, md: 18, lg: 18 },
@@ -292,7 +292,22 @@ const StoryBar = ({
                     if (currentIndexStory < currentStories.length - 1) {
                         setCurrentIndexStory(i => i + 1);
                     } else {
-                        setOpenStory(false);
+                        const currentUserIndex = sortedUniqueUserStories.findIndex(u => u.userId === storyUser?.id || u.userId === storyUser?._id);
+                        const nextUserGroup = sortedUniqueUserStories[currentUserIndex + 1];
+                        if (nextUserGroup) {
+                            const nextUser = users.find(u => u.id === nextUserGroup.userId);
+                            if (nextUser) {
+                                setOpenStory(false); // Close current viewer
+                                setTimeout(() => {
+                                    setStoryUser(nextUser);
+                                    setCurrentStories(nextUserGroup.stories);
+                                    setCurrentIndexStory(0);
+                                    setOpenStory(true); // Re-open to trigger progress
+                                }, 100);
+                            }
+                        } else {
+                            setOpenStory(false);
+                        }
                     }
                 }}
             />
@@ -306,7 +321,7 @@ const StoryBar = ({
                         p: 2,
                     }}
                 >
-                    <CameraCapture onMediaUpload={handleImageUpload} />
+                    <CameraCapture userId={user._id} onMediaUpload={handleImageUpload} />
                 </Box>
             </Modal>
         </Box>

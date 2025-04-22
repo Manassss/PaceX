@@ -129,19 +129,26 @@ const RecommendedUsers = ({ users, visibleCount, setVisibleCount, handleFollowTo
                                 </Link>
 
                                 <Button
-                                    variant={isFollowing ? "outlined" : "contained"}
-                                    color="secondary"
-                                    size="small"
-                                    sx={{
-                                        borderRadius: "20px",
-                                        textTransform: "none",
-                                        fontSize: "12px",
-                                        minWidth: "90px",
-                                    }}
-                                    onClick={() => handleFollowToggle(profile.id)}
-                                >
-                                    {isFollowing ? "Disconnect" : "Connect"}
-                                </Button>
+  variant={isFollowing ? "outlined" : "contained"}
+  size="small"
+  sx={{
+    borderRadius: "20px",
+    textTransform: "none",
+    fontSize: "12px",
+    minWidth: "90px",
+    ...( !isFollowing && {
+      background: "linear-gradient(to bottom, #f7f4ef, #e6ddd1)",
+      color: "#000",
+      "&:hover": {
+        background: "linear-gradient(to bottom, #e6ddd1, #f7f4ef)"
+      }
+    })
+  }}
+  onClick={() =>{ handleFollowToggle(profile.id); setRecommendedProfiles(prev => prev.filter(p => p.id !== profile.id));} }
+>
+  {isFollowing ? "Disconnect" : "Connect"}
+</Button>
+
                             </ListItem>
                         );
                     })}

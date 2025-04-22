@@ -258,8 +258,33 @@ const getsavedPost = async (req, res) => {
   // }
 }
 
+const getRandomPosts = async (req, res) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: "Valid userId query parameter is required." });
+  }
+
+  try {
+    const posts = await Post.aggregate([
+      {
+        $match: {
+          userId: { $ne: userId },
+          archived: false,
+          tempdelete: false
+        }
+      },
+      { $sample: { size: 20 } }
+    ]);
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("❌ Error fetching random posts:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 module.exports = {
-  createPost, getPosts, likePost, addComment,
+  createPost, getPosts, likePost, addComment, getRandomPosts,
   deletePost, togglearchive, toggletempdelete, getuserfeed, getuserPosts, toggleSavedPost
 };

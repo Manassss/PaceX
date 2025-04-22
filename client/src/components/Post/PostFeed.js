@@ -1,4 +1,4 @@
-import React from "react";
+import { React, useState, useEffect } from "react";
 import {
     Box,
     Typography,
@@ -14,7 +14,10 @@ import { FaRegComment, FaShare } from "react-icons/fa6";
 import { BsFillSaveFill } from "react-icons/bs";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-
+import axios from "axios";
+import { host } from '../apinfo';
+import { useAuth } from "../../auth/AuthContext";
+import { useLocation } from 'react-router-dom';
 const PostFeed = ({
     posts,
     users,
@@ -32,12 +35,60 @@ const PostFeed = ({
     handleOpenLikeModal,
     setSelectedPost,
     setOpenPostShareModal,
-    currentImageIndex,
-    setCurrentImageIndex
 }) => {
     const isMobile = useMediaQuery('(max-width: 480px)');
     const isTablet = useMediaQuery('(max-width: 960px)');
     console.log("length of posts", posts.length);
+    const [imageIndex, setImageIndex] = useState(0);
+    //const { user } = useAuth()
+    const [randomPosts, setRandomPosts] = useState([]);
+    //const [selectedTab, setSelectedTab] = useState(posts?.length === 0 ? 'explore' : 'posts');
+    const initialTab = new URLSearchParams(window.location.search).get('tab') || (posts?.length === 0 ? 'explore' : 'posts');
+    const [selectedTab, setSelectedTab] = useState(initialTab);
+
+    const displayPosts = selectedTab === 'explore' ? randomPosts : posts;
+    const fetchrandomPosts = async () => {
+        try {
+            const payload = { userId: user?._id };
+            const res = await axios.post(`${host}/api/posts/random`, payload);
+            const data = res.data;
+
+            const postsWithComments = await Promise.all(
+                data.map(async (post) => {
+                    const commentsRes = await axios.get(`${host}/api/comment/${post._id}`);
+                    return {
+                        content: post.content,
+                        createdAtFormatted: new Date(post.createdAt).toLocaleString(),
+                        rawCreatedAt: post.createdAt,
+                        dislikes: post.dislikes || [],
+                        likes: Array.isArray(post.likes) ? post.likes : [],
+                        postimg: post.postimg,
+                        userId: post.userId,
+                        userName: post.userName,
+                        postId: post._id,
+                        comments: commentsRes.data,
+                        images: post.images
+                    };
+                })
+            );
+
+            setRandomPosts(postsWithComments);
+            console.log("random posts", postsWithComments);
+        } catch (error) {
+            console.error("❌ Error fetching random posts:", error);
+        }
+    }
+    useEffect(() => {
+        fetchrandomPosts();
+    }, [])
+    const location = useLocation();
+
+    useEffect(() => {
+        const tabFromUrl = new URLSearchParams(location.search).get('tab');
+        if (tabFromUrl && tabFromUrl !== selectedTab) {
+            setSelectedTab(tabFromUrl);
+        }
+    }, [location.search]);
     return (
         <Box
             sx={{
@@ -49,23 +100,71 @@ const PostFeed = ({
                 overflowY: "hidden",
 
                 alignItems: 'center',
-                mt: '20%'
+                mt: selectedTab === "posts" ? "20%" : 0,
             }}
         >
-            {[...posts]
+            {/* <Box
+                sx={{
+                    display: 'flex',
+                    width: '100%',
+                    maxWidth: { xs: "70%", sm: "75%", md: "80%", lg: "95%" },
+                    mx: "auto",
+                    mb: 2,
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    boxShadow: 2,
+                }}
+            >
+                <Button
+                    onClick={() => setSelectedTab('posts')}
+                    disabled={posts?.length === 0}
+                    sx={{
+                        flex: 1,
+                        borderRadius: 0,
+                        backgroundColor: selectedTab === 'posts' ? '#073574' : '#e0e0e0',
+                        color: selectedTab === 'posts' ? '#fff' : '#000',
+                        fontWeight: 600,
+                        '&:hover': {
+                            backgroundColor: selectedTab === 'posts' ? '#062d5c' : '#d5d5d5',
+                        },
+                    }}
+                >
+                    Posts
+                </Button>
+                <Button
+                    onClick={() => setSelectedTab('explore')}
+                    sx={{
+                        flex: 1,
+                        borderRadius: 0,
+                        backgroundColor: selectedTab === 'explore' ? '#073574' : '#e0e0e0',
+                        color: selectedTab === 'explore' ? '#fff' : '#000',
+                        fontWeight: 600,
+                        '&:hover': {
+                            backgroundColor: selectedTab === 'explore' ? '#062d5c' : '#d5d5d5',
+                        },
+                    }}
+                >
+                    Explore
+                </Button>
+            </Box> */}
+
+            {[...displayPosts]
                 .sort((a, b) =>
                     new Date(b.rawCreatedAt).getTime() - new Date(a.rawCreatedAt).getTime()
                 ).map((post, index) => {
                     const postUser = users.find((user) => user.id === post.userId);
                     if (!postUser) return null;
 
+
+
                     return (
+
                         <Paper
                             key={index}
                             sx={{
                                 mb: 2,
                                 width: "100%",
-                                backgroundColor: "#cccccc",
+                                backgroundColor: "transparent",
                                 boxShadow: "none",
                                 py: 2,
                                 borderRadius: "12px",
@@ -104,24 +203,24 @@ const PostFeed = ({
                                         px: 4
                                     }}
                                 >
-                                    {post.images?.length > 0 ? (
+                                    {post.images?.length > 1 ? (
                                         <>
-                                            {currentImageIndex > 0 && (
+                                            {imageIndex > 0 && (
                                                 <IconButton
-                                                    onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
+                                                    onClick={() => setImageIndex(imageIndex - 1)}
                                                     sx={arrowButtonStyle}
                                                 >
                                                     <ArrowBackIosNewIcon />
                                                 </IconButton>
                                             )}
                                             <img
-                                                src={post.images[currentImageIndex]}
+                                                src={post.images[imageIndex]}
                                                 alt="Post"
                                                 style={{ width: "100%", borderRadius: "10px" }}
                                             />
-                                            {currentImageIndex < post.images.length - 1 && (
+                                            {imageIndex < post.images.length - 1 && (
                                                 <IconButton
-                                                    onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
+                                                    onClick={() => setImageIndex(imageIndex + 1)}
                                                     sx={arrowButtonStyleRight}
                                                 >
                                                     <ArrowForwardIosIcon />
@@ -130,7 +229,7 @@ const PostFeed = ({
                                         </>
                                     ) : (
                                         <img
-                                            src={post.postimg}
+                                            src={post.images[0]}
                                             alt="Post"
                                             style={{ width: "100%", borderRadius: "10px" }}
                                         />
@@ -186,6 +285,7 @@ const PostFeed = ({
                                 <Box sx={{ display: "flex", alignItems: "center" }}>
                                     <IconButton
                                         onClick={() => {
+                                            console.log("selectedpost", post)
                                             setSelectedPost(post);
                                             setOpenPostShareModal(true);
                                         }}

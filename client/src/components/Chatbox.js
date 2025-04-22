@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Box, TextField, Button, Typography, List, ListItem, ListItemText, Container, Avatar, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import io from 'socket.io-client';
 import { useAuth } from '../auth/AuthContext';
@@ -6,24 +6,47 @@ import axios from 'axios';
 import { Send, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { host } from '../components/apinfo';
+import Postmodal from './Post/Postmodal';
+
 const socket = io(`${host}`, {
     transports: ["websocket", "polling"],
     withCredentials: true
 });
 
-const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
+const Chatbox = ({ userId, username, isMobile, onBack }) => {
     const { user } = useAuth();
     const theme = useTheme();
     const isXs = useMediaQuery(theme.breakpoints.down('sm'));
     const [message, setMessage] = useState("");
     const [chatHistory, setChatHistory] = useState([]);
+    const listRef = useRef(null);
+    const bottomRef = useRef(null);
+    const [selectedPost, setSelectedPost] = useState(null);
+    const [openPostModal, setOpenPostModal] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
+        console.log(`Chat with ${userId} -- ${username}`);
         if (!userId || !username) return;
 
         console.log(`Chat with ${userId} -- ${username}`);
         getMessages();
+        const fetchUserStats = async () => {
+            try {
+                if (!userId) {
+                    console.warn("⚠️ userId is undefined, skipping fetchStats.");
+                    return;
+                }
+                console.log(`🔍 Fetching profile for chat header user ID: ${userId}`);
+                const res = await axios.get(`${host}/api/users/profile/${userId}`);
+                console.log("✅ Profile API response:", res.data);
+                setAvatarUrl(res.data.profileImage || '');
+            } catch (err) {
+                console.error("❌ Error fetching chat header user profile:", err);
+            }
+        };
+        fetchUserStats();
 
         socket.on("connect", () => {
             console.log("Connected to server");
@@ -34,9 +57,12 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
             socket.emit('join_room', roomId);
         }
 
+        const roomId = [user._id, userId].sort().join("_");
+
         socket.on('receive_message', (data) => {
-            console.log("Message received:", data);
-            setChatHistory((prev) => [...prev, data]);
+            if (data.roomId === roomId) {
+                setChatHistory(prev => [...prev, data]);
+            }
         });
 
         return () => {
@@ -57,8 +83,8 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
             roomId
         };
 
-        postMessage();
-        socket.emit('send_message', messageData);
+        socket.emit('send_message', messageData); // 🔹 only emit
+        postMessage(messageData); // 🔹 send to DB
         setMessage('');
     };
 
@@ -76,35 +102,38 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
         }
     };
 
-    const postMessage = async () => {
+    const postMessage = async (messageData) => {
         try {
-            const postData = {
-                senderId: user._id,
-                receiverId: userId,
-                text: message.trim(),
-            };
-            const res = await axios.post(`${host}/api/chat/send`, postData);
-            console.log("res", res.chat)
-
-
+            await axios.post(`${host}/api/chat/send`, {
+                senderId: messageData.senderId,
+                receiverId: messageData.receiverId,
+                text: messageData.text,
+            });
         } catch (err) {
             console.error('Error sending message:', err.response?.data || err.message);
         }
     };
+
+    useEffect(() => {
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'auto' });
+        }
+    }, [chatHistory]);
 
     return (
         <Box
             sx={{
                 flex: 1,
                 width: { xs: "99%", sm: "85%", md: "85%", lg: '92%' },
-                height: '100%',
+                height: '100vh',
                 background: "#f8f2ec",
                 display: "flex",
                 flexDirection: "column",
                 padding: { xs: "10px", sm: "20px" },
                 overflow: 'hidden',
                 boxSizing: 'border-box',
-                minWidth: 0
+                minWidth: 0,
+                // mt: 10,
             }}
         >
             {/* Chat Header */}
@@ -119,18 +148,17 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
 
                 }}
             >
-                {isXs && (
-                    <IconButton onClick={() => setSelectedUser(null)}>
-                        <ArrowBack />
-                    </IconButton>
-                )}
-                <Avatar sx={{ width: 50, height: 50 }} />
+                <IconButton onClick={onBack} sx={{ mr: 1 }}>
+                    <ArrowBack />
+                </IconButton>
+                <Avatar src={avatarUrl} sx={{ width: 50, height: 50 }} />
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                     {username}
                 </Typography>
             </Box>
             {/* Chat History List */}
             <List
+                ref={listRef}
                 sx={{
                     flexGrow: 1,
                     overflowY: 'auto',
@@ -186,11 +214,14 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                                     cursor: "pointer",
 
                                 }}
-
+                                onClick={() => {
+                                    setSelectedPost(msg.sharedContent);
+                                    setOpenPostModal(true);
+                                }}
                             >
                                 <Typography sx={{ fontWeight: "bold" }}>Shared a Post</Typography>
                                 <Box sx={{ mt: 1 }}>
-                                    <img src={msg.sharedContent.postimg} alt="Post Preview" style={{ width: "100%", borderRadius: "8px" }} />
+                                    <img src={msg.sharedContent.postimg ? msg.sharedContent.postimg : msg.sharedContent.images} alt="Post Preview" style={{ width: "100%", borderRadius: "8px" }} />
                                     <Typography sx={{ fontSize: "14px", color: "gray", mt: 1 }}>
                                         {msg.sharedContent.content.substring(0, 50)}...
                                     </Typography>
@@ -214,6 +245,7 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                         )}
                     </ListItem>
                 ))}
+                <div ref={bottomRef} />
             </List>
 
             {/* ✅ SINGLE FIXED MESSAGE INPUT AT BOTTOM */}
@@ -256,6 +288,13 @@ const Chatbox = ({ userId, username, isMobile, setSelectedUser }) => {
                     <Send />
                 </Button>
             </Box>
+            <Postmodal
+                selectedPost={selectedPost}
+                openPostModal={openPostModal}
+                setOpenPostModal={setOpenPostModal}
+                currentImageIndex={0}
+                user={user}
+            />
         </Box>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import {
   Typography,
@@ -13,6 +13,8 @@ import {
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
+import { FaUpload } from 'react-icons/fa';
+import Webcam from 'react-webcam';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext'
 import { storage } from '../../firebase';
@@ -21,6 +23,9 @@ import Cropper from 'react-easy-crop';
 import { transform } from 'framer-motion';
 import { host } from '../apinfo';
 const AddPost = ({ open: isOpen, onClose }) => {
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const webcamRef = useRef(null);
+  
   const resetForm = () => {
     setContent('');
     setPostImages([]);
@@ -66,6 +71,19 @@ const AddPost = ({ open: isOpen, onClose }) => {
         setOpenCropModal(true);
       });
     }
+  };
+
+  const handleCapture = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    fetch(imageSrc)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setSelectedFiles([file]);
+        setImageSrc(URL.createObjectURL(file));
+        setOpenCropModal(true);
+        setCameraOpen(false);
+      });
   };
 
   // Crop completion
@@ -169,201 +187,96 @@ const AddPost = ({ open: isOpen, onClose }) => {
 
   return (
     <>
-      <Modal
-        open={isOpen}
-        onClose={handleModalClose}
-        closeAfterTransition
-        BackdropProps={{
-          sx: {
-            backdropFilter: 'blur(8px)',
-            backgroundColor: 'rgba(0,0,0,0.4)',
-          },
-        }}
-      >
+      <Modal open={isOpen} onClose={handleModalClose} closeAfterTransition BackdropProps={{ sx: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.4)' } }}>
         <Box
           sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '95%', sm: '80%', md: '70%', lg: '60%' }, // wider across screens
-            height: { xs: '90vh', sm: '85vh', md: '50vh' }, // taller form
-            bgcolor: '#f8f2ec',
-            borderRadius: 3,
-            boxShadow: 24,
-            p: 3,
-            overflowY: 'auto', // scroll inside the form if content grows
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: { xs: '95%', sm: '80%', md: '70%', lg: '50%' },
+            maxHeight: { xs: '90vh', sm: '85vh', md: '100vh' },
+            height:'50vh',
+            bgcolor: '#f8f2ec', borderRadius: 3, boxShadow: 24, p: 3, overflowY: 'auto'
           }}
         >
-
-          <Typography variant="h6" align="center" sx={{ fontWeight: 'bold', color: 'black', mb: 2 }}>
+          <Typography variant="h6" align="center" sx={{ fontWeight: 700, mb: 2 }}>
             Create a New Post
           </Typography>
-
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                borderRadius: 1,
-                padding: '8px',
-              }}
-            >
-              <TextField
-                placeholder="What's on your mind?"
-                multiline
-                rows={1}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                fullWidth
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '12px',
-                    },
-                    backgroundColor: '#fff',
-                    padding: '4px 8px',
-                  },
-                }}
-              />
-
-              <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} id="upload-file" accept="image/*" />
-              <label htmlFor="upload-file">
-                <Tooltip title="Choose Images">
-                  <IconButton component="span" color="primary">
-                    <ImageIcon />
-                  </IconButton>
-                </Tooltip>
-              </label>
-
-              <Tooltip title="Post">
-                <IconButton color="primary" onClick={handleSubmit}>
-                  <SendIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
+            <TextField
+              placeholder="Write a caption..."
+              multiline rows={2} value={content} onChange={(e) => setContent(e.target.value)} fullWidth variant="outlined"
+            />
+            {!selectedFiles.length && !cameraOpen && (
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
+                <Box
+                  component="label"
+                  sx={{
+                    flex: 1, p: 2, border: '2px dashed #1976d2', borderRadius: 2, mt: 10,
+                    bgcolor: '#f5f9ff', textAlign: 'center', cursor: 'pointer', '&:hover': { bgcolor: '#e3f2fd' }
+                  }}
+                >
+                  <FaUpload size={36} color="#1976d2" />
+                  <Typography variant="subtitle1" fontWeight={600}>Click to upload image</Typography>
+                  <Typography variant="caption">JPG, PNG</Typography>
+                  <input type="file" accept="image/*" hidden onChange={handleFileChange} />
+                </Box>
+                <Button variant="outlined" sx={{ minWidth: 40, height:60, mt: 10 }} onClick={() => setCameraOpen(true)}>
+                  Use Camera
+                </Button>
+              </Box>
+            )}
             {selectedFiles.length > 0 && !openCropModal && (
-              <Box mt={2} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {selectedFiles.map((file, idx) => (
-                  <Box key={idx} sx={{ width: 80, height: 80, border: '1px solid #ccc' }}>
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`preview-${idx}`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </Box>
-                ))}
+              <Box>
+                <Typography variant="body2">Selected: {selectedFiles[0].name}</Typography>
+                <Box
+                  component="img" src={URL.createObjectURL(selectedFiles[0])} alt="Preview"
+                  sx={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 2, my: 1 }}
+                />
+                <Button variant="text" color="error" onClick={() => setSelectedFiles([])}>Discard</Button>
               </Box>
             )}
-
-            {postImages.length > 0 && (
-              <Box mt={2} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {postImages.map((img, index) => (
-                  <Box key={index} sx={{ position: 'relative', width: 100, height: 100 }}>
-                    <img
-                      src={img}
-                      alt="Uploaded"
-                      style={{ width: '100%', height: '100%', borderRadius: 8, objectFit: 'cover' }}
-                    />
-                    <IconButton
-                      sx={{
-                        position: 'absolute',
-                        top: 5,
-                        right: 5,
-                        backgroundColor: 'rgba(255,255,255,0.8)',
-                        color: 'red',
-                      }}
-                      onClick={() => {
-                        setPostImages(postImages.filter((_, i) => i !== index));
-                      }}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
-            )}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button disabled={!content && selectedFiles.length === 0} variant="contained" onClick={handleSubmit}>
+                Post
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Modal>
-      {/* Cropping Modal */}
-      {openCropModal && (
-        <Modal
-          open={openCropModal}
-          onClose={() => setOpenCropModal(false)}
-          closeAfterTransition
-          BackdropProps={{
-            sx: {
-              backdropFilter: 'blur(8px)',
-              backgroundColor: 'rgba(0,0,0,0.4)',
-            },
+
+      <Modal open={cameraOpen} onClose={() => setCameraOpen(false)} closeAfterTransition BackdropProps={{ sx: { backdropFilter: 'blur(8px)' } }}>
+        <Box
+          sx={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: { xs: '90%', sm: '600px' }, height: { xs: '60vh', sm: '500px' }, p: 2,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2
           }}
         >
+          <Webcam ref={webcamRef} audio={false} screenshotFormat="image/jpeg" style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+          <Box sx={{ display: 'flex', gap: 2 }}> 
+            <Button variant="contained" onClick={handleCapture}>Capture</Button>
+            <Button variant="outlined" onClick={() => setCameraOpen(false)}>Cancel</Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      {openCropModal && (
+        <Modal open onClose={() => setOpenCropModal(false)} closeAfterTransition BackdropProps={{ sx: { backdropFilter: 'blur(8px)' } }}>
           <Box
             sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: { xs: '90%', sm: '80%', md: '60%' },
-              bgcolor: '#fff',
-              borderRadius: 2,
-              boxShadow: 24,
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 2,
-              height: { xs: '70vh', sm: '75vh', md: '80vh' }
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              width: { xs: '100%', sm: '90%', md: '70%' }, height: { xs: '80vh', md: '70vh' },
+              bgcolor: '#fff', borderRadius: 2, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'
             }}
           >
             <Cropper
-              image={imageSrc}
-              crop={crop}
-              zoom={zoom}
-              aspect={4 / 3}
-              cropSize={{ width: 600, height: 450 }}
-              objectFit="contain"
-              minZoom={0.5}
-              style={{
-                containerStyle: {
-                  display: 'flex',
-
-
-
-                },
-                mediaStyle: {
-                  objectFit: 'contain',
-
-                  width: '70%',
-                  height: '70%',
-                }
-              }}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={onCropComplete}
-
-
+              image={imageSrc} crop={crop} zoom={zoom} aspect={4/3}
+              onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
+              style={{ containerStyle: { width: '100%', height: '100%' } }}
             />
-            <Slider
-              value={zoom}
-              min={1}
-              max={3}
-              step={0.1}
-              onChange={(e, value) => setZoom(value)}
-              sx={{ width: '80%' }}
-            />
-            <Box sx={{ display: 'flex', gap: 1, bottom: 10, position: 'fixed', alignItems: 'center' }}>
-              <Button variant="contained" onClick={() => setOpenCropModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="contained" onClick={handleCropConfirm}>
-                Crop & Upload
-              </Button>
+            <Slider value={zoom} min={1} max={3} step={0.1} onChange={(e,v) => setZoom(v)} sx={{ width: '80%' }} />
+            <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+              <Button onClick={() => setOpenCropModal(false)}>Cancel</Button>
+              <Button onClick={handleCropConfirm}>Crop & Upload</Button>
             </Box>
           </Box>
         </Modal>

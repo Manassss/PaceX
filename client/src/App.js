@@ -57,14 +57,16 @@ function AppContent({ userId }) {
 
   return (
     <>
-      <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <Box sx={{ display: "flex", height: "100vh", overflow: "hidden", }}>
+        <Box sx={{ alignItems: 'center' }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/home" element={<Home />} />
+          </Routes>
 
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/home" element={<Home />} />
-        </Routes>
+        </Box>
 
         {/* Navbar Section */}
         {showNavbar && (
@@ -105,16 +107,23 @@ function AppContent({ userId }) {
             <Route path="/userhome/" element={<UserHome />} />
             <Route path="/chatbox" element={<Chatbox />} />
             <Route path="/marketplace/:userId" element={<Marketplace />} />
-            <Route path="/marketplace" element={<Marketplace />} />
+            <Route
+              path="/marketplace"
+              element={
+
+                <Marketplace />
+
+              }
+            />
             <Route path="/navbar" element={<Navbar />} />
             <Route path="/community" element={<CommunityHome />} />
             <Route path="/community/:id" element={<CommunityDetail />} />
             <Route
               path="/marketplaceupload"
               element={
-                <LoadScript googleMapsApiKey={process.env.GOOGLE_MAPS_API} libraries={["places"]}>
-                  <MarketplaceUpload />
-                </LoadScript>
+
+                <MarketplaceUpload />
+
               }
             />
             <Route path="/messenger" element={<Box

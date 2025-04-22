@@ -38,14 +38,6 @@ io.on("connection", (socket) => {
         io.to(data.roomId).emit("receive_message", data);
     });
 
-
-
-    // ✅ HANDLE DISCONNECT
-    socket.on("disconnect", () => {
-        console.log(" User Disconnected:", socket.id);
-    });
-});
-io.on("connection", (socket) => {
     // ✅ HANDLE NOTIFICATIONS
     socket.on("sendNotification", async ({ recipient, sender, type, postId, messageId }) => {
         try {
@@ -67,7 +59,12 @@ io.on("connection", (socket) => {
             console.error(" Error sending notification:", error);
         }
     });
-})
+
+    // ✅ HANDLE DISCONNECT
+    socket.on("disconnect", () => {
+        console.log(" User Disconnected:", socket.id);
+    });
+});
 
 
 // ✅ Ensure routes are properly mounted

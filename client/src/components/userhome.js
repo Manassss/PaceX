@@ -1,6 +1,6 @@
 // 🔹 React & Hooks
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 // 🔹 Context
 import { useAuth } from '../auth/AuthContext';
@@ -54,6 +54,8 @@ const UserHome = () => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [openLikeModal, setOpenLikeModal] = useState(false);
   const [likedUsers, setLikedUsers] = useState([]); // This will store the list returned from the API
+  const location = useLocation();
+  const selectedTab = new URLSearchParams(location.search).get('tab') || 'posts';
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -464,7 +466,7 @@ const UserHome = () => {
       disableGutters
       maxWidth={false}
       sx={{
-        background: "#f8f2ec",
+        background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
         minHeight: "100vh",
         width: '100%',
         overflowX: "hidden",
@@ -473,7 +475,7 @@ const UserHome = () => {
         flexDirection: "row",
         // alignItems: "center",
         left: 0,
-        backgroundColor: "#e5e5e5",
+        // backgroundColor: "#e5e5e5",
         //position: 'sticky'
       }}
     >
@@ -504,11 +506,18 @@ const UserHome = () => {
 
           }}
         >
+        {/* <StoryBar
+          users={users}
+          setOpenStoryCamera={setOpenStoryCamera}
+          handleProfile={handleProfile}
+        /> */}
+        {selectedTab === 'posts' && (
           <StoryBar
             users={users}
             setOpenStoryCamera={setOpenStoryCamera}
             handleProfile={handleProfile}
           />
+        )}
 
           {/**FEED */}
           <PostFeed
@@ -529,6 +538,8 @@ const UserHome = () => {
             setOpenPostShareModal={setOpenPostShareModal}
             currentImageIndex={currentImageIndex}
             setCurrentImageIndex={setCurrentImageIndex}
+            selectedTab={selectedTab}
+            
           />
 
         </Box>
@@ -563,7 +574,8 @@ const UserHome = () => {
           senderId: user?._id,
           postId: selectedPost?.postId,
           content: selectedPost?.content,
-          postimg: selectedPost?.postimg,
+          postimg: selectedPost?.postimg || "",
+          images: selectedPost?.images || ""
         }}
         type="post"
       />

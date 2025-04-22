@@ -36,7 +36,8 @@ const Login = () => {
             const { email, password } = formData;
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            if (!user.emailVerified) {
+            await user.reload();
+            if (user.emailVerified = false) {
                 setMessage("❌ Email not verified. Please check your inbox.");
                 return;
             }
@@ -46,7 +47,7 @@ const Login = () => {
             const now = Date.now();
             localStorage.setItem("loginTime", `${now}`); setMessage('🎉 Login Successful!');
             login(res.data.user);
-            navigate('/userhome');
+            navigate('/userhome?tab=posts');
         } catch (err) {
             setMessage('❌ Login Failed');
             console.error("Login Error:", err.response?.data?.message || "Server Error");
@@ -161,6 +162,14 @@ const Login = () => {
                                     Sign Up
                                 </Link>
                             </Typography>
+                            {message && (
+                                <Typography
+                                    variant="body2"
+                                    sx={{ color: message.includes('❌') ? 'red' : 'green', mt: 1 }}
+                                >
+                                    {message}
+                                </Typography>
+                            )}
                         </Box>
                     </Container>
                 </motion.div>
