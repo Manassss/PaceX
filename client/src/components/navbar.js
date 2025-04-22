@@ -138,7 +138,7 @@ const Navbar = () => {
   const moreNavItems = navItems.filter(item =>
     !["Home", "Messenger"].includes(item.label)
   );
-  
+
 
   return (
     <>
@@ -198,7 +198,7 @@ const Navbar = () => {
                 marginRight: "auto",
                 display: "block"
               }}
-              onClick={() => navigate("/userhome")}
+              onClick={() => navigate("/userhome?tab=posts")}
             />
 
           </Box>
@@ -278,7 +278,7 @@ const Navbar = () => {
 
           {/* Navigation Items */}
           <List
-            onClick={() => {}}
+            onClick={() => { }}
             sx={{
               display: "flex", flexDirection: "column", alignItems: "center", gap: isCollapsed ? 2 : 1, // spacing between icons
               mt: isCollapsed ? 3 : 2,
@@ -395,63 +395,63 @@ const Navbar = () => {
       </Modal>
 
       <Paper
-  sx={{
-    display: { xs: 'block', sm: 'none' },
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1300,
-  }}
-  elevation={3}
->
-  <BottomNavigation showLabels sx={{ bgcolor: '#073574' }}>
-    {primaryNavItems.map((item, i) => (
-      <BottomNavigationAction
-        key={i}
-        label={item.label}
-        icon={item.icon}
-        sx={{ color: 'white', '&.Mui-selected': { color: '#f8f2ec' } }}
-        onClick={() => handleNavItem(item)}
-      />
-    ))}
-
-    {/* More Button */}
-    <BottomNavigationAction
-      label="More"
-      icon={<MoreHorizIcon />}
-      sx={{ color: 'white' }}
-      onClick={(e) => setMoreAnchorEl(e.currentTarget)}
-    />
-  </BottomNavigation>
-
-  {/* More Menu */}
-  <Menu
-  anchorEl={moreAnchorEl}
-  open={isMoreMenuOpen}
-  onClose={() => setMoreAnchorEl(null)}
-  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-  transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-  PaperProps={{
-    sx: {
-      background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
-    }
-  }}
->
-    {moreNavItems.map((item, i) => (
-      <MenuItem
-        key={i}
-        onClick={() => {
-          handleNavItem(item);
-          setMoreAnchorEl(null); // close menu
+        sx={{
+          display: { xs: 'block', sm: 'none' },
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1300,
         }}
+        elevation={3}
       >
-        <ListItemIcon sx={{ minWidth: 30 }}>{item.icon}</ListItemIcon>
-        <ListItemText>{item.label}</ListItemText>
-      </MenuItem>
-    ))}
-  </Menu>
-</Paper>
+        <BottomNavigation showLabels sx={{ bgcolor: '#073574' }}>
+          {primaryNavItems.map((item, i) => (
+            <BottomNavigationAction
+              key={i}
+              label={item.label}
+              icon={item.icon}
+              sx={{ color: 'white', '&.Mui-selected': { color: '#f8f2ec' } }}
+              onClick={() => handleNavItem(item)}
+            />
+          ))}
+
+          {/* More Button */}
+          <BottomNavigationAction
+            label="More"
+            icon={<MoreHorizIcon />}
+            sx={{ color: 'white' }}
+            onClick={(e) => setMoreAnchorEl(e.currentTarget)}
+          />
+        </BottomNavigation>
+
+        {/* More Menu */}
+        <Menu
+          anchorEl={moreAnchorEl}
+          open={isMoreMenuOpen}
+          onClose={() => setMoreAnchorEl(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          PaperProps={{
+            sx: {
+              background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
+            }
+          }}
+        >
+          {moreNavItems.map((item, i) => (
+            <MenuItem
+              key={i}
+              onClick={() => {
+                handleNavItem(item);
+                setMoreAnchorEl(null); // close menu
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 30 }}>{item.icon}</ListItemIcon>
+              <ListItemText>{item.label}</ListItemText>
+            </MenuItem>
+          ))}
+        </Menu>
+      </Paper>
 
 
 

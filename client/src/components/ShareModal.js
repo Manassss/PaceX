@@ -4,6 +4,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import axios from 'axios';
 import { useAuth } from '../auth/AuthContext';
 import { host } from '../components/apinfo';
+import io from "socket.io-client";
+
+
+const socket = io(`${host}`, {
+    transports: ["websocket", "polling"],
+    withCredentials: true
+});
 const ShareModal = ({ open, onClose, contentToShare, type }) => {
     const [users, setUsers] = useState([]);
     const { user } = useAuth();
@@ -30,11 +37,12 @@ const ShareModal = ({ open, onClose, contentToShare, type }) => {
             console.error("Error: contentToShare is missing required fields", contentToShare);
             return;
         }
-
+        const roomId = [contentToShare.senderId, receiverId].sort().join("_");
         const messageData = {
             senderId: contentToShare.senderId,
             receiverId: receiverId,
             text: type === "profile" ? `Check out ${contentToShare.name}'s profile!` : `Check out this post!`,
+            roomId,
             sharedContent: {
                 type,
                 ...contentToShare, // ✅ Ensure necessary fields are included
@@ -44,6 +52,8 @@ const ShareModal = ({ open, onClose, contentToShare, type }) => {
         console.log("Sending messageData:", messageData); // ✅ Debugging log
 
         try {
+            socket.emit('send_message', messageData);
+
             await axios.post(`${host}/api/chat/send`, messageData);
             onClose(); // Close modal after sharing
         } catch (err) {

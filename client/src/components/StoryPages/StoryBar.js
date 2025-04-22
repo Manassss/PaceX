@@ -205,7 +205,7 @@ const StoryBar = ({
                                     }}
                                     sx={{
                                         position: "absolute",
-                                        top: 75,
+                                        top: { xs: 65, sm: 75, md: 75, lg: 75 },
                                         right: 25,
                                         backgroundColor: "white",
                                         borderRadius: "50%",
@@ -222,7 +222,7 @@ const StoryBar = ({
                                 <AddIcon
                                     sx={{
                                         position: "absolute",
-                                        top: 75,
+                                        top: { xs: 65, sm: 75, md: 75, lg: 75 },
                                         right: 25,
                                         backgroundColor: "white",
                                         borderRadius: "50%",
