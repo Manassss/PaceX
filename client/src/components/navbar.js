@@ -38,7 +38,7 @@ import AddPost from '../components/Post/AddPost'; // adjust the path if needed
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 
-
+import { IoLogOutSharp } from "react-icons/io5";
 
 
 
@@ -129,7 +129,8 @@ const Navbar = () => {
       onClick: () => {
         setOpenCreateModal(true);
       },
-    }
+    },
+    { icon: <IoLogOutSharp size={28} />, label: 'Logout', path: "/home" }
   ];
 
   const primaryNavItems = navItems.filter(item =>
