@@ -25,7 +25,7 @@ import { host } from '../apinfo';
 const AddPost = ({ open: isOpen, onClose }) => {
   const [cameraOpen, setCameraOpen] = useState(false);
   const webcamRef = useRef(null);
-  
+
   const resetForm = () => {
     setContent('');
     setPostImages([]);
@@ -54,7 +54,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
   const { user } = useAuth();
 
   // Handle multiple file selection
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const files = Array.from(event.target.files);
     if (files.length > 0) {
       const readers = files.map((file) => {
@@ -65,11 +65,27 @@ const AddPost = ({ open: isOpen, onClose }) => {
         });
       });
 
-      Promise.all(readers).then((images) => {
-        setSelectedFiles(files);
-        setImageSrc(images[0]); // Start with first image
-        setOpenCropModal(true);
-      });
+      const images = await Promise.all(readers);
+      const resizedFiles = await Promise.all(
+        files.map(async (file) => {
+          const imageBitmap = await createImageBitmap(file);
+          const canvas = document.createElement("canvas");
+          canvas.width = 800; // match camera resolution
+          canvas.height = 600;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+          return new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+              const resizedFile = new File([blob], file.name, { type: "image/jpeg" });
+              resolve(resizedFile);
+            }, "image/jpeg", 0.9);
+          });
+        })
+      );
+
+      setSelectedFiles(resizedFiles);
+      setImageSrc(images[0]);
+      setOpenCropModal(true);
     }
   };
 
@@ -175,7 +191,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
         images: postImages, // Send multiple images
       };
       await axios.post(`${host}/api/posts/add`, postData);
-      alert('Post created successfully!');
+      // alert('Post created successfully!');
       setContent('');
       setPostImages([]);
       resetForm();
@@ -193,7 +209,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
             position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
             width: { xs: '95%', sm: '80%', md: '70%', lg: '50%' },
             maxHeight: { xs: '90vh', sm: '85vh', md: '100vh' },
-            height:'50vh',
+            height: '50vh',
             bgcolor: '#f8f2ec', borderRadius: 3, boxShadow: 24, p: 3, overflowY: 'auto'
           }}
         >
@@ -219,7 +235,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
                   <Typography variant="caption">JPG, PNG</Typography>
                   <input type="file" accept="image/*" hidden onChange={handleFileChange} />
                 </Box>
-                <Button variant="outlined" sx={{ minWidth: 40, height:60, mt: 10 }} onClick={() => setCameraOpen(true)}>
+                <Button variant="outlined" sx={{ minWidth: 40, height: 60, mt: 10 }} onClick={() => setCameraOpen(true)}>
                   Use Camera
                 </Button>
               </Box>
@@ -252,7 +268,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
           }}
         >
           <Webcam ref={webcamRef} audio={false} screenshotFormat="image/jpeg" style={{ width: '100%', height: '100%', borderRadius: 8 }} />
-          <Box sx={{ display: 'flex', gap: 2 }}> 
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <Button variant="contained" onClick={handleCapture}>Capture</Button>
             <Button variant="outlined" onClick={() => setCameraOpen(false)}>Cancel</Button>
           </Box>
@@ -268,13 +284,14 @@ const AddPost = ({ open: isOpen, onClose }) => {
               bgcolor: '#fff', borderRadius: 2, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'
             }}
           >
-            <Cropper
-              image={imageSrc} crop={crop} zoom={zoom} aspect={4/3}
-              onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
-              style={{ containerStyle: { width: '100%', height: '100%' } }}
-            />
-            <Slider value={zoom} min={1} max={3} step={0.1} onChange={(e,v) => setZoom(v)} sx={{ width: '80%' }} />
-            <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+            <Box sx={{ position: 'relative', width: '100%', height: '60%', mb: 2 }}>
+              <Cropper
+                image={imageSrc} crop={crop} zoom={zoom} aspect={4 / 3}
+                onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
+              />
+            </Box>
+            <Slider value={zoom} min={1} max={3} step={0.1} onChange={(e, v) => setZoom(v)} sx={{ width: '80%', mb: 2 }} />
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <Button onClick={() => setOpenCropModal(false)}>Cancel</Button>
               <Button onClick={handleCropConfirm}>Crop & Upload</Button>
             </Box>

@@ -120,7 +120,6 @@ const ProfilePage = () => {
   const [deleteperm, setdelete] = useState(false);
   const [deleteptemp, setdeletetemp] = useState(false);
   const [archive, setarchive] = useState(false);
-  
   //User Profile Details
   const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   useEffect(() => {
@@ -175,40 +174,32 @@ const ProfilePage = () => {
       setIsRequested(res.data.requests?.includes(user?._id));
       setUserDetails(transformedData);
       setFormData(transformedData);
-
+      const cleanedRequests = res.data.requests?.filter(req => req !== null);
+      console.log('reqqq', res.data.requests)
       // 🔥 Fetch profiles for each request user
-      if (Array.isArray(res.data.requests) && res.data.requests.length > 0) {
+      if (Array.isArray(cleanedRequests) && cleanedRequests.length > 0) {
         const profiles = await Promise.all(
-          res.data.requests.map(async (reqUserId) => {
+          cleanedRequests.map(async (reqUserId) => {
             try {
-              if (reqUserId != null) {
-                console.log("requserid", reqUserId)
-                const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
-
-                return {
-                  _id: userRes.data._id,
-                  name: userRes.data.name,
-                  username: userRes.data.username,
-                  profileImage: userRes.data.profileImage,
-                };
-                // Remove any failed/null results
-                const validProfiles = profiles.filter(p => p !== null);
-                console.log("vvalid", validProfiles)
-                setRequestProfiles(validProfiles);
-              }
-
-
-
+              const userRes = await axios.get(`${host}/api/users/profile/${reqUserId}`);
+              return {
+                _id: userRes.data._id,
+                name: userRes.data.name,
+                username: userRes.data.username,
+                profileImage: userRes.data.profileImage,
+              };
             } catch (err) {
               console.error(`Error fetching profile for request user ${reqUserId}:`, err.message);
-              return null; // Skip user on error
+              return null; // skip on error
             }
           })
         );
 
-
+        const validProfiles = profiles.filter(p => p !== null);
+        console.log("valid", validProfiles);
+        setRequestProfiles(validProfiles);
       } else {
-        setRequestProfiles([]); // Clear if no requests
+        setRequestProfiles([]); // no requests
       }
 
 
