@@ -119,14 +119,7 @@ function AppContent({ userId }) {
             <Route path="/navbar" element={<Navbar />} />
             <Route path="/community" element={<CommunityHome />} />
             <Route path="/community/:id" element={<CommunityDetail />} />
-            <Route
-              path="/marketplaceupload"
-              element={
 
-                <MarketplaceUpload />
-
-              }
-            />
             <Route path="/messenger" element={<Box
               sx={{
                 position: "fixed",

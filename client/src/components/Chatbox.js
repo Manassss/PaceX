@@ -125,7 +125,7 @@ const Chatbox = ({ userId, username, isMobile, onBack }) => {
             sx={{
                 flex: 1,
                 width: { xs: "99%", sm: "85%", md: "85%", lg: '92%' },
-                height: '100vh',
+                height: '90vh',
                 background: "#f8f2ec",
                 display: "flex",
                 flexDirection: "column",

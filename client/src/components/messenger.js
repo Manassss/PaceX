@@ -263,11 +263,11 @@ const Messenger = ({ resetChatbox = false, isNavbarCollapsed = false }) => {
             width: { xs: "100%", sm: "60%", md: "70%" }
           }}
         >
-      <Chatbox
-        userId={selectedUser.id || selectedUser._id}
-        username={selectedUser.name}
-        onBack={() => setSelectedUser(null)} // ✅ correctly handles back
-      />
+          <Chatbox
+            userId={selectedUser.id || selectedUser._id}
+            username={selectedUser.name}
+            onBack={() => setSelectedUser(null)} // ✅ correctly handles back
+          />
         </Box>
       ) : (
         <Box
@@ -306,9 +306,10 @@ const styles = {
     boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
     transition: "0.3s",
     color: "black",
+
   },
   chatContainer: {
-    height: '100%',
+    height: '90%',
     display: 'flex',
     flexDirection: 'column',
     borderRadius: 3,
