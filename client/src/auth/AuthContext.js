@@ -10,8 +10,8 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import axios from 'axios';
 import { updateProfile as fbUpdate } from "firebase/auth";
 
-//const host = process.env.REACT_APP_DEV_API_BASE_URL
-const host = process.env.REACT_APP_PROD_API_BASE_URL
+const host = process.env.REACT_APP_DEV_API_BASE_URL
+//const host = process.env.REACT_APP_PROD_API_BASE_URL
 async function updateProfile(updates) {
     const auth = getAuth();
     if (!auth.currentUser) throw new Error("No user");

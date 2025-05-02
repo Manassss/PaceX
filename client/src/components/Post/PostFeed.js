@@ -9,7 +9,7 @@ import {
     Button,
     useMediaQuery
 } from "@mui/material";
-
+import { format, isToday, isYesterday, parse } from 'date-fns';
 import { FaRegComment, FaShare } from "react-icons/fa6";
 import { BsFillSaveFill } from "react-icons/bs";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -264,7 +264,16 @@ const PostFeed = ({
                                         {postUser.name}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
-                                        {post.createdAtFormatted}
+                                        <Typography variant="caption" color="text.secondary">
+                                            {(() => {
+                                                const date = parse(post.createdAtFormatted, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                                                return isToday(date)
+                                                    ? `Today at ${format(date, 'p')}`
+                                                    : isYesterday(date)
+                                                        ? `Yesterday at ${format(date, 'p')}`
+                                                        : format(date, 'dd/MM/yyyy, p');
+                                            })()}
+                                        </Typography>
                                     </Typography>
                                 </Box>
 
