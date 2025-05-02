@@ -292,22 +292,40 @@ const StoryBar = ({
                     if (currentIndexStory < currentStories.length - 1) {
                         setCurrentIndexStory(i => i + 1);
                     } else {
-                        const currentUserIndex = sortedUniqueUserStories.findIndex(u => u.userId === storyUser?.id || u.userId === storyUser?._id);
+                        const currentUserIndex = sortedUniqueUserStories.findIndex(
+                            u => u.userId === storyUser?.id || u.userId === storyUser?._id
+                        );
                         const nextUserGroup = sortedUniqueUserStories[currentUserIndex + 1];
                         if (nextUserGroup) {
                             const nextUser = users.find(u => u.id === nextUserGroup.userId);
                             if (nextUser) {
-                                setOpenStory(false); // Close current viewer
+                                setOpenStory(false);
                                 setTimeout(() => {
                                     setStoryUser(nextUser);
                                     setCurrentStories(nextUserGroup.stories);
                                     setCurrentIndexStory(0);
-                                    setOpenStory(true); // Re-open to trigger progress
+                                    setOpenStory(true);
                                 }, 100);
                             }
                         } else {
                             setOpenStory(false);
                         }
+                    }
+                }}
+                handleNextUser={() => {
+                    const currentUserIndex = sortedUniqueUserStories.findIndex(
+                        u => u.userId === storyUser?.id || u.userId === storyUser?._id
+                    );
+                    const nextUserGroup = sortedUniqueUserStories[currentUserIndex + 1];
+                    if (nextUserGroup) {
+                        const nextUser = users.find(u => u.id === nextUserGroup.userId);
+                        if (nextUser) {
+                            setStoryUser(nextUser);
+                            setCurrentStories(nextUserGroup.stories);
+                            setCurrentIndexStory(0);
+                        }
+                    } else {
+                        setOpenStory(false); // No more stories
                     }
                 }}
             />

@@ -28,7 +28,8 @@ const StoryViewer = ({
     //fetchViewers,
     handleDeleteStory,
     handlePrev,
-    handleNext
+    handleNext,
+    handleNextUser // ✅ NEW
 }) => {
     //     const [stories, setStories] = useState([]);
     // const [openStory, setOpenStory] = useState(false);
@@ -86,7 +87,7 @@ const StoryViewer = ({
                         if (currentIndexStory < currentStories.length - 1) {
                             handleNext();
                         } else {
-                            handleClose(); // close after last story
+                            handleNextUser && handleNextUser();
                         }
                     }, 100); // short buffer to avoid premature switch
                 }
@@ -165,8 +166,13 @@ const StoryViewer = ({
                             controls={false}
                             onEnded={() => {
                                 setTimeout(() => {
-                                    handleNext();
-                                }, 100); // small buffer
+                                    if (currentIndexStory < currentStories.length - 1) {
+                                        handleNext();
+                                    } else {
+                                        // End of current user's stories, handled by parent
+                                        handleNextUser && handleNextUser();
+                                    }
+                                }, 100);
                             }}
                             style={{
                                 width: "100%",

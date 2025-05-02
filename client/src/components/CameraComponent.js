@@ -16,7 +16,7 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
     const [recording, setRecording] = useState(false);
     const [videoBlob, setVideoBlob] = useState(null);
     const [uploading, setUploading] = useState(false);
-    const { user } = useAuth()
+    const { user } = useAuth();
 
     //  Capture Photo
     const capturePhoto = () => {
@@ -112,7 +112,7 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
     };
 
     return (
-        <Box display="flex" flexDirection="column" alignItems="center" sx={{ border: "2px solid #ccc", borderRadius: 3, width: '435px', height: '100%', backgroundColor: 'RGBA(255,255,255,1)' }}>
+        <Box display="flex" flexDirection="column" alignItems="center" sx={{ border: "2px solid #ccc", borderRadius: 3, width: '435px', height: '100%', backgroundColor: 'RGBA(255,255,255,1)', position: 'relative' }}>
 
             {/* Webcam & Media Preview */}
             {!capturedImage && !videoBlob ? (
@@ -128,7 +128,52 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
             ) : capturedImage ? (
                 <img src={capturedImage} alt="Captured" style={{ width: 435, height: 800, objectFit: 'cover', borderRadius: 10 }} />
             ) : (
-                <video controls src={URL.createObjectURL(videoBlob)} style={{ width: 430, height: 800, objectFit: 'cover', borderRadius: 10 }} />
+                <Box sx={{ position: 'relative', width: 430, height: 800 }}>
+                    <video
+                        controls
+                        src={URL.createObjectURL(videoBlob)}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: 10,
+                            zIndex: 10,
+                        }}
+                    />
+                    {/* Action Buttons for videoBlob */}
+                    {videoBlob && (
+                        <Box
+                            display="flex"
+                            gap={2}
+                            sx={{
+                                position: 'absolute',
+                                top: 10,
+                                right: 10,
+                                zIndex: 20
+                            }}
+                        >
+                            <Button
+                                variant="contained"
+                                onClick={uploadMedia}
+                                disabled={uploading}
+                                sx={{ textTransform: "none", borderRadius: 5, px: 4, backgroundColor: '#073574' }}
+                            >
+                                Post
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => {
+                                    setCapturedImage(null);
+                                    setVideoBlob(null);
+                                }}
+                                sx={{ textTransform: "none", borderRadius: 10, px: 4, backgroundColor: '#073574' }}
+                            >
+                                Cancel
+                            </Button>
+                        </Box>
+                    )}
+                </Box>
             )}
 
             <Box
@@ -138,7 +183,8 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
                     display: "flex",
                     gap: 1,
                     padding: "5px 10px",
-                    left: "3%"
+                    left: "3%",
+                    zIndex: 10
                 }}
             >
                 <Avatar
@@ -151,29 +197,20 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
                 </Typography>
             </Box>
 
-            {/* <IconButton
-                onClick={() => {
-                    setCapturedImage(null);
-                    setVideoBlob(null);
-                    if (typeof onMediaUpload === "function") {
-                        onMediaUpload(null); // optionally trigger close if parent clears modal on null
-                    }
-                }}
+            {/* Action Buttons */}
+            <Box
                 sx={{
-                    position: "absolute",
-                    top: "2%",
-                    right: "3%",
-                    backgroundColor: "rgba(255,255,255,0.7)",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,1)" }
+                    position: 'absolute',
+                    bottom: 30,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 2,
+                    zIndex: 10
                 }}
             >
-                <Typography variant="h6" fontWeight="bold">✕</Typography>
-            </IconButton> */}
-
-            {/* Action Buttons */}
-
-            <Box display="flex" justifyContent="center" alignItems="center" gap={2} marginTop={2} position='absolute' bottom={30} >
-
                 {/* Capture and Record */}
                 {!capturedImage && !videoBlob && !recording && (
                     <>
@@ -202,32 +239,43 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
                         <StopIcon sx={{ color: "red", fontSize: 24 }} />
                     </IconButton>
                 )}
-
-                {(capturedImage || videoBlob) && (
-                    <Box display="flex" justifyContent="center" gap={2} position="absolute" bottom={5}>
-                        <Button
-                            variant="contained"
-
-                            onClick={uploadMedia}
-                            disabled={uploading}
-                            sx={{ textTransform: "none", borderRadius: 5, px: 4, backgroundColor: '#073574' }}
-                        >
-                            Post
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => {
-                                setCapturedImage(null);
-                                setVideoBlob(null);
-                            }}
-                            sx={{ textTransform: "none", borderRadius: 10, px: 4, backgroundColor: '#073574' }}
-                        >
-                            Cancel
-                        </Button>
-                    </Box>
-                )}
             </Box>
+
+            {/* Only show bottom Post/Cancel for capturedImage, not videoBlob */}
+            {capturedImage && (
+                <Box
+                    display="flex"
+                    justifyContent="center"
+                    gap={2}
+                    sx={{
+                        position: 'absolute',
+                        bottom: 30,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 10
+                    }}
+                >
+                    <Button
+                        variant="contained"
+                        onClick={uploadMedia}
+                        disabled={uploading}
+                        sx={{ textTransform: "none", borderRadius: 5, px: 4, backgroundColor: '#073574' }}
+                    >
+                        Post
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                            setCapturedImage(null);
+                            setVideoBlob(null);
+                        }}
+                        sx={{ textTransform: "none", borderRadius: 10, px: 4, backgroundColor: '#073574' }}
+                    >
+                        Cancel
+                    </Button>
+                </Box>
+            )}
         </Box>
     );
 };
