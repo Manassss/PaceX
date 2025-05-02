@@ -9,7 +9,7 @@ import {
     Button,
     useMediaQuery
 } from "@mui/material";
-import { AiFillLike } from "react-icons/ai";
+
 import { FaRegComment, FaShare } from "react-icons/fa6";
 import { BsFillSaveFill } from "react-icons/bs";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -18,6 +18,7 @@ import axios from "axios";
 import { host } from '../apinfo';
 import { useAuth } from "../../auth/AuthContext";
 import { useLocation } from 'react-router-dom';
+import { AiFillLike, AiOutlineLike } from 'react-icons/ai';
 const PostFeed = ({
     posts,
     users,
@@ -38,7 +39,7 @@ const PostFeed = ({
 }) => {
     const isMobile = useMediaQuery('(max-width: 480px)');
     const isTablet = useMediaQuery('(max-width: 960px)');
-    console.log("length of posts", posts.length);
+    console.log("length of posts", posts[0]);
     const [imageIndex, setImageIndex] = useState(0);
     //const { user } = useAuth()
     const [randomPosts, setRandomPosts] = useState([]);
@@ -89,6 +90,85 @@ const PostFeed = ({
             setSelectedTab(tabFromUrl);
         }
     }, [location.search]);
+
+    // Handle adding a new comment
+    const handleExploreAddComment = async (postId, postuserId) => {
+        console.log("ps", posts)
+        if (!newComment[postId]) return;
+
+        try {
+            console.log(user);
+            const res = await axios.post(`${host}/api/comment/add`, {
+                userId: user._id,
+                postId: postId,
+                text: newComment[postId],
+                username: user?.name,
+                userimg: user?.profileImage,
+                post_userid: postuserId
+            });
+
+            console.log("✅ Comment Added:", res.data);
+            setNewComment({ ...newComment, [postId]: "" });
+            fetchComments(postId);
+        } catch (err) {
+            console.error("🔥 Error adding comment:", err.response?.data || err.message);
+        }
+    };
+    const fetchComments = async (postId) => {
+        try {
+            console.log("Fetching comments for post", postId);
+            const res = await axios.get(`${host}/api/comment/${postId}`);
+            setRandomPosts((prevPosts) =>
+                prevPosts.map((post) =>
+                    post.postId === postId ? { ...post, comments: res.data } : post
+                )
+            );
+
+        } catch (err) {
+            console.error("Error fetching comments:", err.response?.data || err.message);
+        }
+    };
+    const handleExploreLikePost = async (postId) => {
+        if (!user || !user._id) {
+            console.error("🚨 User is not logged in or undefined!");
+            return;
+        }
+        console.log("id", postId);
+        try {
+            const post = randomPosts.find((p) => p.postId === postId);
+            if (!post) {
+                console.warn("⚠️ Post not found or likes array is undefined!");
+                return;
+            }
+            console.log("postlike", post.likes)
+            console.log("userid", user._id)
+            const alreadyLiked = post.likes.includes(user._id);
+            console.log("alreadyliked", alreadyLiked);
+            const response = alreadyLiked
+                ? await axios.post(`${host}/api/likes/remove`,
+                    { userId: user._id, postId },
+                )
+                : await axios.post(`${host}/api/likes/add`, { userId: user._id, postId });
+
+            console.log("✅ Like toggled:", response.data);
+
+
+            setRandomPosts((prevPosts) =>
+                prevPosts.map((post) =>
+                    post.postId === postId
+                        ? {
+                            ...post,
+                            likes: alreadyLiked
+                                ? post.likes.filter((id) => id !== user._id)
+                                : [...post.likes, user._id],
+                        }
+                        : post
+                )
+            );
+        } catch (error) {
+            console.error("🔥 Error toggling like:", error.response?.data || error.message);
+        }
+    };
     return (
         <Box
             sx={{
@@ -262,10 +342,13 @@ const PostFeed = ({
                             <Box sx={{ display: "flex", alignItems: "center", mt: 1, gap: 5, px: 2 }}>
                                 <Box sx={{ display: "flex", alignItems: "center" }}>
                                     <IconButton
-                                        onClick={() => handleLikePost(post.postId)}
-                                        sx={{ color: post.likes?.includes(user?._id) ? "#073574" : "inherit" }}
-                                    >
-                                        <AiFillLike />
+                                        onClick={() => selectedTab === 'explore' ? handleExploreLikePost(post.postId) : handleLikePost(post.postId)}>
+                                        {post.likes?.map(id => id.toString()).includes(user?._id?.toString()) ? (
+                                            <AiFillLike color="#073574" />
+                                        ) : (
+                                            <AiOutlineLike />
+                                        )}
+
                                     </IconButton>
                                     <Typography
                                         sx={{ cursor: "pointer" }}
@@ -279,7 +362,13 @@ const PostFeed = ({
                                     <IconButton onClick={() => toggleCommentBox(post.postId)}>
                                         <FaRegComment />
                                     </IconButton>
-                                    <Typography>{post.comments.comments.length} Comment</Typography>
+                                    <Typography>
+                                        {(Array.isArray(post.comments?.comments)
+                                            ? post.comments.comments.length
+                                            : Array.isArray(post.comments)
+                                                ? post.comments.length
+                                                : 0)} Comment
+                                    </Typography>
                                 </Box>
 
                                 <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -295,11 +384,6 @@ const PostFeed = ({
                                     <Typography>Share</Typography>
                                 </Box>
 
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                    <IconButton>
-                                        <BsFillSaveFill />
-                                    </IconButton>
-                                </Box>
                             </Box>
 
                             {/* Comment Box */}
@@ -369,7 +453,7 @@ const PostFeed = ({
                                                 px: 1,
                                                 fontSize: "13px",
                                             }}
-                                            onClick={() => handleAddComment(post.postId, post.userId)}
+                                            onClick={() => selectedTab === 'explore' ? handleExploreAddComment(post.postId, post.userId) : handleAddComment(post.postId, post.userId)}
                                         >
                                             Post
                                         </Button>

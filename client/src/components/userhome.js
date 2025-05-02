@@ -232,6 +232,7 @@ const UserHome = () => {
           post.postId === postId ? { ...post, comments: res.data } : post
         )
       );
+
     } catch (err) {
       console.error("Error fetching comments:", err.response?.data || err.message);
     }
@@ -368,11 +369,11 @@ const UserHome = () => {
       }
 
       const alreadyLiked = post.likes.includes(user._id);
-
+      console.log("abcdefg", postId);
       const response = alreadyLiked
-        ? await axios.delete(`${host}/api/likes/remove`, {
-          data: { userId: user._id, postId },
-        })
+        ? await axios.post(`${host}/api/likes/remove`,
+          { userId: user._id, postId },
+        )
         : await axios.post(`${host}/api/likes/add`, { userId: user._id, postId });
 
       console.log("✅ Like toggled:", response.data);
@@ -451,7 +452,9 @@ const UserHome = () => {
   const handleOpenLikeModal = async (postId) => {
     try {
       // Assuming your endpoint returns { likes: [user details...] }
+
       const res = await axios.get(`${host}/api/likes/post/${postId}`);
+      console.log("liked users", res.data.likes);
       setLikedUsers(res.data.likes);
       setOpenLikeModal(true);
     } catch (error) {

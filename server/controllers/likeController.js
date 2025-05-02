@@ -4,6 +4,7 @@ const Post = require("../models/Post"); // ✅ Import Post model
 const Like = require("../models/like"); // ✅ Import Like model
 const Notification = require("../models/Notification");
 const User = require("../models/Userdetails"); // ✅ Import User Model
+const like = require("../models/like");
 
 // ✅ Add Like
 const addLike = async (req, res) => {
@@ -38,19 +39,19 @@ const addLike = async (req, res) => {
         if (!Array.isArray(post.dislikes)) post.dislikes = [];
 
         // ✅ Check if user already liked the post
-        if (post.likes.some(id => id.toString() === userId)) {
+        if (post.likes.some(user => user._id.toString() === userId)) {
             console.log("❌ User already liked this post.");
             return res.status(400).json({ message: "You have already liked this post." });
         }
 
         // ✅ Add like and save post
-        post.likes.push(userObjectId);
+        post.likes.push(sender);
         await post.save();
 
         console.log("✅ Like added successfully!");
 
         // ✅ Prevent self-notification
-        if (post.userId.toString() !== userId) { 
+        if (post.userId.toString() !== userId) {
             // ✅ Create notification and store sender details
             const notification = await Notification.create({
                 userId: post.userId, // Post owner
@@ -86,7 +87,7 @@ const addLike = async (req, res) => {
 const removeLike = async (req, res) => {
     try {
         const { userId, postId } = req.body;
-
+        console.log("removereq", req.body)
         if (!userId || !postId) {
             return res.status(400).json({ message: "UserId and PostId are required." });
         }
@@ -103,7 +104,7 @@ const removeLike = async (req, res) => {
         }
 
         // ✅ Remove the like (filter out userId from likes array)
-        post.likes = post.likes.filter(id => id.toString() !== userId);
+        post.likes = post.likes.filter(user => user._id.toString() !== userId);
         await post.save();
 
         console.log("✅ Like removed successfully!");
@@ -123,9 +124,12 @@ const getLikesByPostId = async (req, res) => {
         if (!postId) {
             return res.status(400).json({ message: "PostId is required." });
         }
-
-        const likes = await Like.find({ postId }).populate("userId", "username userimg");
-        res.status(200).json({ likesCount: likes.length, likes });
+        const checkpost = await Post.findById(postId);
+        console.log("checkpost", checkpost)
+        // const likes = await Like.find({ postId }).populate("userId", "username userimg");
+        const post = await Post.findById(postId).populate('likes');
+        console.log("likes", post.likes)
+        res.status(200).json({ likesCount: post.likes.length, likes: post.likes });
     } catch (err) {
         console.error("Error fetching likes:", err);
         res.status(500).json({ message: "Server Error" });

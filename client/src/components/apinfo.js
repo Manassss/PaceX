@@ -6,4 +6,5 @@
 //         : process.env.REACT_APP_PROD_API_BASE_URL;
 // };
 
-export const host = process.env.REACT_APP_PROD_API_BASE_URL;
+export const host = process.env.REACT_APP_PROD_API_BASE_URL
+//const host = process.env.REACT_APP_PROD_API_BASE_URL;

@@ -72,19 +72,22 @@ const StoryViewer = ({
         const currentStory = currentStories[currentIndexStory];
         let timer;
 
-        if (!open || !currentStory) return;
+        if (!open || !currentStory || currentIndexStory >= currentStories.length) return;
 
         if (currentStory.mediaType === "image") {
             setProgress(0);
             let progressValue = 0;
-
             timer = setInterval(() => {
                 progressValue += 1;
                 setProgress(progressValue);
                 if (progressValue >= 100) {
                     clearInterval(timer);
                     setTimeout(() => {
-                        handleNext();
+                        if (currentIndexStory < currentStories.length - 1) {
+                            handleNext();
+                        } else {
+                            handleClose(); // close after last story
+                        }
                     }, 100); // short buffer to avoid premature switch
                 }
             }, 50);
