@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, Box, Typography, List, ListItem, Avatar, ListItemText } from '@mui/material';
 
 const LikeModal = ({ open, onClose, likedUsers, handleProfile }) => {
+
+    useEffect(() => {
+        console.log("liked users", likedUsers);
+    },)
     return (
         <Modal open={open} onClose={onClose}>
             <Box

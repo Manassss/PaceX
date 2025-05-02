@@ -28,7 +28,8 @@ const StoryViewer = ({
     //fetchViewers,
     handleDeleteStory,
     handlePrev,
-    handleNext
+    handleNext,
+    handleNextUser // ✅ NEW
 }) => {
     //     const [stories, setStories] = useState([]);
     // const [openStory, setOpenStory] = useState(false);
@@ -72,19 +73,22 @@ const StoryViewer = ({
         const currentStory = currentStories[currentIndexStory];
         let timer;
 
-        if (!open || !currentStory) return;
+        if (!open || !currentStory || currentIndexStory >= currentStories.length) return;
 
         if (currentStory.mediaType === "image") {
             setProgress(0);
             let progressValue = 0;
-
             timer = setInterval(() => {
                 progressValue += 1;
                 setProgress(progressValue);
                 if (progressValue >= 100) {
                     clearInterval(timer);
                     setTimeout(() => {
-                        handleNext();
+                        if (currentIndexStory < currentStories.length - 1) {
+                            handleNext();
+                        } else {
+                            handleNextUser && handleNextUser();
+                        }
                     }, 100); // short buffer to avoid premature switch
                 }
             }, 50);
@@ -162,8 +166,13 @@ const StoryViewer = ({
                             controls={false}
                             onEnded={() => {
                                 setTimeout(() => {
-                                    handleNext();
-                                }, 100); // small buffer
+                                    if (currentIndexStory < currentStories.length - 1) {
+                                        handleNext();
+                                    } else {
+                                        // End of current user's stories, handled by parent
+                                        handleNextUser && handleNextUser();
+                                    }
+                                }, 100);
                             }}
                             style={{
                                 width: "100%",

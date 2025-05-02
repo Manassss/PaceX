@@ -64,6 +64,13 @@ const Marketplace = () => {
     setAnchorEl(e.currentTarget);
     setMenuItem(item);
   };
+  const allowedAddresses = [
+    "1 Pace Plaza, New York, NY",
+    "33 Beekman St, New York, NY",
+    "161 William St, New York, NY",
+    "41 Park Row, New York, NY",
+    "Birch Coffee, 8 Spruce St",
+  ];
 
   const handleMenuClose = () => {
     setAnchorEl(null);
@@ -87,8 +94,8 @@ const Marketplace = () => {
   }, [searchQuery, selectedCategory, listings]);
 
   const displayedListings = tabIndex === 1
-    ? listings.filter(item => item.userId?._id === user?._id && !item.sold)
-    : filteredListings.filter(item => !item.sold);
+    ? listings.filter(item => item?.userId?._id === user?._id && !item?.sold)
+    : filteredListings.filter(item => !item?.sold);
 
 
   const fetchListings = async () => {
@@ -217,7 +224,7 @@ const Marketplace = () => {
   const visible = listings.filter(item => {
     if (!item.sold) return true;
     // if sold, only owner sees it
-    return user && item.userId._id === user._id;
+    return user && item.userId?._id === user._id;
   });
 
 
@@ -301,7 +308,7 @@ const Marketplace = () => {
           minHeight: '100vh',
           background: 'linear-gradient(to bottom, #f7f4ef, #e6ddd1)',
           p: { xs: 2, sm: 4 },
-          pt: { xs: '80px', sm: '110px' },
+
         }}
       >
         {/* Search & Filter Row */}
@@ -430,28 +437,22 @@ const Marketplace = () => {
                     fullWidth
                     sx={{ flex: 1, borderRadius: 2, bgcolor: "#f7f7f7" }}
                   />
-                  <Autocomplete
-                    onLoad={(autocomplete) => {
-                      autocompleteRef.current = autocomplete;
-                    }}
-                    onPlaceChanged={() => {
-                      const place = autocompleteRef.current.getPlace();
-                      if (place.formatted_address) {
-                        setFormData((prev) => ({ ...prev, address: place.formatted_address }));
-                      }
-                    }}
-                  >
-                    <TextField
-                      label="Address"
+
+                  <FormControl required fullWidth sx={{ flex: 2 }}>
+                    <InputLabel>Address</InputLabel>
+                    <Select
                       name="address"
-                      inputRef={addressInputRef}
                       value={formData.address}
                       onChange={handleChange}
-                      required
-                      fullWidth
-                      sx={{ flex: 2, borderRadius: 2, bgcolor: "#f7f7f7" }}
-                    />
-                  </Autocomplete>
+                      label="Address"
+                      sx={{ borderRadius: 2, bgcolor: "#f7f7f7" }}
+                    >
+                      {allowedAddresses.map((addr) => (
+                        <MenuItem key={addr} value={addr}>{addr}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
 
 
 
@@ -696,26 +697,29 @@ const Marketplace = () => {
                   </Box>
 
                   {/* Push the button to the bottom of the card */}
-                  <Box mt="auto">
-                    <Button
-                      className="chat-button"
-                      variant="contained"
-                      startIcon={<ChatIcon />}
-                      fullWidth
-                      sx={{
-                        borderRadius: '8px',
-                        backgroundColor: '#073574',
-                        color: '#fff',
-                        '&:hover': { backgroundColor: '#05204d' },
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openChat(item.userId);
-                      }}
-                    >
-                      Chat with Seller
-                    </Button>
-                  </Box>
+                  {item?.userId?._id && user?._id && item.userId._id !== user._id && (
+                    <Box mt="auto">
+                      <Button
+                        className="chat-button"
+                        variant="contained"
+                        startIcon={<ChatIcon />}
+                        fullWidth
+                        sx={{
+                          borderRadius: '8px',
+                          backgroundColor: '#073574',
+                          color: '#fff',
+                          '&:hover': { backgroundColor: '#05204d' },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openChat(item.userId);
+                        }}
+                      >
+                        Chat with Seller
+                      </Button>
+                    </Box>
+                  )}
+
                 </CardContent>
               </Card>
             </Grid>
@@ -725,16 +729,16 @@ const Marketplace = () => {
 
 
         {/* ChatBox Model */}
-        <Modal open={openChatbox} onClose={() => setOpenChatbox(false)}>
-          <Box width="50%" height="50%" position="absolute" left='28%' top='25%' >
+        <Modal open={openChatbox} onClose={() => setOpenChatbox(false)} >
+          <Box width="50%" position="absolute" left='28%' top='2%' >
 
             {chatUser && (
               <>
-<Chatbox
-  userId={chatUser._id}
-  username={chatUser.name}
-  onBack={() => setOpenChatbox(false)} // ✅ closes modal on back
-/>
+                <Chatbox
+                  userId={chatUser._id}
+                  username={chatUser.name}
+                  onBack={() => setOpenChatbox(false)} // ✅ closes modal on back
+                />
 
               </>
             )}
@@ -809,22 +813,24 @@ const Marketplace = () => {
             <Button variant="outlined" onClick={() => setOpenDetailModal(false)}>
               Close
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<ChatIcon />}
-              sx={{
-                ml: 2,
-                backgroundColor: '#073574',
-                color: '#fff',
-                '&:hover': { backgroundColor: '#05204d' },
-              }}
-              onClick={() => {
-                openChat(selectedItem.userId);
-                setOpenDetailModal(false);
-              }}
-            >
-              Chat with Seller
-            </Button>
+            {selectedItem?.userId._id !== user._id && (
+              <Button
+                variant="contained"
+                startIcon={<ChatIcon />}
+                sx={{
+                  ml: 2,
+                  backgroundColor: '#073574',
+                  color: '#fff',
+                  '&:hover': { backgroundColor: '#05204d' },
+                }}
+                onClick={() => {
+                  openChat(selectedItem.userId);
+                  setOpenDetailModal(false);
+                }}
+              >
+                Chat with Seller
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
 

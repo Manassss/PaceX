@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const Like = require('../models/like');
 const Chat = require('../models/Chat');
-const Message = require('../models/Message');
+
 const Saved = require('../models/Saved');
 const Marketplace = require('../models/Market');
 const Story = require('../models/Story');
@@ -408,8 +408,7 @@ const deleteUser = async (req, res) => {
         // 5. Delete all chats/messages where user is sender or receiver
         await Chat.deleteMany({ $or: [{ senderId: userId }, { receiverId: userId }] });
         console.log("Chat deleted");
-        await Message.deleteMany({ $or: [{ senderId: userId }, { recipientId: userId }] });
-        console.log("message deleted");
+
         // 6. Delete notifications triggered by or for user
         await Notification.deleteMany({ $or: [{ userId }, { senderId: userId }] });
         console.log("Notifications deleted");
