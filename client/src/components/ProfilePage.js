@@ -22,6 +22,7 @@ import {
   Stack,
   ListItemButton,
   ListItemAvatar,
+  ListItemIcon,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -50,13 +51,18 @@ import PersonOffIcon from '@mui/icons-material/PersonOff';
 import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block';
 import { GiShare } from "react-icons/gi";
-import { useTheme } from '@mui/material/styles';
+import { styled,useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FollowRequest from '../components/Profile/FollowRequest';
 import { host } from '../components/apinfo';
 import { updateProfile as firebaseUpdateProfile } from "firebase/auth";
 import Postmodal from './Post/Postmodal';
 import Chatbox from './Chatbox';
+import DeleteIcon from '@mui/icons-material/Delete';
+import InboxIcon from '@mui/icons-material/Inbox';
+import ShareIcon from '@mui/icons-material/Share';
+
+
 
 
 
@@ -936,6 +942,17 @@ const ProfilePage = () => {
     setOpenChat(true);
   }
 
+  const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
+    backgroundColor: theme.palette.grey[50],
+    padding: theme.spacing(2),
+    borderTopLeftRadius: theme.shape.borderRadius,
+    borderTopRightRadius: theme.shape.borderRadius,
+    // push the content down a bit for breathing room
+    paddingBottom: theme.spacing(1),
+    // make sure we can absolutely position the close button
+    position: 'relative',
+  }));
+
   return (
     <>
       <Container
@@ -943,6 +960,7 @@ const ProfilePage = () => {
         sx={{
           // bring back a bit of horizontal breathing room
           px: { xs: 2, md: 4 }
+          
         }}
       >
 
@@ -963,9 +981,6 @@ const ProfilePage = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderRadius: 2,
-                boxShadow: 1,
-                flexWrap: 'nowrap',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -975,44 +990,84 @@ const ProfilePage = () => {
               <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
                 <CiMenuKebab />
               </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-              >
-                {userDetails.id === user?._id
-                  ? [
-                    <MenuItem key="blocked" onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
-                      Blocked Contacts
-                    </MenuItem>,
-                    // <MenuItem key="edit" onClick={() => { setEditMode(v => !v); handleMenuClose(); }}>
-                    //   {editMode ? "Cancel Edit Profile" : "Edit Profile"}
-                    // </MenuItem>,
-                    <MenuItem key="requests" onClick={() => { setOpenFollowRequestModal(true); handleMenuClose(); }}>
-                      Follow Requests
-                    </MenuItem>,
-                    <MenuItem key="edit" onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
-                      Edit Profile
-                    </MenuItem>,
-                    <MenuItem key="delete" onClick={() => { setOpenDeleteAccountModal(true); handleMenuClose(); }}>
-                      Delete Account
-                    </MenuItem>
-                  ]
-                  : [
-                    <MenuItem key="block" onClick={() => { handleBlock(); handleMenuClose(); }}>
-                      Block
-                    </MenuItem>
-                  ]
-                }
-                <MenuItem key="share" onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
-                  Share Profile
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              elevation: 6,
+              sx: {
+                borderRadius: 2,
+                minWidth: 200,
+                p: 1,
+                overflow: 'visible',
+                boxShadow: '0px 5px 10px rgba(0,0,0,0.12)',
+                '& .MuiMenuItem-root': {
+                  borderRadius: 1,
+                  mx: 0.5,
+                  my: 0.25,
+                  px: 1.5,
+                  py: 0.75,
+                  transition: 'background-color 0.2s',
+                },
+                '& .MuiMenuItem-root:hover': {
+                  bgcolor: 'action.hover',
+                },
+                // optional arrow “pointer”
+                '&:before': {
+                  content: '""',
+                  display: 'block',
+                  position: 'absolute',
+                  top: 0,
+                  right: 14,
+                  width: 10,
+                  height: 10,
+                  bgcolor: 'background.paper',
+                  transform: 'translateY(-50%) rotate(45deg)',
+                  boxShadow: '-1px -1px 1px rgba(0,0,0,0.1)',
+                  zIndex: 0,
+                },
+              },
+            }}
+          >
+            {userDetails.id === user?._id ? (
+              <>
+                <MenuItem onClick={() => { setOpenBlockedContacts(true); handleMenuClose(); }}>
+                  <ListItemIcon><BlockIcon fontSize="small" /></ListItemIcon>
+                  <ListItemText primary="Blocked Contacts" />
                 </MenuItem>
+                <MenuItem onClick={() => { setOpenFollowRequestModal(true); handleMenuClose(); }}>
+                  <ListItemIcon><InboxIcon fontSize="small" /></ListItemIcon>
+                  <ListItemText primary="Follow Requests" />
+                </MenuItem>
+                <MenuItem onClick={() => { setOpenEditProfile(true); handleMenuClose(); }}>
+                  <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+                  <ListItemText primary="Edit Profile" />
+                </MenuItem>
+                <MenuItem onClick={() => { setOpenDeleteAccountModal(true); handleMenuClose(); }}>
+                  <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+                  <ListItemText primary="Delete Account" />
+                </MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={() => { handleBlock(); handleMenuClose(); }}>
+                <ListItemIcon><BlockIcon fontSize="small" /></ListItemIcon>
+                <ListItemText primary="Block User" />
+              </MenuItem>
+            )}
 
-              </Menu>
+            <MenuItem onClick={() => { setOpenShareModal(true); handleMenuClose(); }}>
+              <ListItemIcon><ShareIcon fontSize="small" /></ListItemIcon>
+              <ListItemText primary="Share Profile" />
+            </MenuItem>
+          </Menu>
+            
             </Box>
 
             {/* 2. Avatar */}
-            <Box sx={{ width: 250, height: 250, ml: 'auto', mt: 2, }}>
+            <Box sx={{ width: 250, height: 250, ml:13 , mt: 9, }}>
               <Avatar
                 src={userDetails.profileImage}
                 sx={{
@@ -1395,16 +1450,43 @@ const ProfilePage = () => {
           fullWidth
           maxWidth="xs"
         >
-          <DialogTitle sx={{ fontWeight: 'bold', position: 'relative', textAlign: 'center', pb: 1 }}>
-            Blocked Contacts
-            <IconButton
-              aria-label="close"
-              onClick={() => setOpenBlockedContacts(false)}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
+              <StyledDialogTitle>
+      <Box display="flex" alignItems="center">
+        <Avatar
+          sx={{
+            bgcolor: theme.palette.error.light,
+            color: theme.palette.error.contrastText,
+            mr: 1,
+            width: 32,
+            height: 32,
+          }}
+        >
+          <PersonOffIcon fontSize="small" />
+        </Avatar>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Blocked Contacts
+        </Typography>
+      </Box>
+      <IconButton
+        aria-label="close"
+        onClick={() => setOpenBlockedContacts(false)}
+        size="small"
+        sx={{
+          position: 'absolute',
+          right: theme.spacing(1),
+          top: theme.spacing(1),
+          color: theme.palette.grey[600],
+          '&:hover': { bgcolor: theme.palette.grey[200] },
+        }}
+      >
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    </StyledDialogTitle>
+    <Divider sx={{ borderColor: theme.palette.grey[200] }} />
+
+
+<Divider sx={{ borderColor: 'primary.light' }} />
+          
           <DialogContent dividers>
             {blockedUsers && blockedUsers.length > 0 ? (
               <List disablePadding>
