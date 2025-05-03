@@ -163,13 +163,14 @@ const StoryViewer = ({
                             key={`story-${currentIndexStory}`}
                             src={currentStories[currentIndexStory].mediaUrl}
                             muted
+                            autoPlay
+                            playsInline
                             controls={false}
                             onEnded={() => {
                                 setTimeout(() => {
                                     if (currentIndexStory < currentStories.length - 1) {
                                         handleNext();
                                     } else {
-                                        // End of current user's stories, handled by parent
                                         handleNextUser && handleNextUser();
                                     }
                                 }, 100);
@@ -177,8 +178,18 @@ const StoryViewer = ({
                             style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "contain",
+                                objectFit: "cover", // Changed from 'contain' to 'cover' for better compatibility
                                 borderRadius: 10,
+                                backgroundColor: "black", // Ensure black background instead of default
+                            }}
+                            onLoadedMetadata={() => {
+                                try {
+                                    videoRef.current?.play().catch((err) => {
+                                        console.error("Autoplay failed:", err);
+                                    });
+                                } catch (e) {
+                                    console.error("Playback error:", e);
+                                }
                             }}
                         />
                     ) : (

@@ -30,7 +30,25 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
         setVideoBlob(null);
 
         const stream = webcamRef.current.video.srcObject;
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+        let options = { mimeType: "video/webm" };
+        if (!MediaRecorder.isTypeSupported("video/webm")) {
+            if (MediaRecorder.isTypeSupported("video/mp4")) {
+                options = { mimeType: "video/mp4" };
+            } else {
+                options = {};
+            }
+        }
+
+        let mediaRecorder;
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } catch (e) {
+            alert("Your browser does not support video recording.");
+            console.error("MediaRecorder init error:", e);
+            return;
+        }
+
         let recordedChunks = [];
 
         mediaRecorder.ondataavailable = (event) => {
@@ -40,7 +58,7 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
         };
 
         mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: "video/webm" });
+            const blob = new Blob(recordedChunks, { type: options.mimeType || "video/webm" });
             setVideoBlob(blob);
         };
 
@@ -48,7 +66,6 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
         mediaRecorder.start();
         setRecording(true);
     };
-
     //  Stop Video Recording
     const stopRecording = () => {
         if (mediaRecorderRef.current) {
@@ -81,7 +98,7 @@ const CameraCapture = ({ userId, onMediaUpload }) => {
             } else if (videoBlob) {
                 //  Upload Video
                 file = videoBlob;
-                fileType = "video/webm";
+                fileType = file.type || "video/webm";  // Instead of hardcoding "video/webm"
                 fileName = `media/${uid}/video_${currentDateTime}.webm`;
 
             }
