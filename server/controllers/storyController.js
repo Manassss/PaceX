@@ -36,6 +36,32 @@ const getStories = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+const getUserStories = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // 1. Find the user
+        const user = await User.findById(userId).select('followings');
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 2. Include user's own ID + followings
+        const allowedUserIds = [userId, ...user.followings];
+
+        // 3. Fetch active stories from those users
+        const stories = await Story.find({
+            userId: { $in: allowedUserIds },
+            expiresAt: { $gt: new Date() }
+        }).sort({ createdAt: -1 });
+
+        res.status(200).json(stories);
+    } catch (err) {
+        console.error("🔥 Error fetching stories:", err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
 
 //  Mark a story as "viewed" by a user
 const viewStory = async (req, res) => {
@@ -132,4 +158,4 @@ const getStoryViews = async (req, res) => {
 // (Optional) Run cleanup job every hour
 //setInterval(deleteExpiredStories, 60 * 60 * 1000); // Runs every 1 hour
 
-module.exports = { createStory, getStories, viewStory, deleteStory, getStoryViews };
+module.exports = { createStory, getStories, viewStory, deleteStory, getStoryViews, getUserStories };

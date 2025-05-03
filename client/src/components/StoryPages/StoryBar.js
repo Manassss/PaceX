@@ -23,7 +23,7 @@ const StoryBar = ({
 
     const fetchStories = async () => {
         try {
-            const res = await axios.get(`${host}/api/story/all`);
+            const res = await axios.get(`${host}/api/story/${user?._id}`);
             const todaystories = res.data.map(story => ({
                 storyId: story._id,
                 userId: story.userId,

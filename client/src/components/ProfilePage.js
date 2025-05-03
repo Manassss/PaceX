@@ -857,6 +857,7 @@ const ProfilePage = () => {
       const res = await axios.post(`${host}/api/users/block`, payload);
       console.log("Response:", res.message);
       fetchUserProfile();
+
       navigate('/userhome')
 
     } catch (error) {

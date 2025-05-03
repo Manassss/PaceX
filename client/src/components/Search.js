@@ -7,11 +7,12 @@ import {
   Typography,
 } from "@mui/material";
 import { host } from '../components/apinfo';
+import { useAuth } from "../auth/AuthContext";
 const SearchPanel = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const navigate = useNavigate();
-
+  const { user } = useAuth();
   const handleSearchChange = async (e) => {
     const value = e.target.value;
     setSearchTerm(value);
@@ -21,8 +22,10 @@ const SearchPanel = ({ onClose }) => {
       const filtered = res.data
         .filter(
           (u) =>
-            u.name.toLowerCase().includes(value.toLowerCase()) ||
-            u.email.toLowerCase().includes(value.toLowerCase())
+            (u.name.toLowerCase().includes(value.toLowerCase()) ||
+              u.email.toLowerCase().includes(value.toLowerCase())) &&
+            !user.blockeduser.includes(u._id) &&
+            !user.blockedby.includes(u._id)
         )
         .slice(0, 5);
       setFilteredUsers(filtered);
