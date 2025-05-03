@@ -104,7 +104,7 @@ const CommunityPage = () => {
   const [openCamera, setOpenCamera] = useState(false);
   // Members dialog state
   const [membersOpen, setMembersOpen] = useState(false);
-
+  const [nameError, setNameError] = useState("");
   const handleOpenMembers = () => setMembersOpen(true);
   const handleCloseMembers = () => setMembersOpen(false);
 
@@ -211,6 +211,13 @@ const CommunityPage = () => {
 
   const handleCreateCommunity = async () => {
     try {
+      const alreadyExists = communities.some(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (alreadyExists) {
+        setNameError("A community with this name already exists.");
+        return; // Stop submission
+      } else {
+        setNameError(""); // Clear error if name is valid
+      }
       let imageUrl = coverImageUrl;
       if (coverImage && !coverImageUrl) {
         const storageRef = ref(storage, `communityCovers/${user._id}/${coverImage.name}`);
@@ -222,7 +229,7 @@ const CommunityPage = () => {
           });
         });
       }
-
+      console.log("alreadyexists", alreadyExists);
       const payload = {
         name,
         description,
@@ -355,19 +362,19 @@ const CommunityPage = () => {
         ps.map(p =>
           p._id === postId
             ? {
-                ...p,
-                comments: [
-                  ...p.comments,
-                  {
-                    userId: {
-                      _id: user._id,
-                      name: user.name,
-                      profileImage: user.profileImage || ""
-                    },
-                    text
-                  }
-                ]
-              }
+              ...p,
+              comments: [
+                ...p.comments,
+                {
+                  userId: {
+                    _id: user._id,
+                    name: user.name,
+                    profileImage: user.profileImage || ""
+                  },
+                  text
+                }
+              ]
+            }
             : p
         )
       );
@@ -495,180 +502,181 @@ const CommunityPage = () => {
             {[...filteredCommunities]
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
               .map((community) => (
-              <Grid item xs={12} sm={6} md={4} lg={4} key={community._id}>
-                <Card
-                  sx={{
-                    height: "100%",              // ← fill the Grid item’s height
-                    display: "flex",
-                    flexDirection: "column",
-                    borderRadius: 10,
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    border: "2px solid #073574",
-                    boxShadow: "0 8px 24px rgba(7,53,116,0.2)",
-                    transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                    backdropFilter: "blur(10px)",
-                    background: "white",
-                    position: "relative", // <-- ensure relative for absolute child
-                    "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: "0 12px 32px rgba(7,53,116,0.3)",
-                    },
-                  }}
-                >
-                  {community.createdBy === user._id && (
-                    <IconButton
-                      onClick={() => handleDeleteCommunityHome(community._id)}
-                      sx={{
-                        position: "absolute",
-                        top: 8,
-                        right: 8,
-                        backgroundColor: "rgba(0,0,0,0.05)",
-                        "&:hover": { backgroundColor: "rgba(0,0,0,0.1)" },
-                        zIndex: 1
-                      }}
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                  {/* Banner */}
-                  <Box
+                <Grid item xs={12} sm={6} md={4} lg={4} key={community._id}>
+                  <Card
                     sx={{
-                      height: 0,
-                      pt: "56%", // 16:9 aspect ratio
-                      backgroundImage: `url(${community.coverImage})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
+                      height: "100%",              // ← fill the Grid item’s height
+                      display: "flex",
+                      flexDirection: "column",
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      border: "2px solid #073574",
+                      boxShadow: "0 8px 24px rgba(7,53,116,0.2)",
+                      transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                      backdropFilter: "blur(10px)",
+                      background: "white",
+                      position: "relative", // <-- ensure relative for absolute child
+                      "&:hover": {
+                        transform: "translateY(-5px)",
+                        boxShadow: "0 12px 32px rgba(7,53,116,0.3)",
+                      },
                     }}
-                  />
-
-                  {/* Content */}
-                  <CardContent>
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      sx={{ mb: 1 }}
-                    >
-                      <Typography
-                        variant="h6"
-                        fontWeight="bold"
-                        fontSize={{ xs: "1rem", sm: "1.2rem", md: "1.4rem" }}
-
-                        sx={{ color: "#073574", fontSize: "1.2rem" }}
+                  >
+                    {community.createdBy === user._id && (
+                      <IconButton
+                        onClick={() => handleDeleteCommunityHome(community._id)}
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          backgroundColor: "rgba(0,0,0,0.05)",
+                          "&:hover": { backgroundColor: "rgba(0,0,0,0.1)" },
+                          zIndex: 1
+                        }}
+                        size="small"
                       >
-                        {community.name.length > 15
-                          ? `${community.name.substring(0, 15)}…`
-                          : community.name}
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    {/* Banner */}
+                    <Box
+                      sx={{
+                        height: 0,
+                        pt: "56%", // 16:9 aspect ratio
+                        backgroundImage: `url(${community.coverImage})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+
+                    {/* Content */}
+                    <CardContent>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ mb: 1 }}
+                      >
+                        <Typography
+                          variant="h6"
+                          fontWeight="bold"
+                          fontSize={{ xs: "1rem", sm: "1.2rem", md: "1.4rem" }}
+
+                          sx={{ color: "#073574", fontSize: "1.2rem" }}
+                        >
+                          {community.name.length > 15
+                            ? `${community.name.substring(0, 15)}…`
+                            : community.name}
+                        </Typography>
+
+                        <Button
+                          onClick={() => {
+                            setSelectedCommunity(community);
+                            setView("detail");
+                            setSearchTerm("");
+                          }}
+                          startIcon={<VisibilityIcon />}
+                          variant="outlined"
+                          sx={{
+                            borderRadius: "999px",
+                            textTransform: "none",
+                            color: "#073574",
+                            borderColor: "#073574",
+                            px: 2,
+                            py: 0.5,
+                            "&:hover": {
+                              backgroundColor: "rgba(7,53,116,0.1)",
+                              borderColor: "#073574",
+                            },
+                          }}
+                        >
+                          View
+                        </Button>
+                      </Box>
+
+
+                      <Typography
+                        variant="body2"
+                        color="black"
+                        sx={{ mb: 2, minHeight: 50 }}
+                      >
+                        {community.description.length > 75
+                          ? `${community.description.substring(0, 75)}…`
+                          : community.description}
                       </Typography>
 
-                      <Button
-                        onClick={() => {
-                          setSelectedCommunity(community);
-                          setView("detail");
-                        }}
-                        startIcon={<VisibilityIcon />}
-                        variant="outlined"
-                        sx={{
-                          borderRadius: "999px",
-                          textTransform: "none",
-                          color: "#073574",
-                          borderColor: "#073574",
-                          px: 2,
-                          py: 0.5,
-                          "&:hover": {
-                            backgroundColor: "rgba(7,53,116,0.1)",
-                            borderColor: "#073574",
-                          },
-                        }}
+                      {/* …inside your CardContent, after description… */}
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ mt: "auto", px: 1, flexWrap: "wrap", gap: 1 }}
                       >
-                        View
-                      </Button>
-                    </Box>
+                        {["rules", "members", "posts"].map((key) => {
+                          let icon, label, onClick, bg, hoverBg, color;
+                          switch (key) {
+                            case "rules":
+                              icon = <ListAltIcon fontSize="small" />;
+                              label = "Rules";
+                              onClick = () => handleOpenRules(community.rules);
+                              bg = "#fce4ec";
+                              hoverBg = "#f8bbd0";
+                              color = "secondary";
+                              break;
+                            case "members":
+                              icon = <GroupsIcon fontSize="small" />;
+                              label = `${community.members?.length || 0} Members`;
+                              onClick = undefined;
+                              bg = "#e3f2fd";
+                              hoverBg = bg;
+                              color = "primary";
+                              break;
+                            case "posts":
+                              icon = <ArticleIcon fontSize="small" />;
+                              label = `${community.posts} Posts`;
+                              onClick = undefined;
+                              bg = "#f3e5f5";
+                              hoverBg = bg;
+                              color = "secondary";
+                              break;
+                          }
 
-
-                    <Typography
-                      variant="body2"
-                      color="black"
-                      sx={{ mb: 2, minHeight: 50 }}
-                    >
-                      {community.description.length > 75
-                        ? `${community.description.substring(0, 75)}…`
-                        : community.description}
-                    </Typography>
-
-                    {/* …inside your CardContent, after description… */}
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ mt: "auto", px: 1, flexWrap: "wrap", gap: 1 }}
-                    >
-                      {["rules", "members", "posts"].map((key) => {
-                        let icon, label, onClick, bg, hoverBg, color;
-                        switch (key) {
-                          case "rules":
-                            icon = <ListAltIcon fontSize="small" />;
-                            label = "Rules";
-                            onClick = () => handleOpenRules(community.rules);
-                            bg = "#fce4ec";
-                            hoverBg = "#f8bbd0";
-                            color = "secondary";
-                            break;
-                          case "members":
-                            icon = <GroupsIcon fontSize="small" />;
-                            label = `${community.members?.length || 0} Members`;
-                            onClick = undefined;
-                            bg = "#e3f2fd";
-                            hoverBg = bg;
-                            color = "primary";
-                            break;
-                          case "posts":
-                            icon = <ArticleIcon fontSize="small" />;
-                            label = `${community.posts} Posts`;
-                            onClick = undefined;
-                            bg = "#f3e5f5";
-                            hoverBg = bg;
-                            color = "secondary";
-                            break;
-                        }
-
-                        return (
-                          <Box
-                            key={key}
-                            onClick={onClick}
-                            sx={{
-                              display: "inline-flex",        // size to content
-                              alignItems: "center",
-                              whiteSpace: "nowrap",          // never wrap icon/text
-                              px: 1.5,
-                              py: 0.75,
-                              background: bg,
-                              borderRadius: "999px",
-                              cursor: onClick ? "pointer" : "default",
-                              transition: "background 0.2s",
-                              "&:hover": onClick ? { background: hoverBg } : {},
-                            }}
-                          >
-                            {React.cloneElement(icon, { sx: { mr: 0.5 } })}
-                            <Typography
-                              component="span"              // renders inline
-                              fontSize="0.9rem"
-                              fontWeight={500}
-                              color={color}
+                          return (
+                            <Box
+                              key={key}
+                              onClick={onClick}
+                              sx={{
+                                display: "inline-flex",        // size to content
+                                alignItems: "center",
+                                whiteSpace: "nowrap",          // never wrap icon/text
+                                px: 1.5,
+                                py: 0.75,
+                                background: bg,
+                                borderRadius: "999px",
+                                cursor: onClick ? "pointer" : "default",
+                                transition: "background 0.2s",
+                                "&:hover": onClick ? { background: hoverBg } : {},
+                              }}
                             >
-                              {label}
-                            </Typography>
-                          </Box>
-                        );
-                      })}
-                    </Stack>
+                              {React.cloneElement(icon, { sx: { mr: 0.5 } })}
+                              <Typography
+                                component="span"              // renders inline
+                                fontSize="0.9rem"
+                                fontWeight={500}
+                                color={color}
+                              >
+                                {label}
+                              </Typography>
+                            </Box>
+                          );
+                        })}
+                      </Stack>
 
 
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
           </Grid>
         </>
       )}
@@ -1249,28 +1257,37 @@ const CommunityPage = () => {
           />
 
           {/* 🚀 Create Button */}
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleCreateCommunity}
-            sx={{
-              ml: 35,
-              py: 1.2,
-              fontWeight: "bold",
-              fontSize: "1rem",
-              borderRadius: "50px",
-              width: "20%",
-              background: "#073574",
-              boxShadow: 4,
-              textTransform: "none",
-              "&:hover": {
-                background: "linear-gradient(135deg, #7b1fa2, #9c27b0)",
-                boxShadow: 6,
-              },
-            }}
-          >
-            Create
-          </Button>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleCreateCommunity}
+              sx={{
+
+                py: 1.2,
+                fontWeight: "bold",
+                fontSize: "1rem",
+                borderRadius: "50px",
+                width: "20%",
+                background: "#073574",
+                boxShadow: 4,
+                textTransform: "none",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #7b1fa2, #9c27b0)",
+                  boxShadow: 6,
+                },
+              }}
+            >
+              Create
+            </Button>
+            {nameError && (
+              <Typography color="error" variant="body2" mt={1}>
+                {nameError}
+              </Typography>
+            )}
+          </Box>
+
         </Box>
       </Modal>
       <Dialog

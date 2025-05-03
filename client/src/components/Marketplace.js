@@ -91,7 +91,7 @@ const Marketplace = () => {
 
   useEffect(() => {
     handleFilter();
-  }, [searchQuery, selectedCategory, listings]);
+  }, [searchQuery, listings]);
 
   const displayedListings = tabIndex === 1
     ? listings.filter(item => item?.userId?._id === user?._id && !item?.sold)
