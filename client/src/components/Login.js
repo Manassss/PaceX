@@ -3,7 +3,7 @@ import axios from 'axios';
 import { TextField, Button, Container, Typography, Box, Paper, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import Logo from "../assets/PACE.png";
 import { motion } from "framer-motion";
 import { host } from '../components/apinfo';
@@ -35,9 +35,14 @@ const Login = () => {
             await setPersistence(auth, browserLocalPersistence);
             const { email, password } = formData;
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log("user crdesntail", userCredential)
             const user = userCredential.user;
+            // 
             await user.reload();
-            if (user.emailVerified = false) {
+            console.log("user crd", user)
+            console.log("user ver", user.emailVerified)
+            console.log("user email", user.email)
+            if (!user.emailVerified) {
                 setMessage("❌ Email not verified. Please check your inbox.");
                 return;
             }
@@ -47,7 +52,14 @@ const Login = () => {
             const now = Date.now();
             localStorage.setItem("loginTime", `${now}`); setMessage('🎉 Login Successful!');
             login(res.data.user);
-            navigate('/userhome?tab=posts');
+            const posts = await axios.get(`${host}/api/posts/${res.data.user._id}`);
+            if (posts.data.length === 0) {
+                navigate('/userhome?tab=explore');
+            }
+            else {
+                navigate('/userhome?tab=posts');
+            }
+
         } catch (err) {
             setMessage('❌ Login Failed');
             console.error("Login Error:", err.response?.data?.message || "Server Error");

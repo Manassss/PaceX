@@ -26,11 +26,14 @@ const Register = () => {
 
     try {
       const { name, email, password, username } = formData;
-
+      if (!/^[a-zA-Z0-9._%+-]+@pace\.edu$/.test(email)) {
+        setMessage("❌ Please use a valid @pace.edu email address.");
+        return;
+      }
       // Create user using Firebase Authentication.
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+      console.log("usercredential,", user);
       // Get an ID token to send to your backend.
       const idToken = await user.getIdToken();
 
@@ -43,8 +46,11 @@ const Register = () => {
         username
       });
 
-      setMessage('🎉 Registration Successful!');
+
+
       await sendEmailVerification(user);
+      await auth.signOut();
+      alert("📩 Verification email sent. Please check your inbox and verify your account before logging in.");
       setMessage("📩 Please check your email and verify your account before logging in.");
       navigate('/login');
     } catch (err) {
