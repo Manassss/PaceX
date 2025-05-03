@@ -7,9 +7,9 @@ const addComment = async (req, res) => {
         const { userId, postId, text, username, userimg, post_userid
         } = req.body;
         console.log("add strted", req.body);
-        if (!userId || !postId || !text || !username || !userimg || !post_userid) {
-            return res.status(400).json({ message: "userId, postId, and text are required." });
-        }
+        // if (!userId || !postId || !text || !username || !userimg || !post_userid) {
+        //     return res.status(400).json({ message: "userId, postId, and text are required." });
+        // }
 
         const newComment = new Comment({ userId, postId, text, username, userimg, post_userid });
 

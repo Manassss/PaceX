@@ -9,7 +9,7 @@ import {
     Button,
     useMediaQuery
 } from "@mui/material";
-import { format, isToday, isYesterday, parse } from 'date-fns';
+import { format, isToday, isYesterday, parseISO, isValid } from 'date-fns';
 import { FaRegComment, FaShare } from "react-icons/fa6";
 import { BsFillSaveFill } from "react-icons/bs";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -266,7 +266,8 @@ const PostFeed = ({
                                     <Typography variant="caption" color="text.secondary">
                                         <Typography variant="caption" color="text.secondary">
                                             {(() => {
-                                                const date = parse(post.createdAtFormatted, 'dd/MM/yyyy, HH:mm:ss', new Date());
+                                                 const date = parseISO(post.rawCreatedAt);
+                                                 if (!isValid(date)) return 'Unknown date';
                                                 return isToday(date)
                                                     ? `Today at ${format(date, 'p')}`
                                                     : isYesterday(date)
