@@ -20,7 +20,7 @@ const createCommunity = async (req, res) => {
         // Save community to the database
         await newCommunity.save();
 
-        res.status(201).json({ message: "Community created successfully", community: newCommunity });
+        res.status(201).json(newCommunity);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

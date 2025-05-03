@@ -21,6 +21,7 @@ import {
   CardActions,
   Divider,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -101,6 +102,11 @@ const CommunityPage = () => {
   const [expandedPosts, setExpandedPosts] = useState({});
   const webcamRef = useRef(null);
   const [openCamera, setOpenCamera] = useState(false);
+  // Members dialog state
+  const [membersOpen, setMembersOpen] = useState(false);
+
+  const handleOpenMembers = () => setMembersOpen(true);
+  const handleCloseMembers = () => setMembersOpen(false);
 
   const capturePhoto = () => {
     const imageSrc = webcamRef.current.getScreenshot();
@@ -148,7 +154,9 @@ const CommunityPage = () => {
       try {
         const response = await axios.get(`${host}/api/community`);
         console.log("✅ communities fetched:", response.data);
-        setCommunities(response.data.filter(c => !!c.name)); // filter invalid ones
+        const valid = response.data.filter(c => !!c.name);
+        valid.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setCommunities(valid);
       } catch (error) {
         console.error("Error fetching communities:", error);
       }
@@ -174,12 +182,18 @@ const CommunityPage = () => {
         console.log("fetchDetails posts data:", postsRes.data);
         // Update additional data, but avoid resetting selectedCommunity
         const updatedCommunity = communityRes.data;
+        // Replace the selectedCommunity with the server-fresh version
+        setSelectedCommunity(updatedCommunity);
         if (!updatedCommunity.createdBy) {
           updatedCommunity.createdBy = { name: "Unknown" };
         }
 
         setIsMember(!!updatedCommunity.members.find(m => m.userId === user._id));
-        setIsAdmin(updatedCommunity.createdBy === user._id);
+        setIsAdmin(
+          // If createdBy is a plain ID or a populated object, match against user._id
+          updatedCommunity.createdBy === user._id ||
+          (updatedCommunity.createdBy && updatedCommunity.createdBy._id === user._id)
+        );
         setPosts(postsRes.data);
       } catch (error) {
         console.error("Error loading community detail:", error);
@@ -219,7 +233,13 @@ const CommunityPage = () => {
       };
 
       const res = await axios.post(`${host}/api/community`, payload);
-      setCommunities([res.data, ...communities]);
+      const newCommunity = res.data;
+      // Add the creator as a member/admin and navigate to detail view
+      setCommunities([newCommunity, ...communities]);
+      setSelectedCommunity(newCommunity);
+      setView("detail");
+      setIsMember(true);
+      setIsAdmin(true);
       setOpenModal(false);
       setName(""); setDescription(""); setCoverImage(null); setRules("");
     } catch (error) {
@@ -334,7 +354,20 @@ const CommunityPage = () => {
       setPosts(ps =>
         ps.map(p =>
           p._id === postId
-            ? { ...p, comments: [...p.comments, { userId: user._id, text }] }
+            ? {
+                ...p,
+                comments: [
+                  ...p.comments,
+                  {
+                    userId: {
+                      _id: user._id,
+                      name: user.name,
+                      profileImage: user.profileImage || ""
+                    },
+                    text
+                  }
+                ]
+              }
             : p
         )
       );
@@ -369,6 +402,17 @@ const CommunityPage = () => {
       };
       img.src = URL.createObjectURL(file);
     });
+  };
+
+
+  // Handler to delete a community from the home view
+  const handleDeleteCommunityHome = async (communityId) => {
+    try {
+      await axios.delete(`${host}/api/community/${communityId}`);
+      setCommunities(prev => prev.filter(c => c._id !== communityId));
+    } catch (error) {
+      console.error("Error deleting community:", error);
+    }
   };
 
 
@@ -448,7 +492,9 @@ const CommunityPage = () => {
 
           {/* Community Cards Grid */}
           <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-            {filteredCommunities.map((community) => (
+            {[...filteredCommunities]
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .map((community) => (
               <Grid item xs={12} sm={6} md={4} lg={4} key={community._id}>
                 <Card
                   sx={{
@@ -463,12 +509,29 @@ const CommunityPage = () => {
                     transition: "transform 0.3s ease, box-shadow 0.3s ease",
                     backdropFilter: "blur(10px)",
                     background: "white",
+                    position: "relative", // <-- ensure relative for absolute child
                     "&:hover": {
                       transform: "translateY(-5px)",
                       boxShadow: "0 12px 32px rgba(7,53,116,0.3)",
                     },
                   }}
                 >
+                  {community.createdBy === user._id && (
+                    <IconButton
+                      onClick={() => handleDeleteCommunityHome(community._id)}
+                      sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        backgroundColor: "rgba(0,0,0,0.05)",
+                        "&:hover": { backgroundColor: "rgba(0,0,0,0.1)" },
+                        zIndex: 1
+                      }}
+                      size="small"
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  )}
                   {/* Banner */}
                   <Box
                     sx={{
@@ -554,7 +617,7 @@ const CommunityPage = () => {
                             break;
                           case "members":
                             icon = <GroupsIcon fontSize="small" />;
-                            label = `${community.members.length} Members`;
+                            label = `${community.members?.length || 0} Members`;
                             onClick = undefined;
                             bg = "#e3f2fd";
                             hoverBg = bg;
@@ -723,29 +786,29 @@ const CommunityPage = () => {
                       color="error"
                       size="small"
                       onClick={handleDelete}
-                      sx={{
-                        px: 2,
-                        py: 0.5,
-                        fontSize: "0.875rem",
-                        minWidth: 100,
-                      }}
+                      sx={{ px: 2, py: 0.5, fontSize: "0.875rem", minWidth: 100 }}
                     >
                       Delete
+                    </Button>
+                  ) : isMember ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={handleMembership}
+                      sx={{ px: 2, py: 0.5, fontSize: "0.875rem", minWidth: 100 }}
+                    >
+                      Leave
                     </Button>
                   ) : (
                     <Button
                       variant="contained"
-                      color={isMember ? "primary" : "primary"}
+                      color="primary"
                       size="small"
                       onClick={handleMembership}
-                      sx={{
-                        px: 2,
-                        py: 0.5,
-                        fontSize: "0.875rem",
-                        minWidth: 100,
-                      }}
+                      sx={{ px: 2, py: 0.5, fontSize: "0.875rem", minWidth: 100 }}
                     >
-                      {isMember ? "Leave" : "Join"}
+                      Join
                     </Button>
                   )}
                 </Box>
@@ -788,7 +851,7 @@ const CommunityPage = () => {
                     spacing={2}
                   >
                     {/* Members stat */}
-                    <Box textAlign="center">
+                    <Box textAlign="center" onClick={handleOpenMembers} sx={{ cursor: "pointer" }}>
                       <Avatar
                         sx={{
                           bgcolor: "primary.main",
@@ -800,7 +863,7 @@ const CommunityPage = () => {
                         <GroupsIcon fontSize="large" />
                       </Avatar>
                       <Typography variant="h5">
-                        {selectedCommunity.members.length}  {/* number of members */}
+                        {selectedCommunity.members?.length || 0}  {/* number of members */}
                       </Typography>
                       <Typography color="text.secondary" variant="body2">
                         Members
@@ -942,9 +1005,9 @@ const CommunityPage = () => {
                             {post.comments?.map((c, idx) => (
                               <Box key={c._id || idx} sx={{ my: 1, py: 0.5 }}>
                                 <Stack direction="row" spacing={1} alignItems="center">
-                                  <Avatar src={c.userId.profileImage || ""} sx={{ width: 28, height: 28 }} />
+                                  <Avatar src={c.userId?.profileImage || ""} sx={{ width: 28, height: 28 }} />
                                   <Typography variant="subtitle2" fontWeight="bold">
-                                    {c.userId.name || "User"}
+                                    {c.userId?.name || "User"}
                                   </Typography>
                                 </Stack>
                                 <Typography variant="body2" sx={{ ml: 4, mt: 0.25 }}>
@@ -1275,6 +1338,46 @@ const CommunityPage = () => {
             variant="contained"
             sx={{ textTransform: 'none' }}
           >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* -------------------- Members Dialog Section -------------------- */}
+      <Dialog
+        open={membersOpen}
+        onClose={handleCloseMembers}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden',
+          }
+        }}
+      >
+        <DialogTitle>Community Members</DialogTitle>
+        <DialogContent dividers>
+          <List>
+            {selectedCommunity?.members?.map((m, idx) => (
+              <ListItem key={m.id || idx}>
+                <ListItemIcon>
+                  <Avatar
+                    src={m.userId?.profileImage || ""}
+                    alt={m.userId?.name || "Member"}
+                    sx={{ width: 32, height: 32 }}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={m.userId?.name || m.userId || "Unknown"}
+                  secondary={m.role}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMembers} variant="contained">
             Close
           </Button>
         </DialogActions>
