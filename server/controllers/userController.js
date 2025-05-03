@@ -334,25 +334,41 @@ const followrequest = async (req, res) => {
     const { targetUserId, requesterId } = req.body;
 
     try {
-        console.log("follow request started", req.body)
+        console.log("follow request started", req.body);
         const targetUser = await User.findById(targetUserId);
-        const alreadyRequested = targetUser.requests.includes(requesterId);
+        const requesterUser = await User.findById(requesterId);
 
+        // ✅ Unfollow if already following
+        const alreadyFollowing = targetUser.followers.includes(requesterId);
+        if (alreadyFollowing) {
+            targetUser.followers.pull(requesterId);
+            requesterUser.followings.pull(targetUserId);
+
+            targetUser.followersNumber = targetUser.followers.length;
+            requesterUser.followingsNumber = requesterUser.followings.length;
+
+            await targetUser.save();
+            await requesterUser.save();
+
+            return res.status(200).json({ message: "Unfollowed successfully." });
+        }
+
+        // 🟡 Handle follow request toggle
+        const alreadyRequested = targetUser.requests.includes(requesterId);
         if (alreadyRequested) {
-            // Cancel the request
             targetUser.requests.pull(requesterId);
             await targetUser.save();
             return res.status(200).json({ message: "Request cancelled." });
         } else {
-            // Send new request
             targetUser.requests.push(requesterId);
             await targetUser.save();
             return res.status(200).json({ message: "Request sent." });
         }
     } catch (err) {
+        console.error("Follow request error:", err);
         res.status(500).json({ error: err.message });
     }
-}
+};
 
 const approvereject = async (req, res) => {
     const { targetUserId, requesterId, action } = req.body;

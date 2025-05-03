@@ -126,6 +126,7 @@ const ProfilePage = () => {
   const [deleteperm, setdelete] = useState(false);
   const [deleteptemp, setdeletetemp] = useState(false);
   const [archive, setarchive] = useState(false);
+  const [isfollowing, setisfollowing] = useState(false);
   //User Profile Details
   const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   useEffect(() => {
@@ -179,6 +180,8 @@ const ProfilePage = () => {
       setIsConnected(res.data.followers?.includes(user?._id) ? true : false);
       setIsRequested(res.data.requests?.includes(user?._id));
       setUserDetails(transformedData);
+      console.log("isfolowing", transformedData.followers.includes(user?._id))
+      setisfollowing(transformedData.followers.includes(user?._id))
       setFormData(transformedData);
       const cleanedRequests = res.data.requests?.filter(req => req !== null);
       console.log('reqqq', res.data.requests)
@@ -228,16 +231,16 @@ const ProfilePage = () => {
   console.log("ProfilePage rendered — viewing profile:", userId, "logged-in user:", user?._id);
   console.log("Current myCommunities state:", myCommunities);
 
-  useEffect(() => {
-    if (!userId) return;   // userId comes from useParams()
-    console.log("👀 loading communities for profile userId:", userId);
-    axios.get(`${host}/api/communities/user/${userId}`)
-      .then(res => {
-        console.log("← got communities for", userId, ":", res.data);
-        setMyCommunities(res.data);
-      })
-      .catch(err => console.error("Communities fetch error:", err));
-  }, [userId]);
+  // useEffect(() => {
+  //   if (!userId) return;   // userId comes from useParams()
+  //   console.log("👀 loading communities for profile userId:", userId);
+  //   axios.get(`${host}/api/communities/user/${userId}`)
+  //     .then(res => {
+  //       console.log("← got communities for", userId, ":", res.data);
+  //       setMyCommunities(res.data);
+  //     })
+  //     .catch(err => console.error("Communities fetch error:", err));
+  // }, [userId]);
 
   // Handle delete button click
   const handleDeleteclick = () => {
@@ -357,6 +360,7 @@ const ProfilePage = () => {
   };
 
   const handleRequestToggle = async () => {
+
     try {
 
       const response = await axios.put(`${host}/api/users/followrequest`, {
@@ -365,9 +369,14 @@ const ProfilePage = () => {
       });
 
       console.log("rrrr", response.data);
-
+      if (isfollowing) {
+        setisfollowing(false);
+      }
+      else {
+        setIsRequested(!isRequested);
+      }
       // Update local state to reflect request status
-      setIsRequested(!isRequested);
+
     } catch (err) {
       console.error("Error sending/canceling follow request:", err);
     }
@@ -1154,16 +1163,16 @@ const ProfilePage = () => {
                     borderRadius: 2,
                     px: 2,
                     textTransform: 'none',
-                    backgroundColor: isConnected || isRequested ? '#f0f0f0' : '#007bff',
-                    color: isConnected || isRequested ? '#000' : '#fff',
+                    backgroundColor: isfollowing || isRequested ? '#f0f0f0' : '#007bff',
+                    color: isfollowing || isRequested ? '#000' : '#fff',
                     '&:hover': {
-                      backgroundColor: isConnected || isRequested ? '#e0e0e0' : '#0056b3',
+                      backgroundColor: isfollowing || isRequested ? '#e0e0e0' : '#0056b3',
                     },
                   }}
                 >
                   {loading
                     ? <CircularProgress size={20} sx={{ color: 'inherit' }} />
-                    : isConnected
+                    : isfollowing
                       ? <>Following ▼</>
                       : isRequested
                         ? "Requested"
@@ -1261,9 +1270,7 @@ const ProfilePage = () => {
               </Box>
 
               {/* Posts Grid or Private Message */}
-              {((selectedTab === 'all') ||
-                (!vistinguser && selectedTab === 'archived') ||
-                (!vistinguser && selectedTab === 'recentlyDeleted')) ? (
+              {isfollowing || userDetails.id == user?._id ? (
                 filteredPosts.length > 0 ? (
                   <Grid container spacing={1} mt={2}>
                     {filteredPosts.map((post, idx) => (
@@ -1306,11 +1313,27 @@ const ProfilePage = () => {
                     </Typography>
                     <Button
                       variant="contained"
-                      sx={{ borderRadius: 2, padding: '6px 12px', fontSize: '14px', backgroundColor: isConnected ? '#f0f0f0' : '#007bff', color: isConnected ? '#000' : '#fff', '&:hover': { backgroundColor: isConnected ? '#e0e0e0' : '#0056b3' } }}
-                      onClick={handleConnectToggle}
+                      onClick={handleRequestToggle}
                       disabled={loading}
+                      sx={{
+                        borderRadius: 2,
+                        px: 2,
+                        textTransform: 'none',
+                        backgroundColor: isfollowing || isRequested ? '#f0f0f0' : '#007bff',
+                        color: isfollowing || isRequested ? '#000' : '#fff',
+                        '&:hover': {
+                          backgroundColor: isfollowing || isRequested ? '#e0e0e0' : '#0056b3',
+                        },
+                      }}
                     >
-                      {loading ? <CircularProgress size={20} sx={{ color: 'inherit' }} /> : isConnected ? <>Following ▼</> : 'Connect'}
+                      {loading
+                        ? <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                        : isfollowing
+                          ? <>Following ▼</>
+                          : isRequested
+                            ? "Requested"
+                            : 'Connect'
+                      }
                     </Button>
                   </Box>
                 </Box>
