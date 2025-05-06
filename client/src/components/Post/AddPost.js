@@ -200,6 +200,10 @@ const AddPost = ({ open: isOpen, onClose }) => {
       console.error('Error creating post:', err.response?.data || err.message);
     }
   };
+  const handleDiscard = () => {
+    setSelectedFiles([]);
+    setContent("");
+  }
 
   return (
     <>
@@ -254,7 +258,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5
             }}>
               {selectedFiles.length == 0 ? <></> :
-                < Button sx={{ background: 'red', color: 'white' }} onClick={() => setSelectedFiles([])}>Discard</Button>}
+                < Button sx={{ background: 'red', color: 'white' }} onClick={handleDiscard}>Discard</Button>}
 
 
               <Button disabled={!content && selectedFiles.length === 0} variant="contained" onClick={handleSubmit}>
@@ -278,7 +282,7 @@ const AddPost = ({ open: isOpen, onClose }) => {
           <Webcam ref={webcamRef} audio={false} screenshotFormat="image/jpeg" style={{ width: '100%', height: '100%', borderRadius: 8 }} />
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button variant="contained" onClick={handleCapture}>Capture</Button>
-            <Button variant="outlined" onClick={() => setCameraOpen(false)}>Cancel</Button>
+            <Button variant="contained" onClick={() => setCameraOpen(false)}>Cancel</Button>
           </Box>
         </Box>
       </Modal>

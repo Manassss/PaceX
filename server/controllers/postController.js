@@ -56,6 +56,20 @@ const getuserPosts = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 }
+const getpostbyID = async (req, res) => {
+  try {
+    const { postId } = req.body;
+    console.log("postid", postId)
+    const posts = await Post.findById(postId)
+
+    res.status(200).json(posts);
+
+
+  } catch (err) {
+    console.error("Error fetching  posts:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+}
 
 //  Like a specific post
 const likePost = async (req, res) => {
@@ -286,5 +300,5 @@ const getRandomPosts = async (req, res) => {
 
 module.exports = {
   createPost, getPosts, likePost, addComment, getRandomPosts,
-  deletePost, togglearchive, toggletempdelete, getuserfeed, getuserPosts, toggleSavedPost
+  deletePost, togglearchive, toggletempdelete, getuserfeed, getuserPosts, toggleSavedPost, getpostbyID
 };

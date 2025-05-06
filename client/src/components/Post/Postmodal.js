@@ -40,7 +40,7 @@ const Postmodal = ({
 
     const fetchComments = async () => {
         try {
-            const response = await axios.get(`${host}/api/comment/${selectedPost.postId}`);
+            const response = await axios.get(`${host}/api/comment/${selectedPost.postId || selectedPost._id}`);
             setComments(response.data.comments || []);
         } catch (error) {
             console.error("Error fetching comments:", error);
@@ -75,7 +75,7 @@ const Postmodal = ({
     // };
     const handleLike = async () => {
         console.log(`${user?._id} is user id and targetid ${selectedPost.postId}`);
-        const payload = { userId: user._id, postId: selectedPost.postId };
+        const payload = { userId: user._id, postId: selectedPost.postId || selectedPost._id };
 
         if (isLiked) {
             const res = await axios.post(`${host}/api/likes/remove`, payload);
@@ -105,7 +105,7 @@ const Postmodal = ({
         try {
             const payload = {
                 userId: user._id,
-                postId: selectedPost.postId,
+                postId: selectedPost.postId || selectedPost._id,
                 text: newComment,
                 username: user?.name,
                 userimg: user?.profileImage,

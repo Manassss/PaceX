@@ -127,6 +127,8 @@ const ProfilePage = () => {
   const [deleteptemp, setdeletetemp] = useState(false);
   const [archive, setarchive] = useState(false);
   const [isfollowing, setisfollowing] = useState(false);
+  const [imageaccepting, setImageaccepting] = useState(false);
+  const [imageaccepted, setImageaccepted] = useState(false);
   //User Profile Details
   const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   useEffect(() => {
@@ -605,8 +607,8 @@ const ProfilePage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  // returns the downloadURL when it's done
   const handleImageUpload = () => {
+    setImageaccepting(true);
     if (!selectedFile) return Promise.reject("No file");
 
     return new Promise((resolve, reject) => {
@@ -620,11 +622,16 @@ const ProfilePage = () => {
         () => {
           getDownloadURL(uploadTask.snapshot.ref)
             .then((downloadURL) => {
-              // update formData for preview
+              // Update formData for preview
               setFormData((prev) => ({ ...prev, profileImage: downloadURL }));
+              setImageaccepted(true);
+              setImageaccepting(false);
               resolve(downloadURL);
             })
-            .catch(reject);
+            .catch((err) => {
+              setImageaccepting(false); // Stop spinner even on error
+              reject(err);
+            });
         }
       );
     });
@@ -797,8 +804,14 @@ const ProfilePage = () => {
 
 
   const handleUpdateProfile = async () => {
+
+
+
     console.log("handleUpdateProfile called with formData", formData);
     try {
+
+      // await handleImageUpload();
+
       // 1. Update Firebase Auth profile
       const auth = getAuth();
       const currentUser = auth.currentUser;
@@ -1607,20 +1620,29 @@ const ProfilePage = () => {
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
                   <Button
-                    variant="text"
-                    color="error"
+                    variant="contained"
                     onClick={() => setSelectedFile(null)}
                   >
                     Discard
                   </Button>
-                  <Button
+                  {!imageaccepted ? <Button
                     variant="contained"
                     onClick={async () => {
-                      await handleImageUpload();
+
+                      await handleImageUpload()
+
                     }}
                   >
-                    Accept
-                  </Button>
+                    {imageaccepting
+                      ? <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                      : imageaccepted
+                        ? "Accepted"
+                        : "Accept"
+
+                    }
+                  </Button> :
+                    <></>}
+
                 </Box>
               </Box>
             )}

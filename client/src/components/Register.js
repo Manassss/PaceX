@@ -25,6 +25,7 @@ const Register = () => {
     e.preventDefault();
 
     try {
+      setMessage("");
       const { name, email, password, username } = formData;
       if (!/^[a-zA-Z0-9._%+-]+@pace\.edu$/.test(email)) {
         setMessage("❌ Please use a valid @pace.edu email address.");
@@ -46,12 +47,10 @@ const Register = () => {
         username
       });
 
-
-
       await sendEmailVerification(user);
       await auth.signOut();
       alert("📩 Verification email sent. Please check your inbox and verify your account before logging in.");
-      setMessage("📩 Please check your email and verify your account before logging in.");
+      setMessage("");
       navigate('/login');
     } catch (err) {
       // Enhanced error logging: display detailed error information from Firebase.
@@ -133,8 +132,8 @@ const Register = () => {
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField label="Username" variant="outlined" name="username" onChange={handleChange} required fullWidth />
-            <TextField label="First Name" variant="outlined" name="name" onChange={handleChange} required fullWidth />
-            <TextField label="Email (.edu)" variant="outlined" name="email" type="email" onChange={handleChange} required fullWidth />
+            <TextField label="Full Name" variant="outlined" name="name" onChange={handleChange} required fullWidth />
+            <TextField label="Email (xxxxxxxx@pace.edu)" variant="outlined" name="email" type="email" onChange={handleChange} required fullWidth />
             <TextField label="Password" variant="outlined" name="password" type="password" onChange={handleChange} required fullWidth />
             <Button variant="contained" color="primary" type="submit" sx={{ mt: 2, borderRadius: 2, width: { xs: "100%", sm: "auto" } }}>
               Register

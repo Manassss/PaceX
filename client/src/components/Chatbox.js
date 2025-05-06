@@ -102,6 +102,20 @@ const Chatbox = ({ userId, username, isMobile, onBack }) => {
         }
     };
 
+    const handlepost = async (postId) => {
+        try {
+            console.log('postId', postId);
+            const response = await axios.post(`${host}/api/posts/getpost`, { postId });
+            console.log("post", response.data);
+            setSelectedPost(response.data);
+            setOpenPostModal(true);
+        } catch (error) {
+            console.error("Error fetching post:", error);
+        }
+    };
+
+
+
     const postMessage = async (messageData) => {
         try {
             await axios.post(`${host}/api/chat/send`, {
@@ -214,10 +228,7 @@ const Chatbox = ({ userId, username, isMobile, onBack }) => {
                                     cursor: "pointer",
 
                                 }}
-                                onClick={() => {
-                                    setSelectedPost(msg.sharedContent);
-                                    setOpenPostModal(true);
-                                }}
+                                onClick={() => handlepost(msg.sharedContent.postId)}
                             >
                                 <Typography sx={{ fontWeight: "bold" }}>Shared a Post</Typography>
                                 <Box sx={{ mt: 1 }}>
@@ -289,6 +300,7 @@ const Chatbox = ({ userId, username, isMobile, onBack }) => {
                 </Button>
             </Box>
             <Postmodal
+                setSelectedPost={setSelectedPost}
                 selectedPost={selectedPost}
                 openPostModal={openPostModal}
                 setOpenPostModal={setOpenPostModal}

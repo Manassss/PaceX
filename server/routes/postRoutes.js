@@ -1,7 +1,7 @@
 const express = require('express');
 const { createPost, getPosts, likePost, addComment, deletePost,
     togglearchive, toggletempdelete, toggleSavedPost,
-    getuserfeed, getuserPosts, getRandomPosts } = require('../controllers/postController');
+    getuserfeed, getuserPosts, getRandomPosts, getpostbyID } = require('../controllers/postController');
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.post('/add', createPost);
 
 //  Route to fetch all posts (or filtered by query parameter)
 router.get('/all', getPosts);
-
+router.post('/getpost', getpostbyID);
 //  Feed route should be placed before `/:userId` to avoid conflicts
 router.get('/feed/:userId', getuserfeed);
 
