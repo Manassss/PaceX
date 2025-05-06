@@ -1,6 +1,6 @@
-# 🎓 UniConnect - University Social Platform
+# 🎓 PaceX - University Social Platform
 
-UniConnect is a MERN stack-based social platform designed exclusively for university students and faculty. It provides a digital space where users can connect, collaborate, and engage in academic and extracurricular activities.
+PaceX is a MERN stack-based social platform designed exclusively for university students and faculty. It provides a digital space where users can connect, collaborate, and engage in academic and extracurricular activities.
 
 ---
 
@@ -12,7 +12,6 @@ UniConnect is a MERN stack-based social platform designed exclusively for univer
 - **Messaging System**: Real-time chat functionality.
 - **Events & Notices**: Stay updated with university events and announcements.
 - **Marketplace**: Buy and sell textbooks, gadgets, and services within the university.
-- **AI-Powered Content Moderation**: Automatic filtering of inappropriate content.
 
 ---
 
@@ -21,47 +20,73 @@ UniConnect is a MERN stack-based social platform designed exclusively for univer
 - **Frontend**: React.js, Material-UI
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB with Mongoose
-- **Authentication**: JWT (JSON Web Tokens)
+- **Authentication**: FireBase
 - **Real-Time Communication**: Socket.io
-- **Deployment**: Vercel / Netlify (Frontend), Heroku / AWS (Backend)
+- **Deployment**: Vercel (Frontend),Render(Backend)
 
 ---
 
 ## 📦 Getting Started
 
+For deployed version of the application please use this link
+
+```bash
+https://pacedev.vercel.app
+```
+
+OR
+
 Follow the instructions below to set up the project locally.
 
----
-
-### 1️⃣ **Clone the Repository**
+### 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/Manassss/PaceX.git
 ```
 
-### 2️⃣ **Set up the FrontEnd**
+### 2️⃣ Set up the Frontend
 
 ```bash
 cd client
 npm install
-npm start
 ```
 
-### 3️⃣ **Set up the BackendEnd**
+### 3️⃣ Set up the Backend
 
-Open Another terminal in Root Directory
+Open another terminal in the project root:
 
 ```bash
 cd server
 npm install
 ```
 
-### 4️⃣ **Configure Environment Variables**
+### 4️⃣ Configure Environment Variables
 
-In the server directory, create a file named .env.
-Add the following environment variables to the .env file:
+#### Client `.env`
 
-```bash
+In `client/.env`, add:
+
+```env
+VITE_GOOGLE_MAPS_API=AIzaSyAO2ekezozP0iZGQNeyYOkASsjsl456Kn8
+REACT_APP_FIREBASE_API_KEY=AIzaSyD-cG5FUYp3BtDn1MM6dSqwF4U5vBzFYQ4
+REACT_APP_FIREBASE_AUTH_DOMAIN=uniconnect-b0f89.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=uniconnect-b0f89
+REACT_APP_FIREBASE_STORAGE_BUCKET=uniconnect-b0f89.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=813462086599
+REACT_APP_FIREBASE_APP_ID=1:813462086599:web:d3c0f9299e2ca55d72afe2
+REACT_APP_FIREBASE_MEASUREMENT_ID=G-VR81083ESP
+# For local development
+REACT_APP_DEV_API_BASE_URL=http://localhost:5001
+REACT_APP_NODE_ENV=production
+# For deployed production frontend
+REACT_APP_PROD_API_BASE_URL=https://pacex.onrender.com
+```
+
+#### Server `.env`
+
+In `server/.env`, add:
+
+```env
 MONGO_URI='mongodb+srv://Sid:MongoDBUniconnect07@cluster0.3wia5.mongodb.net/UniconnectDB?retryWrites=true&w=majority'
 JWT_SECRET=a0734cb17286a6c8cb3ca15bf26ba3f48c56bf50ebdba36058839b812675001c23fd9470729ea2c5420873631dd6346e0ee9b607859c63f2784861605c384900
 # FIREBASE_KEY_PATH=C:\Users\manas\firebase-keys\firebase-key.json
@@ -79,102 +104,73 @@ env.FirebaseDOMAIN="googleapis.com"
 CLIENT_ORIGIN="https://pacedev.vercel.app"
 ```
 
-In the client directory, create a file named .env.
-Add the following environment variables to the .env file:
+### 5️⃣ Local Host Toggle
 
-```bash
-VITE_GOOGLE_MAPS_API=AIzaSyAO2ekezozP0iZGQNeyYOkASsjsl456Kn8
-REACT_APP_FIREBASE_API_KEY=AIzaSyD-cG5FUYp3BtDn1MM6dSqwF4U5vBzFYQ4
-REACT_APP_FIREBASE_AUTH_DOMAIN=uniconnect-b0f89.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=uniconnect-b0f89
-REACT_APP_FIREBASE_STORAGE_BUCKET=uniconnect-b0f89.firebasestorage.app
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=813462086599
-REACT_APP_FIREBASE_APP_ID=1:813462086599:web:d3c0f9299e2ca55d72afe2
-REACT_APP_FIREBASE_MEASUREMENT_ID=G-VR81083ESP
-# For local development
-REACT_APP_DEV_API_BASE_URL=http://localhost:5001
-REACT_APP_NODE_ENV=production
-# For deployed production frontend
-REACT_APP_PROD_API_BASE_URL=https://pacex.onrender.com
-```
+In these client files:
 
-### 5️⃣ **Run the Backend Server**
+- `client/src/auth/authContext.js`
+- `client/src/components/apinfo.js`
+- `client/src/App.js`
 
-```bash
-node server.js
-```
+Replace:
 
-If you're running on your local machine, make these changes before starting the client:
-
-```bash
-client/src/auth/authContext.js
-
-client/src/components/apinfo.js
-
-client/src/App.js
-```
-
-In each of these files, switch the host variable to use your local dev server URL:
-
-### 6 **For production (deployed) use:**
-
-```bash
+```js
 const host = process.env.REACT_APP_PROD_API_BASE_URL;
-// Uncomment for local development:
 // const host = process.env.REACT_APP_DEV_API_BASE_URL;
 ```
 
-Project Structure
-Client
+Uncomment the second line for local development.
+
+### 6️⃣ Run the Servers
+
+#### Backend
 
 ```bash
+cd server
+node server.js
+```
 
+#### Frontend
+
+```bash
+cd client
+npm start
+```
+
+## 📂 Project Structure
+
+### Client
+
+```
 client/
-├── public/ # Static assets and HTML template
+├── public/                 # Static assets and HTML template
 ├── src/
-│ ├── assets/ # Images, icons, logos
-│ ├── auth/ # Firebase Auth context and hooks
-│ ├── components/ # Reusable components
-│ │ ├── Post/ # AddPost, PostFeed, Modals
-│ │ ├── StoryPages/ # StoryBar, StoryViewer
-│ │ └── Community/ # CommunityHome, CommunityDetail
-│ ├── pages/ # Route-level pages (Home, Profile, Login, Register)
-│ ├── firebaseconfig.js # Firebase initialization
-│ ├── App.js # Route definitions
-│ └── ...
+│   ├── assets/             # Images, icons, logos
+│   ├── auth/               # Firebase Auth context and hooks
+│   ├── components/         # Reusable components
+│   │   ├── Post/           # AddPost, PostFeed, Modals
+│   │   ├── StoryPages/     # StoryBar, StoryViewer
+│   │   └── Community/      # CommunityHome, CommunityDetail
+│   ├── pages/              # Route-level pages (Home, Profile, Login, Register)
+│   ├── firebaseconfig.js   # Firebase initialization
+│   ├── App.js              # Route definitions
+│   └── ...
 ├── .env
 └── package.json
 ```
 
-Server
+### Server
 
-```bash
-
+```
 server/
-├── config/ # DB connection, Firebase Admin setup
-├── controllers/ # Business logic for each resource
-├── middlewares/ # Auth checks, error handlers
-├── models/ # Mongoose schemas (User, Post, Story, ...)
-├── routes/ # Express routers mapping paths to controllers
-├── server.js # App entry point and Socket.IO setup
+├── config/                 # DB connection, Firebase Admin setup
+├── controllers/            # Business logic for each resource
+├── middlewares/            # Auth checks, error handlers
+├── models/                 # Mongoose schemas (User, Post, Story, ...)
+├── routes/                 # Express routers mapping paths to controllers
+├── server.js               # App entry point and Socket.IO setup
 ├── .env
 └── package.json
 ```
 
-API Endpoints
-Base URL: http://localhost:5001/api
-
-Resource Endpoint Method Protected Description
-Auth /auth/register POST No Register a new user
-Auth /auth/login POST No Login and receive JWT
-Users /users/:id GET Yes Get user profile
-Posts /posts/ GET Yes Fetch all posts
-Posts /posts POST Yes Create a new post
-Stories /stories POST Yes Upload a new story
-Stories /stories/:userId GET Yes Get stories for a specific user
-Comments /comments POST Yes Add a comment
-Likes /likes POST Yes Toggle like on a post
-Communities /communities GET/POST Yes Browse or create communities
-CommunityPost /communities/:id/posts POST Yes Create post within a community
-Marketplace /market GET/POST Yes Browse or list items for sale
-Chat /messages/:conversationId GET Yes Fetch conversation messages
+---
