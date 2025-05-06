@@ -247,17 +247,25 @@ const AddPost = ({ open: isOpen, onClose }) => {
                   component="img" src={URL.createObjectURL(selectedFiles[0])} alt="Preview"
                   sx={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 2, my: 1 }}
                 />
-                <Button variant="text" color="error" onClick={() => setSelectedFiles([])}>Discard</Button>
+
               </Box>
             )}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Box sx={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5
+            }}>
+              {selectedFiles.length == 0 ? <></> :
+                < Button sx={{ background: 'red', color: 'white' }} onClick={() => setSelectedFiles([])}>Discard</Button>}
+
+
               <Button disabled={!content && selectedFiles.length === 0} variant="contained" onClick={handleSubmit}>
                 Post
               </Button>
             </Box>
+
+
           </Box>
-        </Box>
-      </Modal>
+        </Box >
+      </Modal >
 
       <Modal open={cameraOpen} onClose={() => setCameraOpen(false)} closeAfterTransition BackdropProps={{ sx: { backdropFilter: 'blur(8px)' } }}>
         <Box
@@ -275,29 +283,31 @@ const AddPost = ({ open: isOpen, onClose }) => {
         </Box>
       </Modal>
 
-      {openCropModal && (
-        <Modal open onClose={() => setOpenCropModal(false)} closeAfterTransition BackdropProps={{ sx: { backdropFilter: 'blur(8px)' } }}>
-          <Box
-            sx={{
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: { xs: '100%', sm: '90%', md: '70%' }, height: { xs: '80vh', md: '70vh' },
-              bgcolor: '#fff', borderRadius: 2, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'
-            }}
-          >
-            <Box sx={{ position: 'relative', width: '100%', height: '60%', mb: 2 }}>
-              <Cropper
-                image={imageSrc} crop={crop} zoom={zoom} aspect={4 / 3}
-                onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
-              />
+      {
+        openCropModal && (
+          <Modal open onClose={() => setOpenCropModal(false)} closeAfterTransition BackdropProps={{ sx: { backdropFilter: 'blur(8px)' } }}>
+            <Box
+              sx={{
+                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                width: { xs: '100%', sm: '90%', md: '70%' }, height: { xs: '80vh', md: '70vh' },
+                bgcolor: '#fff', borderRadius: 2, p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'
+              }}
+            >
+              <Box sx={{ position: 'relative', width: '100%', height: '60%', mb: 2 }}>
+                <Cropper
+                  image={imageSrc} crop={crop} zoom={zoom} aspect={4 / 3}
+                  onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete}
+                />
+              </Box>
+              <Slider value={zoom} min={1} max={3} step={0.1} onChange={(e, v) => setZoom(v)} sx={{ width: '80%', mb: 2 }} />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button onClick={() => setOpenCropModal(false)}>Cancel</Button>
+                <Button onClick={handleCropConfirm}>Crop & Upload</Button>
+              </Box>
             </Box>
-            <Slider value={zoom} min={1} max={3} step={0.1} onChange={(e, v) => setZoom(v)} sx={{ width: '80%', mb: 2 }} />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button onClick={() => setOpenCropModal(false)}>Cancel</Button>
-              <Button onClick={handleCropConfirm}>Crop & Upload</Button>
-            </Box>
-          </Box>
-        </Modal>
-      )}
+          </Modal>
+        )
+      }
     </>
   );
 };

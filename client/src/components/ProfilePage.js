@@ -1439,6 +1439,7 @@ const ProfilePage = () => {
           setarchive={setarchive}
           setdelete={setdelete}
           setdeletetemp={setdeletetemp}
+          setSelectedPost={setSelectedPost}
         />
 
 

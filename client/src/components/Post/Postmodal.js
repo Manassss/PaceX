@@ -19,6 +19,7 @@ const Postmodal = ({
     setarchive,
     setdeletetemp,
     setdelete,
+    setSelectedPost
 }) => {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
@@ -55,22 +56,48 @@ const Postmodal = ({
     //     }
     // };
 
+    // const handleLike = async () => {
+    //     console.log(`${user?._id} is user id and targetid ${selectedPost.postId}`)
+    //     const payload = { userId: user._id, postId: selectedPost.postId }
+    //     if (isLiked) {
+    //         const res = await axios.post(`${host}/api/likes/remove`, payload);
+    //         setIsLiked(false)
+    //         console.log("✅ Like removed:", res.data);
+    //     }
+    //     else {
+    //         const res = await axios.post(`${host}/api/likes/add`, { userId: user._id, postId: selectedPost.postId });
+    //         setIsLiked(true)
+    //         console.log("✅ Like added:", res.data);
+    //     }
+
+
+
+    // };
     const handleLike = async () => {
-        console.log(`${user?._id} is user id and targetid ${selectedPost.postId}`)
-        const payload = { userId: user._id, postId: selectedPost.postId }
+        console.log(`${user?._id} is user id and targetid ${selectedPost.postId}`);
+        const payload = { userId: user._id, postId: selectedPost.postId };
+
         if (isLiked) {
             const res = await axios.post(`${host}/api/likes/remove`, payload);
-            setIsLiked(false)
+            setIsLiked(false);
             console.log("✅ Like removed:", res.data);
-        }
-        else {
-            const res = await axios.post(`${host}/api/likes/add`, { userId: user._id, postId: selectedPost.postId });
-            setIsLiked(true)
+
+            // Remove user ID from likes
+            setSelectedPost(prev => ({
+                ...prev,
+                likes: prev.likes.filter(id => id !== user._id),
+            }));
+        } else {
+            const res = await axios.post(`${host}/api/likes/add`, payload);
+            setIsLiked(true);
             console.log("✅ Like added:", res.data);
+
+            // Add user ID to likes
+            setSelectedPost(prev => ({
+                ...prev,
+                likes: [...prev.likes, user._id],
+            }));
         }
-
-
-
     };
 
     const handleAddComment = async () => {
@@ -201,19 +228,24 @@ const Postmodal = ({
                             <Box sx={{ p: 2 }}>
                                 <Typography variant="body1" fontWeight={500}>{selectedPost.content}</Typography>
                             </Box>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Box sx={{ px: 2, display: "flex", gap: 2 }}>
+                                    <Typography>{selectedPost.likes?.length || 0}</Typography>
+                                    <IconButton onClick={handleLike} sx={{ p: 0 }}>
+                                        {isLiked ? <AiFillLike size={20} color="#073574" /> : <AiOutlineLike size={20} />}
+                                    </IconButton>
+                                </Box>
+                                <Box sx={{ px: 2, display: "flex", gap: 2 }}>
+                                    <Typography>{comments.length || 0}</Typography>
+                                    <FaRegComment size={18} />
 
-                            <Box sx={{ px: 2, display: "flex", gap: 3 }}>
-                                <IconButton onClick={handleLike} sx={{ p: 0 }}>
-                                    {isLiked ? <AiFillLike size={20} color="#073574" /> : <AiOutlineLike size={20} />}
-                                </IconButton>
-                                <Typography>{selectedPost.likes?.length || 0}</Typography>
-
-                                <FaRegComment size={18} />
-                                <Typography>{comments.length || 0}</Typography>
-
-                                <IconButton sx={{ p: 0 }} onClick={() => setOpenPostShareModal(true)} >
-                                    <GiShare size={18} /></IconButton>
+                                </Box>
+                                <Box >
+                                    <IconButton sx={{ p: 0 }} onClick={() => setOpenPostShareModal(true)} >
+                                        <GiShare size={18} /></IconButton>
+                                </Box>
                             </Box>
+
 
                             {selectedPost.userId === user?._id && (
                                 <IconButton onClick={handlePostMenuOpen} sx={{ position: 'absolute', top: 10, right: 10 }}>
