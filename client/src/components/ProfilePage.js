@@ -129,6 +129,7 @@ const ProfilePage = () => {
   const [isfollowing, setisfollowing] = useState(false);
   const [imageaccepting, setImageaccepting] = useState(false);
   const [imageaccepted, setImageaccepted] = useState(false);
+  const [imageuploaded, setImageuploaded] = useState(false);
   //User Profile Details
   const [openDeleteAccountModal, setOpenDeleteAccountModal] = useState(false);
   useEffect(() => {
@@ -672,6 +673,7 @@ const ProfilePage = () => {
       } else if (media.startsWith('https://firebasestorage.googleapis.com')) {
         setFormData(prev => ({ ...prev, profileImage: media }));
         setOpenCamera(false);
+        setImageuploaded(true);
         return;
       } else {
         try {
@@ -681,6 +683,7 @@ const ProfilePage = () => {
           setFormData(prev => ({ ...prev, profileImage: previewUrl }));
           setSelectedFile(blob);
           setOpenCamera(false);
+          setImageuploaded(true);
           return;
         } catch (err) {
           console.error("Error fetching image for upload:", err);
@@ -693,9 +696,11 @@ const ProfilePage = () => {
       fileForUpload = media;
     }
 
+    // ✅ Set both preview and selectedFile
     setFormData(prev => ({ ...prev, profileImage: previewUrl }));
     setSelectedFile(fileForUpload);
     setOpenCamera(false);
+    setImageuploaded(true);
   };
 
   // Handle file selection from device
@@ -854,6 +859,7 @@ const ProfilePage = () => {
 
       // 4. Close dialog
       setOpenEditProfile(false);
+      setImageuploaded(false);
       console.log("handleUpdateProfile: dialog closed");
     } catch (err) {
       console.error("handleUpdateProfile error:", err);
@@ -1571,7 +1577,7 @@ const ProfilePage = () => {
         >
           <DialogTitle sx={{ fontWeight: 'bold' }}>Edit Profile</DialogTitle>
           <DialogContent dividers>
-            {!selectedFile && (
+            {imageuploaded ? <Typography>Image Added Please Save to Update Profile</Typography> : !selectedFile && (
               <Box sx={{ display: 'flex', gap: 2, mb: 3, justifyContent: 'center' }}>
                 <Button
                   variant="outlined"
